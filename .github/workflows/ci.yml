@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Format
+        run: bash .github/scripts/ci/format.sh --check
+
+      - name: Test
+        run: bash .github/scripts/ci/test.sh
+
+      - name: Smoke (container must respond)
+        run: bash .github/scripts/ci/smoke.sh

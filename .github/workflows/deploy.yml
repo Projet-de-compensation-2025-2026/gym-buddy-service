@@ -1,0 +1,95 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_call:
+    inputs:
+      version:
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-service
+  cancel-in-progress: false
+
+jobs:
+  image:
+    name: image
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Image name
+        id: meta
+        run: |
+          OWNER="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          VERSION="${{ inputs.version }}"
+          if [[ -z "$VERSION" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          IMAGE="ghcr.io/${OWNER}/gym-buddy-service"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:v${{ env.VERSION }}
+            ${{ env.IMAGE }}:latest
+
+  vm:
+    name: vm
+    needs: image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout replace script
+        uses: actions/checkout@v4
+
+      - name: Replace container on the target machine
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${HOST:-}" || -z "${USER:-}" || -z "${KEY:-}" ]]; then
+            echo "DEPLOY_HOST / DEPLOY_USER / DEPLOY_SSH_KEY are not set."
+            echo "Image was pushed to GHCR. Skipping SSH replace until secrets exist."
+            exit 0
+          fi
+          VERSION="${{ inputs.version }}"
+          if [[ -z "$VERSION" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          OWNER="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          IMAGE="ghcr.io/${OWNER}/gym-buddy-service:v${VERSION}"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh_port="${PORT:-22}"
+          ssh-keyscan -p "$ssh_port" -H "$HOST" >> ~/.ssh/known_hosts
+          scp -i ~/.ssh/deploy_key -P "$ssh_port" deploy/replace.sh "${USER}@${HOST}:/tmp/gym-buddy-replace.sh"
+          ssh -i ~/.ssh/deploy_key -p "$ssh_port" "${USER}@${HOST}" \
+            "chmod +x /tmp/gym-buddy-replace.sh && /tmp/gym-buddy-replace.sh '${IMAGE}'"

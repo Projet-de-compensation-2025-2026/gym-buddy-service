@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "SemVer to publish (e.g. 0.2.0). Leave empty to compute automatically."
+        required: false
+        type: string
+      bump:
+        description: "When version is empty: auto (from Conventional Commits), patch, minor, or major."
+        required: false
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+        default: auto
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: develop
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Format (apply)
+        run: bash .github/scripts/ci/format.sh --write
+
+      - name: Test
+        run: bash .github/scripts/ci/test.sh
+
+      - name: Smoke (container must respond)
+        run: bash .github/scripts/ci/smoke.sh
+
+      - name: Compute version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_BUMP: ${{ inputs.bump }}
+        run: |
+          VER="$(python3 .github/scripts/ci/next_version.py)"
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+          echo "Releasing v${VER}"
+
+      - name: Prepare changelog
+        run: python3 .github/scripts/ci/prepare_changelog.py "${{ steps.version.outputs.version }}"
+
+      - name: Commit release prep on develop
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No prep changes"
+          else
+            git commit -m "chore(release): prepare v${{ steps.version.outputs.version }}"
+            git push origin HEAD:develop
+          fi
+
+      - name: Squash develop onto main and tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git fetch origin
+          git checkout -B main origin/main
+          git merge --squash origin/develop
+          git commit -m "release: v${VERSION}"
+          git tag -a "v${VERSION}" -m "v${VERSION}"
+          git push origin main
+          git push origin "v${VERSION}"
+          git checkout develop
+          git merge --no-ff main -m "chore(release): sync develop with v${VERSION}"
+          git push origin develop
+
+  deploy:
+    name: deploy
+    needs: release
+    uses: ./.github/workflows/deploy.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit
+    permissions:
+      contents: read
+      packages: write
