@@ -1,5 +1,6 @@
-# Multi-stage Java 26 / Spring Boot build. Keep EXPOSE 8080 for smoke and compose.
-FROM eclipse-temurin:26-jdk AS build
+# Multi-stage Java 25 LTS / Spring Boot build. Wiki target is Java 26; CI/images use 25 until Temurin 26 installs on Actions.
+# Keep EXPOSE 8080 for smoke and compose.
+FROM eclipse-temurin:25-jdk AS build
 WORKDIR /src
 
 ARG MAVEN_VERSION=3.9.11
@@ -14,7 +15,7 @@ COPY pom.xml .
 COPY src ./src
 RUN mvn -B -DskipTests package
 
-FROM eclipse-temurin:26-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 RUN groupadd --system app \
