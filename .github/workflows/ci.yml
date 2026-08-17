@@ -21,10 +21,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use runner Temurin 25
-        run: |
-          echo "JAVA_HOME=${JAVA_HOME_25_X64}" >> "$GITHUB_ENV"
-          echo "${JAVA_HOME_25_X64}/bin" >> "$GITHUB_PATH"
+      - name: Set up Java 25
+        run: bash .github/scripts/ci/setup_java.sh
 
       - name: Show toolchain
         run: |
