@@ -7,12 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Java 26 / Spring Boot 4.1 service: Flyway baseline, `GET /api/v1/healthz` (liveness) and `GET /api/v1/readyz` (PostgreSQL + object storage). Production profile refuses to start without S3.
+- Java 26 / Spring Boot 4.1 application (`pom.xml`): `GET /api/v1/healthz` and `GET /api/v1/readyz`.
+- Flyway baseline, `DATABASE_URL` → JDBC, MinIO/S3 readiness, production refuse-without-S3.
+- Testcontainers coverage for `readyz`. Smoke hits `/api/v1/healthz` when `pom.xml` exists.
 - Local `compose.yaml` and `.env.example`: PostgreSQL 18, Redis, MinIO, API on `127.0.0.1`, optional MailHog profile. Not used on the VPS.
 
 ### Changed
 
-- Dockerfile is a multi-stage Temurin 26 / Maven build. CI smoke hits `/api/v1/healthz`; `readyz` is proven with Testcontainers.
+- CI uses `actions/setup-java` (Temurin 26) and `mvn` (no Maven wrapper binaries).
 
 ## [0.1.1] — 2026-08-17
 
