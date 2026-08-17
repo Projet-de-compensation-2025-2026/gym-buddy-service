@@ -1,30 +1,25 @@
 package fr.projetcompensation.gymbuddy.config;
 
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.env.EnvironmentPostProcessor;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Profiles;
 
-@Component
-@Profile("prod")
-public class ProductionObjectStorageGuard implements ApplicationRunner {
+public class ProductionObjectStorageGuard implements EnvironmentPostProcessor {
 
     private static final String[] REQUIRED_KEYS = {"S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY"};
 
-    private final Environment environment;
-
-    public ProductionObjectStorageGuard(Environment environment) {
-        this.environment = environment;
-    }
-
     @Override
-    public void run(ApplicationArguments args) {
+    public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
+        if (!environment.acceptsProfiles(Profiles.of("prod"))) {
+            return;
+        }
         for (String key : REQUIRED_KEYS) {
             String value = environment.getProperty(key);
             if (value == null || value.isBlank()) {
                 throw new IllegalStateException(
-                        "Production refuses to start without object storage. Missing or blank " + key
+                        "Production refuses to start without object storage. Missing or blank "
+                                + key
                                 + ". Local uploads/ fallback is forbidden.");
             }
         }
