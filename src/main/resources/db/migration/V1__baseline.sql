@@ -1,0 +1,1 @@
+-- Flyway baseline for Gym Buddy. Domain tables arrive with later tickets (auth #12).
