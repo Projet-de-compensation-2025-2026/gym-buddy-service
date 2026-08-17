@@ -21,16 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java
-        id: setup-java
-        continue-on-error: true
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "25"
-
-      - name: Use runner Temurin 25 if setup-java failed
-        if: steps.setup-java.outcome != 'success'
+      - name: Use runner Temurin 25
         run: |
           echo "JAVA_HOME=${JAVA_HOME_25_X64}" >> "$GITHUB_ENV"
           echo "${JAVA_HOME_25_X64}/bin" >> "$GITHUB_PATH"
