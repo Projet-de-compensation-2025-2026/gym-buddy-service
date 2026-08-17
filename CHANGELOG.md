@@ -9,6 +9,12 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+## [0.1.1] — 2026-08-17
+
+### Added
+
+### Changed
+
 ## [0.1.0] — 2026-08-17
 
 ### Added
@@ -18,4 +24,5 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 [Unreleased]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service
 
+[0.1.1]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v0.1.0

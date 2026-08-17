@@ -72,6 +72,8 @@ jobs:
           USER: ${{ secrets.DEPLOY_USER }}
           KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           PORT: ${{ secrets.DEPLOY_PORT }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           if [[ -z "${HOST:-}" || -z "${USER:-}" || -z "${KEY:-}" ]]; then
@@ -91,5 +93,8 @@ jobs:
           ssh_port="${PORT:-22}"
           ssh-keyscan -p "$ssh_port" -H "$HOST" >> ~/.ssh/known_hosts
           scp -i ~/.ssh/deploy_key -P "$ssh_port" deploy/replace.sh "${USER}@${HOST}:/tmp/gym-buddy-replace.sh"
+          actor_q=$(printf '%q' "$GHCR_USERNAME")
+          token_q=$(printf '%q' "$GHCR_TOKEN")
+          image_q=$(printf '%q' "$IMAGE")
           ssh -i ~/.ssh/deploy_key -p "$ssh_port" "${USER}@${HOST}" \
-            "chmod +x /tmp/gym-buddy-replace.sh && /tmp/gym-buddy-replace.sh '${IMAGE}'"
+            "chmod +x /tmp/gym-buddy-replace.sh && GHCR_USERNAME=${actor_q} GHCR_TOKEN=${token_q} /tmp/gym-buddy-replace.sh ${image_q}"

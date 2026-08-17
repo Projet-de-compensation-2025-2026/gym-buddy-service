@@ -6,6 +6,10 @@ IMAGE="${1:?image:tag required}"
 NAME="${DEPLOY_CONTAINER_NAME:-gym-buddy-service}"
 PORT="${DEPLOY_HOST_PORT:-8080}"
 
+if [[ -n "${GHCR_TOKEN:-}" ]]; then
+  echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USERNAME:?GHCR_USERNAME required when GHCR_TOKEN is set}" --password-stdin
+fi
+
 docker pull "$IMAGE"
 docker stop "$NAME" 2>/dev/null || true
 docker rm "$NAME" 2>/dev/null || true
