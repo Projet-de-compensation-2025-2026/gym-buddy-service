@@ -1,5 +1,8 @@
 package fr.projetcompensation.gymbuddy.health;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class ReadinessChecker {
 
     private final PostgresHealthPort postgres;
@@ -11,6 +14,17 @@ public final class ReadinessChecker {
     }
 
     public boolean ready() {
-        return postgres.reachable() && objectStorage.reachable();
+        return failedDependencies().isEmpty();
+    }
+
+    public List<HealthStatus.FailedDependency> failedDependencies() {
+        List<HealthStatus.FailedDependency> failed = new ArrayList<>();
+        if (!postgres.reachable()) {
+            failed.add(new HealthStatus.FailedDependency("postgres", "unreachable"));
+        }
+        if (!objectStorage.reachable()) {
+            failed.add(new HealthStatus.FailedDependency("objectStorage", "unreachable"));
+        }
+        return List.copyOf(failed);
     }
 }

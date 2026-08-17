@@ -15,26 +15,34 @@ class ReadinessCheckerTest {
         when(postgres.reachable()).thenReturn(true);
         when(storage.reachable()).thenReturn(true);
 
-        assertThat(new ReadinessChecker(postgres, storage).ready()).isTrue();
+        ReadinessChecker checker = new ReadinessChecker(postgres, storage);
+        assertThat(checker.ready()).isTrue();
+        assertThat(checker.failedDependencies()).isEmpty();
     }
 
     @Test
-    void notReadyWhenPostgresIsDown() {
+    void namesPostgresWhenPostgresIsDown() {
         PostgresHealthPort postgres = mock(PostgresHealthPort.class);
         ObjectStorageHealthPort storage = mock(ObjectStorageHealthPort.class);
         when(postgres.reachable()).thenReturn(false);
         when(storage.reachable()).thenReturn(true);
 
-        assertThat(new ReadinessChecker(postgres, storage).ready()).isFalse();
+        ReadinessChecker checker = new ReadinessChecker(postgres, storage);
+        assertThat(checker.ready()).isFalse();
+        assertThat(checker.failedDependencies())
+                .containsExactly(new HealthStatus.FailedDependency("postgres", "unreachable"));
     }
 
     @Test
-    void notReadyWhenObjectStorageIsDown() {
+    void namesObjectStorageWhenObjectStorageIsDown() {
         PostgresHealthPort postgres = mock(PostgresHealthPort.class);
         ObjectStorageHealthPort storage = mock(ObjectStorageHealthPort.class);
         when(postgres.reachable()).thenReturn(true);
         when(storage.reachable()).thenReturn(false);
 
-        assertThat(new ReadinessChecker(postgres, storage).ready()).isFalse();
+        ReadinessChecker checker = new ReadinessChecker(postgres, storage);
+        assertThat(checker.ready()).isFalse();
+        assertThat(checker.failedDependencies())
+                .containsExactly(new HealthStatus.FailedDependency("objectStorage", "unreachable"));
     }
 }

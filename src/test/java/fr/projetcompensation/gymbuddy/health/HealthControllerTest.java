@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -27,26 +28,31 @@ class HealthControllerTest {
         mockMvc.perform(get("/api/v1/healthz"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value("ok"));
+                .andExpect(jsonPath("$.status").value("ok"))
+                .andExpect(jsonPath("$.details").doesNotExist());
     }
 
     @Test
     void readyzReturnsOkWhenDependenciesAreReachable() throws Exception {
-        when(readinessChecker.ready()).thenReturn(true);
+        when(readinessChecker.failedDependencies()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/readyz"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value("ok"));
+                .andExpect(jsonPath("$.status").value("ok"))
+                .andExpect(jsonPath("$.details").doesNotExist());
     }
 
     @Test
-    void readyzReturnsUnavailableWhenDependenciesAreDown() throws Exception {
-        when(readinessChecker.ready()).thenReturn(false);
+    void readyzNamesFailedDependencyOn503() throws Exception {
+        when(readinessChecker.failedDependencies())
+                .thenReturn(List.of(new HealthStatus.FailedDependency("postgres", "unreachable")));
 
         mockMvc.perform(get("/api/v1/readyz"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value("unavailable"));
+                .andExpect(jsonPath("$.status").value("unavailable"))
+                .andExpect(jsonPath("$.details[0].path").value("postgres"))
+                .andExpect(jsonPath("$.details[0].issue").value("unreachable"));
     }
 }
