@@ -1,6 +1,5 @@
 package fr.projetcompensation.gymbuddy.health;
 
-import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,10 +23,10 @@ public class HealthController {
 
     @GetMapping("/readyz")
     public ResponseEntity<HealthStatus> readyz() {
-        List<HealthStatus.FailedDependency> failed = readinessChecker.failedDependencies();
-        if (failed.isEmpty()) {
-            return ResponseEntity.ok(HealthStatus.ok());
+        HealthStatus body = readinessChecker.evaluate();
+        if ("ok".equals(body.status())) {
+            return ResponseEntity.ok(body);
         }
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(HealthStatus.unavailable(failed));
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
     }
 }

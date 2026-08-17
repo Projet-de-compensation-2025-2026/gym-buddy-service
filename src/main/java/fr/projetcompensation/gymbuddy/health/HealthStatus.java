@@ -1,18 +1,15 @@
 package fr.projetcompensation.gymbuddy.health;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.util.List;
+import java.util.Map;
 
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
-public record HealthStatus(String status, List<FailedDependency> details) {
+public record HealthStatus(String status, @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, String> details) {
 
     public static HealthStatus ok() {
-        return new HealthStatus("ok", List.of());
+        return new HealthStatus("ok", null);
     }
 
-    public static HealthStatus unavailable(List<FailedDependency> details) {
-        return new HealthStatus("unavailable", List.copyOf(details));
+    public static HealthStatus unavailable(Map<String, String> details) {
+        return new HealthStatus("unavailable", details);
     }
-
-    public record FailedDependency(String path, String issue) {}
 }

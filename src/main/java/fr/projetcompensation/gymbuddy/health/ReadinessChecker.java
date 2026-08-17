@@ -1,7 +1,7 @@
 package fr.projetcompensation.gymbuddy.health;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public final class ReadinessChecker {
 
@@ -13,18 +13,17 @@ public final class ReadinessChecker {
         this.objectStorage = objectStorage;
     }
 
-    public boolean ready() {
-        return failedDependencies().isEmpty();
-    }
-
-    public List<HealthStatus.FailedDependency> failedDependencies() {
-        List<HealthStatus.FailedDependency> failed = new ArrayList<>();
+    public HealthStatus evaluate() {
+        Map<String, String> failed = new LinkedHashMap<>();
         if (!postgres.reachable()) {
-            failed.add(new HealthStatus.FailedDependency("postgres", "unreachable"));
+            failed.put("postgres", postgres.detail());
         }
         if (!objectStorage.reachable()) {
-            failed.add(new HealthStatus.FailedDependency("objectStorage", "unreachable"));
+            failed.put("objectStorage", objectStorage.detail());
         }
-        return List.copyOf(failed);
+        if (failed.isEmpty()) {
+            return HealthStatus.ok();
+        }
+        return HealthStatus.unavailable(failed);
     }
 }
