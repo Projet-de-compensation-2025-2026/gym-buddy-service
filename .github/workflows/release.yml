@@ -22,7 +22,6 @@ permissions:
   contents: write
   packages: write
   pull-requests: write
-  actions: write
 
 concurrency:
   group: release
@@ -47,7 +46,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "25"
-          cache: maven
 
       - name: Format (apply)
         run: bash .github/scripts/ci/format.sh --write
