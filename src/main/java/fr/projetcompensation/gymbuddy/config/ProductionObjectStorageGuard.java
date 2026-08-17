@@ -17,10 +17,9 @@ public class ProductionObjectStorageGuard implements EnvironmentPostProcessor {
         for (String key : REQUIRED_KEYS) {
             String value = environment.getProperty(key);
             if (value == null || value.isBlank()) {
-                throw new IllegalStateException(
-                        "Production refuses to start without object storage. Missing or blank "
-                                + key
-                                + ". Local uploads/ fallback is forbidden.");
+                throw new IllegalStateException("Production refuses to start without object storage. Missing or blank "
+                        + key
+                        + ". Local uploads/ fallback is forbidden.");
             }
         }
     }

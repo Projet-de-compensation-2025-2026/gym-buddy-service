@@ -33,12 +33,13 @@ class ReadinessIT {
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:18.6");
 
     @Container
-    static final GenericContainer<?> MINIO = new GenericContainer<>("minio/minio:RELEASE.2025-09-07T16-13-09Z")
-            .withExposedPorts(9000)
-            .withEnv("MINIO_ROOT_USER", "minioadmin")
-            .withEnv("MINIO_ROOT_PASSWORD", "minioadmin")
-            .withCommand("server", "/data")
-            .waitingFor(Wait.forListeningPort());
+    static final GenericContainer<?> MINIO =
+            new GenericContainer<>("minio/minio:RELEASE.2025-09-07T16-13-09Z")
+                    .withExposedPorts(9000)
+                    .withEnv("MINIO_ROOT_USER", "minioadmin")
+                    .withEnv("MINIO_ROOT_PASSWORD", "minioadmin")
+                    .withCommand("server", "/data")
+                    .waitingFor(Wait.forListeningPort());
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
@@ -69,7 +70,8 @@ class ReadinessIT {
                 .region(Region.US_EAST_1)
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create("minioadmin", "minioadmin")))
-                .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
+                .serviceConfiguration(
+                        S3Configuration.builder().pathStyleAccessEnabled(true).build())
                 .build()) {
             client.createBucket(CreateBucketRequest.builder().bucket("gym-buddy").build());
         }

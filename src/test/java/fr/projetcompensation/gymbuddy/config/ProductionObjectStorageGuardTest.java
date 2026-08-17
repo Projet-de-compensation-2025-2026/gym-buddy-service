@@ -60,13 +60,15 @@ class ProductionObjectStorageGuardTest {
                                 "S3_SECRET_KEY",
                                 "secret")));
 
-        assertThatCode(() -> guard.postProcessEnvironment(environment, application)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.postProcessEnvironment(environment, application))
+                .doesNotThrowAnyException();
     }
 
     @Test
     void ignoresMissingS3OutsideProd() {
         MockEnvironment environment = new MockEnvironment();
 
-        assertThatCode(() -> guard.postProcessEnvironment(environment, application)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.postProcessEnvironment(environment, application))
+                .doesNotThrowAnyException();
     }
 }
