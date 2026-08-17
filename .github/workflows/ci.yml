@@ -28,6 +28,11 @@ jobs:
           java-version: "25"
           cache: maven
 
+      - name: Show toolchain
+        run: |
+          java -version
+          mvn -version
+
       - name: Format
         run: bash .github/scripts/ci/format.sh --check
 
