@@ -1,0 +1,108 @@
+# Local laptop stack only. Do not run this file on the VPS.
+# VPS API replace stays deploy/replace.sh + docker run on 127.0.0.1:8080.
+# Runbook: gym-buddy-documentation 10-Getting-started/04-Environment-and-pipeline.md
+#
+#   cp .env.example .env
+#   docker compose up -d
+#
+# MailHog is optional: docker compose --profile mail up -d
+
+name: gym-buddy
+
+services:
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      FIXTURE_SEED: ${FIXTURE_SEED:-20260813}
+      DATABASE_URL: postgresql://gymbuddy:${POSTGRES_PASSWORD}@postgres:5432/gymbuddy
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_REGION: ${S3_REGION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18.6
+    environment:
+      POSTGRES_DB: gymbuddy
+      POSTGRES_USER: gymbuddy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gymbuddy -d gymbuddy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        i=0
+        until mc alias set local http://minio:9000 "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY"; do
+          i=$$((i+1))
+          [ "$$i" -gt 30 ] && exit 1
+          sleep 1
+        done
+        mc mb -p "local/$$S3_BUCKET" || true
+    restart: "no"
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    profiles: ["mail"]
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  minio_data:

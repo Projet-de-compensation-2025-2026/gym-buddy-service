@@ -7,6 +7,8 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Local `compose.yaml` and `.env.example`: PostgreSQL 18, Redis, MinIO, probe API on `127.0.0.1`, optional MailHog profile. Not used on the VPS.
+
 ### Changed
 
 ## [0.1.1] — 2026-08-17
