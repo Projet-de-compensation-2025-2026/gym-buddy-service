@@ -6,7 +6,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -28,31 +29,30 @@ class HealthControllerTest {
         mockMvc.perform(get("/api/v1/healthz"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value("ok"))
-                .andExpect(jsonPath("$.details").doesNotExist());
+                .andExpect(content().json("{\"status\":\"ok\"}", true));
     }
 
     @Test
     void readyzReturnsOkWhenDependenciesAreReachable() throws Exception {
-        when(readinessChecker.failedDependencies()).thenReturn(List.of());
+        when(readinessChecker.evaluate()).thenReturn(HealthStatus.ok());
 
         mockMvc.perform(get("/api/v1/readyz"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value("ok"))
-                .andExpect(jsonPath("$.details").doesNotExist());
+                .andExpect(content().json("{\"status\":\"ok\"}", true));
     }
 
     @Test
-    void readyzNamesFailedDependencyOn503() throws Exception {
-        when(readinessChecker.failedDependencies())
-                .thenReturn(List.of(new HealthStatus.FailedDependency("postgres", "unreachable")));
+    void readyzNamesTheFailedDependency() throws Exception {
+        Map<String, String> details = new LinkedHashMap<>();
+        details.put("postgres", "connection refused");
+        when(readinessChecker.evaluate()).thenReturn(HealthStatus.unavailable(details));
 
         mockMvc.perform(get("/api/v1/readyz"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value("unavailable"))
-                .andExpect(jsonPath("$.details[0].path").value("postgres"))
-                .andExpect(jsonPath("$.details[0].issue").value("unreachable"));
+                .andExpect(jsonPath("$.details.postgres").value("connection refused"))
+                .andExpect(jsonPath("$.details.objectStorage").doesNotExist());
     }
 }

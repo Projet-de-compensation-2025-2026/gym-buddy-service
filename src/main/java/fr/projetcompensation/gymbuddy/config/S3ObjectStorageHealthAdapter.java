@@ -21,12 +21,22 @@ public class S3ObjectStorageHealthAdapter implements ObjectStorageHealthPort {
 
     @Override
     public boolean reachable() {
+        return failure() == null;
+    }
+
+    @Override
+    public String detail() {
+        String failure = failure();
+        return failure == null ? "ok" : failure;
+    }
+
+    private String failure() {
         try {
             s3Client.listBuckets();
-            return true;
+            return null;
         } catch (RuntimeException ex) {
             log.warn("Object storage readiness check failed: {}", ex.getMessage());
-            return false;
+            return ex.getMessage() == null ? "unreachable" : ex.getMessage();
         }
     }
 }

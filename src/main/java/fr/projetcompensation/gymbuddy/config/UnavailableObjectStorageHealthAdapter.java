@@ -12,4 +12,9 @@ public class UnavailableObjectStorageHealthAdapter implements ObjectStorageHealt
     public boolean reachable() {
         return false;
     }
+
+    @Override
+    public String detail() {
+        return "not configured";
+    }
 }

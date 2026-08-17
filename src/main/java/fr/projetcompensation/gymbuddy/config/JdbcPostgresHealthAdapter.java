@@ -21,12 +21,25 @@ public class JdbcPostgresHealthAdapter implements PostgresHealthPort {
 
     @Override
     public boolean reachable() {
+        return failure() == null;
+    }
+
+    @Override
+    public String detail() {
+        String failure = failure();
+        return failure == null ? "ok" : failure;
+    }
+
+    private String failure() {
         try {
             Integer result = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
-            return result != null && result == 1;
+            if (result != null && result == 1) {
+                return null;
+            }
+            return "unexpected result";
         } catch (RuntimeException ex) {
             log.warn("PostgreSQL readiness check failed: {}", ex.getMessage());
-            return false;
+            return ex.getMessage() == null ? "unreachable" : ex.getMessage();
         }
     }
 }

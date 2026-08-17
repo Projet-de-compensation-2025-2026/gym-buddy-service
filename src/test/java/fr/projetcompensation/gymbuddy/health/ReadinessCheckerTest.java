@@ -15,34 +15,39 @@ class ReadinessCheckerTest {
         when(postgres.reachable()).thenReturn(true);
         when(storage.reachable()).thenReturn(true);
 
-        ReadinessChecker checker = new ReadinessChecker(postgres, storage);
-        assertThat(checker.ready()).isTrue();
-        assertThat(checker.failedDependencies()).isEmpty();
+        HealthStatus status = new ReadinessChecker(postgres, storage).evaluate();
+
+        assertThat(status.status()).isEqualTo("ok");
+        assertThat(status.details()).isNull();
     }
 
     @Test
-    void namesPostgresWhenPostgresIsDown() {
+    void namesPostgresWhenItIsDown() {
         PostgresHealthPort postgres = mock(PostgresHealthPort.class);
         ObjectStorageHealthPort storage = mock(ObjectStorageHealthPort.class);
         when(postgres.reachable()).thenReturn(false);
+        when(postgres.detail()).thenReturn("connection refused");
         when(storage.reachable()).thenReturn(true);
 
-        ReadinessChecker checker = new ReadinessChecker(postgres, storage);
-        assertThat(checker.ready()).isFalse();
-        assertThat(checker.failedDependencies())
-                .containsExactly(new HealthStatus.FailedDependency("postgres", "unreachable"));
+        HealthStatus status = new ReadinessChecker(postgres, storage).evaluate();
+
+        assertThat(status.status()).isEqualTo("unavailable");
+        assertThat(status.details()).containsEntry("postgres", "connection refused");
+        assertThat(status.details()).doesNotContainKey("objectStorage");
     }
 
     @Test
-    void namesObjectStorageWhenObjectStorageIsDown() {
+    void namesObjectStorageWhenItIsDown() {
         PostgresHealthPort postgres = mock(PostgresHealthPort.class);
         ObjectStorageHealthPort storage = mock(ObjectStorageHealthPort.class);
         when(postgres.reachable()).thenReturn(true);
         when(storage.reachable()).thenReturn(false);
+        when(storage.detail()).thenReturn("not configured");
 
-        ReadinessChecker checker = new ReadinessChecker(postgres, storage);
-        assertThat(checker.ready()).isFalse();
-        assertThat(checker.failedDependencies())
-                .containsExactly(new HealthStatus.FailedDependency("objectStorage", "unreachable"));
+        HealthStatus status = new ReadinessChecker(postgres, storage).evaluate();
+
+        assertThat(status.status()).isEqualTo("unavailable");
+        assertThat(status.details()).containsEntry("objectStorage", "not configured");
+        assertThat(status.details()).doesNotContainKey("postgres");
     }
 }

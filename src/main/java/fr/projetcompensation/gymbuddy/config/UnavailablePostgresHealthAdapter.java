@@ -12,4 +12,9 @@ public class UnavailablePostgresHealthAdapter implements PostgresHealthPort {
     public boolean reachable() {
         return false;
     }
+
+    @Override
+    public String detail() {
+        return "not configured";
+    }
 }
