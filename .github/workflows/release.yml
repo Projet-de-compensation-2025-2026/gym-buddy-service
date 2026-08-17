@@ -42,10 +42,18 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Java
+        id: setup-java
+        continue-on-error: true
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "25"
+
+      - name: Use runner Temurin 25 if setup-java failed
+        if: steps.setup-java.outcome != 'success'
+        run: |
+          echo "JAVA_HOME=${JAVA_HOME_25_X64}" >> "$GITHUB_ENV"
+          echo "${JAVA_HOME_25_X64}/bin" >> "$GITHUB_PATH"
 
       - name: Format (apply)
         run: bash .github/scripts/ci/format.sh --write
