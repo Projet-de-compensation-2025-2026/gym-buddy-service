@@ -11,6 +11,11 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Flyway baseline, `DATABASE_URL` → JDBC, MinIO/S3 readiness, production refuse-without-S3.
 - Testcontainers coverage for `readyz`. Smoke hits `/api/v1/healthz` when `pom.xml` exists.
 - Local `compose.yaml` and `.env.example`: PostgreSQL 18, Redis, MinIO, API on `127.0.0.1`, optional MailHog profile. Not used on the VPS.
+- Runtime proof that local compose answers `healthz` and `readyz` 200 on `127.0.0.1` (`docs/local-compose-proof.md`). Not a VPS/Postgres-on-OVH claim.
+
+### Fixed
+
+- Compose `readyz` selected the "postgres not configured" stub while Flyway could already reach PostgreSQL. The JDBC adapter now keys off `DATABASE_URL`. The API waits for `minio-init` before start.
 
 ### Changed
 
