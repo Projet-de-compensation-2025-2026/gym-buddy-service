@@ -102,8 +102,7 @@ class AuthIT {
                 .body(registerBody("blake@example.com", "blake", "short", "Blake"))
                 .retrieve()
                 .toEntity(String.class);
-        assertThat(weak.getStatusCode().isSameCodeAs(HttpStatus.UNPROCESSABLE_ENTITY))
-                .isTrue();
+        assertThat(weak.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(weak.getBody()).contains("\"code\":\"VALIDATION\"");
 
         ResponseEntity<String> unknown = client.post()

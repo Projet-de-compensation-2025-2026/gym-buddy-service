@@ -85,7 +85,7 @@ class AuthControllerTest {
                         .content("""
                                 {"email":"alex@example.com","handle":"alex","password":"short","displayName":"Alex"}
                                 """))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION"))
                 .andExpect(jsonPath("$.error.details[0].issue").value("minLength"));
     }
