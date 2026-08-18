@@ -5,7 +5,7 @@ root="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$root"
 
 if [[ -f pom.xml ]]; then
-  ./mvnw -B test
+  mvn -B test
   exit 0
 fi
 

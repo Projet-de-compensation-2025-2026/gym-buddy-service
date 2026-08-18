@@ -9,9 +9,9 @@ mode="${1:---check}"
 
 if [[ -f pom.xml ]]; then
   if [[ "$mode" == "--write" ]]; then
-    ./mvnw -B spotless:apply
+    mvn -B spotless:apply
   else
-    ./mvnw -B spotless:check
+    mvn -B spotless:check
   fi
 else
   echo "FORMAT OK: no pom.xml yet (Spotless will run once the Java project exists)"

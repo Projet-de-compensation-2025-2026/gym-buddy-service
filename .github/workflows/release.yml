@@ -41,6 +41,9 @@ jobs:
           ref: develop
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Java 25
+        run: bash .github/scripts/ci/setup_java.sh
+
       - name: Format (apply)
         run: bash .github/scripts/ci/format.sh --write
 

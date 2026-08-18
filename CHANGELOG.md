@@ -7,9 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Local `compose.yaml` and `.env.example`: PostgreSQL 18, Redis, MinIO, probe API on `127.0.0.1`, optional MailHog profile. Not used on the VPS.
+- Java 25 LTS / Spring Boot 4.1 application (`pom.xml`): `GET /api/v1/healthz` and `GET /api/v1/readyz`. Wiki target remains Java 26; CI uses 25 because Temurin 26 does not install on GitHub Actions yet.
+- Flyway baseline, `DATABASE_URL` → JDBC, MinIO/S3 readiness, production refuse-without-S3.
+- Testcontainers coverage for `readyz`. Smoke hits `/api/v1/healthz` when `pom.xml` exists.
+- Local `compose.yaml` and `.env.example`: PostgreSQL 18, Redis, MinIO, API on `127.0.0.1`, optional MailHog profile. Not used on the VPS.
 
 ### Changed
+
+- CI uses `actions/setup-java@v5` (Temurin 25) and `mvn` (no Maven wrapper binaries).
 
 ## [0.1.1] — 2026-08-17
 

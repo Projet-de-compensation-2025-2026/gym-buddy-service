@@ -1,12 +1,12 @@
 # gym-buddy-service
 
-Java API for Gym Buddies (Spring Boot, Java 26, PostgreSQL 18). Product decisions live in [`gym-buddy-documentation`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation).
+Java 25 LTS / Spring Boot 4.1 API for Gym Buddies (PostgreSQL 18). Wiki target is Java 26; this slice uses Temurin 25 because GitHub Actions `setup-java` cannot install 26 yet. Product decisions live in [`gym-buddy-documentation`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation).
 
-This repository is **pipeline-first**. Application code is not here yet. Until `pom.xml` exists, CI/Release/Deploy run against a small Docker probe so the smoke and VM replace path are real.
+This slice ships the local data plane plus liveness/readiness. Auth and the rest of `/api/v1` come in later tickets. The HTTP contract is [`gym-buddy-openapi`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-openapi), not a running `/v3/api-docs`.
 
 | Workflow | Trigger | Promise |
 | --- | --- | --- |
-| CI | PR / push on `develop` | format, tests, container actually answers HTTP |
+| CI | PR / push on `develop` | Spotless, JUnit (+ Testcontainers for `readyz`), container answers `GET /api/v1/healthz` |
 | Release | `workflow_dispatch` | squash `develop` → `main`, tag `vX.Y.Z` |
 | Deploy | that tag | push `ghcr.io/.../gym-buddy-service:vX.Y.Z` and replace the VM container when `DEPLOY_*` secrets exist |
 
@@ -14,18 +14,25 @@ See [07-CI-CD.md](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-
 
 ## Local data plane
 
-Postgres 18, Redis, MinIO, and the probe API. This is the laptop stack from the [runbook](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation/blob/develop/10-Getting-started/04-Environment-and-pipeline.md). Do **not** run `compose.yaml` on the VPS.
+Postgres 18, Redis, MinIO, and this API. Laptop stack from the [runbook](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation/blob/develop/10-Getting-started/04-Environment-and-pipeline.md). Do **not** run `compose.yaml` on the VPS.
 
 ```bash
 cp .env.example .env
 docker compose up -d
 ```
 
+Requires JDK 25 (Temurin) and Maven on the host if you run the app outside Compose:
+
+```bash
+mvn -B test
+mvn -B spring-boot:run
+```
+
 Every published port binds `127.0.0.1`:
 
 | Service | Port |
 | --- | --- |
-| API (probe today) | 8080 |
+| API | 8080 |
 | PostgreSQL 18 | 5432 |
 | Redis | 6379 |
 | MinIO S3 | 9000 |
@@ -38,4 +45,11 @@ MailHog is opt-in:
 docker compose --profile mail up -d
 ```
 
-The probe does not talk to Postgres, Redis, or MinIO yet. Those services are up so Spring work can start without inventing ports or env names.
+Unauthenticated probes (OpenAPI `healthz` / `readyz`):
+
+| Path | Meaning |
+| --- | --- |
+| `GET /api/v1/healthz` | Process is up. Body is only `{"status":"ok"}`. |
+| `GET /api/v1/readyz` | PostgreSQL and object storage. `200 {"status":"ok"}` or `503` with `details` naming `postgres` and/or `objectStorage`. |
+
+`SPRING_PROFILES_ACTIVE=prod` refuses to start unless `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, and `S3_SECRET_KEY` are set. There is no local `uploads/` fallback.
