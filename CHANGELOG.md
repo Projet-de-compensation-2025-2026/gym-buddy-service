@@ -7,6 +7,8 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `POST /api/v1/auth/register`, `/login`, `/refresh`, `/logout`: Argon2id passwords, HS256 access JWT, refresh cookie, Redis `jti` denylist (ticket #12).
+- Flyway `V2__users_and_profiles.sql` (`users` + `profiles`). First registered user is `admin`.
 - Java 25 LTS / Spring Boot 4.1 application (`pom.xml`): `GET /api/v1/healthz` and `GET /api/v1/readyz`.
 - Flyway baseline, `DATABASE_URL` → JDBC, MinIO/S3 readiness, production refuse-without-S3.
 - Testcontainers coverage for `readyz`. Smoke hits `/api/v1/healthz` when `pom.xml` exists.

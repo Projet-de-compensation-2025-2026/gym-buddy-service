@@ -2,11 +2,11 @@
 
 Java 25 LTS / Spring Boot 4.1 API for Gym Buddies (PostgreSQL 18). Product decisions live in [`gym-buddy-documentation`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation).
 
-This slice ships the local data plane plus liveness/readiness. Auth and the rest of `/api/v1` come in later tickets. The HTTP contract is [`gym-buddy-openapi`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-openapi), not a running `/v3/api-docs`.
+This slice ships the local data plane, liveness/readiness, and JWT auth (`/api/v1/auth`). Friends, feed, and events come in later tickets. The HTTP contract is [`gym-buddy-openapi`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-openapi), not a running `/v3/api-docs`.
 
 | Workflow | Trigger | Promise |
 | --- | --- | --- |
-| CI | PR / push on `develop` | Spotless, JUnit (+ Testcontainers for `readyz`), container answers `GET /api/v1/healthz` |
+| CI | PR / push on `develop` | Spotless, JUnit (+ Testcontainers for `readyz` and auth), container answers `GET /api/v1/healthz` |
 | Release | `workflow_dispatch` | squash `develop` → `main`, tag `vX.Y.Z` |
 | Deploy | that tag | push `ghcr.io/.../gym-buddy-service:vX.Y.Z` and replace the VM container when `DEPLOY_*` secrets exist |
 
@@ -44,6 +44,8 @@ MailHog is opt-in:
 ```bash
 docker compose --profile mail up -d
 ```
+
+Auth (`POST /api/v1/auth/register`, `/login`, `/refresh`, `/logout`): Argon2id passwords, HS256 access JWT (15 min, claims `sub` / `handle` / `role` / `typ=access`), refresh cookie (`HttpOnly; Secure; SameSite=Lax`; path `/api/v1/auth`; 14 days). `JWT_ACCESS_SECRET` signs both tokens. Logout denylists the refresh `jti` in Redis.
 
 Unauthenticated probes (OpenAPI `healthz` / `readyz`):
 
