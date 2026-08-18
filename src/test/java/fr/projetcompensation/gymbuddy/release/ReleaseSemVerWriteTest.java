@@ -13,8 +13,7 @@ class ReleaseSemVerWriteTest {
         String workflow = Files.readString(Path.of(".github/workflows/release.yml"));
         assertThat(workflow).contains("python3 .github/scripts/ci/sync_pom_version.py");
         assertThat(workflow).contains("prepare_changelog.py");
-        assertThat(workflow.indexOf("prepare_changelog.py"))
-                .isLessThan(workflow.indexOf("sync_pom_version.py"));
+        assertThat(workflow.indexOf("prepare_changelog.py")).isLessThan(workflow.indexOf("sync_pom_version.py"));
         assertThat(workflow.indexOf("sync_pom_version.py"))
                 .isLessThan(workflow.indexOf("Commit release prep on develop"));
     }
