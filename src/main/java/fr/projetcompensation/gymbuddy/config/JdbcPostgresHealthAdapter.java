@@ -3,14 +3,14 @@ package fr.projetcompensation.gymbuddy.config;
 import fr.projetcompensation.gymbuddy.health.PostgresHealthPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 @Primary
-@ConditionalOnBean(JdbcTemplate.class)
+@ConditionalOnProperty(name = "DATABASE_URL")
 public class JdbcPostgresHealthAdapter implements PostgresHealthPort {
 
     private static final Logger log = LoggerFactory.getLogger(JdbcPostgresHealthAdapter.class);
