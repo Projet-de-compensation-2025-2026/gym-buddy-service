@@ -1,4 +1,4 @@
-# Multi-stage Java 25 LTS / Spring Boot build. Wiki target is Java 26; CI/images use 25 until Temurin 26 installs on Actions.
+# Multi-stage Java 25 LTS / Spring Boot build.
 # Keep EXPOSE 8080 for smoke and compose.
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /src

@@ -1,6 +1,6 @@
 # gym-buddy-service
 
-Java 25 LTS / Spring Boot 4.1 API for Gym Buddies (PostgreSQL 18). Wiki target is Java 26; this slice uses Temurin 25 because GitHub Actions `setup-java` cannot install 26 yet. Product decisions live in [`gym-buddy-documentation`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation).
+Java 25 LTS / Spring Boot 4.1 API for Gym Buddies (PostgreSQL 18). Product decisions live in [`gym-buddy-documentation`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation).
 
 This slice ships the local data plane plus liveness/readiness. Auth and the rest of `/api/v1` come in later tickets. The HTTP contract is [`gym-buddy-openapi`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-openapi), not a running `/v3/api-docs`.
 
