@@ -1,11 +1,11 @@
 package fr.projetcompensation.gymbuddy.profiles;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@ConditionalOnBean(JdbcTemplate.class)
+@ConditionalOnProperty(name = "DATABASE_URL")
 public class JdbcProfileRepository implements ProfileRepository {
 
     private final JdbcTemplate jdbc;
