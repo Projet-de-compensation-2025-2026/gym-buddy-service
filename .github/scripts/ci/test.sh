@@ -6,6 +6,7 @@ cd "$root"
 
 if [[ -f pom.xml ]]; then
   mvn -B test
+  python3 .github/scripts/ci/check_vps_deploy.py
   exit 0
 fi
 

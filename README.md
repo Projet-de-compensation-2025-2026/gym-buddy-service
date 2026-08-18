@@ -53,3 +53,7 @@ Unauthenticated probes (OpenAPI `healthz` / `readyz`):
 | `GET /api/v1/readyz` | PostgreSQL and object storage. `200 {"status":"ok"}` or `503` with `details` naming `postgres` and/or `objectStorage`. |
 
 `SPRING_PROFILES_ACTIVE=prod` refuses to start unless `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, and `S3_SECRET_KEY` are set. There is no local `uploads/` fallback.
+
+## VPS data plane
+
+PostgreSQL 18, Redis, and MinIO on the OVH VPS use **`deploy/compose.yaml`**, not this laptop file. Ports `5432` / `6379` / `9000` / `9001` are not published. `deploy/replace.sh` joins `gym-buddy-data` and injects VPS env from `/etc/gym-buddy/vps.env` (not committed). `DEPLOY_BIND` stays `127.0.0.1`. Operator steps: [`docs/vps-data-plane.md`](docs/vps-data-plane.md).

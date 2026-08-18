@@ -1,0 +1,82 @@
+# VPS data plane only. Do not use this file on a laptop.
+# Laptop stack stays the repo-root compose.yaml (127.0.0.1 published ports).
+#
+# Private Docker network. Do not publish 5432 / 6379 / 9000 / 9001 on the host.
+# The API is not in this file: Release → Deploy still runs deploy/replace.sh,
+# which docker-runs the GHCR image on 127.0.0.1:8080 and joins gym-buddy-data.
+#
+# Operator runbook: docs/vps-data-plane.md
+
+name: gym-buddy-vps
+
+services:
+  postgres:
+    image: postgres:18.6
+    environment:
+      POSTGRES_DB: gymbuddy
+      POSTGRES_USER: gymbuddy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gymbuddy -d gymbuddy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - data
+
+  redis:
+    image: redis:8-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - data
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    networks:
+      - data
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        i=0
+        until mc alias set local http://minio:9000 "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY"; do
+          i=$$((i+1))
+          [ "$$i" -gt 30 ] && exit 1
+          sleep 1
+        done
+        mc mb -p "local/$$S3_BUCKET" || true
+    restart: "no"
+    networks:
+      - data
+
+networks:
+  data:
+    name: gym-buddy-data
+    driver: bridge
+
+volumes:
+  postgres_data:
+  minio_data:
