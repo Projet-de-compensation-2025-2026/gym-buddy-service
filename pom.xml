@@ -24,9 +24,10 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop @ 7fa5108, info.version 0.1.0. Fetch at generate time; do not vendor a second YAML. -->
-        <openapi.bundle.url>https://raw.githubusercontent.com/Projet-de-compensation-2025-2026/gym-buddy-openapi/develop/openapi/bundled.yaml</openapi.bundle.url>
-        <openapi.bundle.file>${project.build.directory}/openapi/bundled.yaml</openapi.bundle.file>
+        <!-- gym-buddy-openapi package tag v0.1.0 (9c7c123 / annotated 6373a11). Fetch the tagged $ref tree; do not vendor YAML. -->
+        <openapi.package.tag>v0.1.0</openapi.package.tag>
+        <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
+        <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
 
     <dependencyManagement>
@@ -143,15 +144,18 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>fetch-openapi-bundle</id>
+                        <id>fetch-openapi-package</id>
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>
                         <configuration>
                             <target>
-                                <mkdir dir="${project.build.directory}/openapi"/>
-                                <get src="${openapi.bundle.url}" dest="${openapi.bundle.file}" skipexisting="false"/>
+                                <exec executable="bash" failonerror="true" dir="${project.basedir}">
+                                    <arg value="${project.basedir}/scripts/fetch-openapi-tree.sh"/>
+                                    <arg value="${openapi.package.tag}"/>
+                                    <arg value="${openapi.package.dir}"/>
+                                </exec>
                             </target>
                         </configuration>
                     </execution>
@@ -169,7 +173,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${openapi.bundle.file}</inputSpec>
+                            <inputSpec>${openapi.spec.file}</inputSpec>
                             <generatorName>spring</generatorName>
                             <output>${project.build.directory}/generated-sources/openapi</output>
                             <apiPackage>fr.projetcompensation.gymbuddy.openapi.api</apiPackage>
@@ -188,8 +192,37 @@
                                 <importMapping>HealthStatus=fr.projetcompensation.gymbuddy.health.HealthStatus</importMapping>
                             </importMappings>
                             <schemaMappings>
-                                <HealthStatus>fr.projetcompensation.gymbuddy.health.HealthStatus</HealthStatus>
+                                <schemaMapping>HealthStatus=fr.projetcompensation.gymbuddy.health.HealthStatus</schemaMapping>
                             </schemaMappings>
+                            <!-- File $refs on path items become inline models. Map those names to the component schemas. -->
+                            <inlineSchemaNameMappings>
+                                <inlineSchemaNameMapping>getHealthz_200_response=HealthStatus</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_request=RegisterRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthLogin_request=LoginRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthLogin_200_response=AccessTokenResponse</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRefresh_200_response=AccessTokenResponse</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_201_response=RegisteredUser</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_409_response=ErrorResponse</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_422_response=ErrorResponse</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_409_response_error=ErrorResponseError</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_422_response_error=ErrorResponseError</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_409_response_error_details_inner=ErrorDetail</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_422_response_error_details_inner=ErrorDetail</inlineSchemaNameMapping>
+                            </inlineSchemaNameMappings>
+                            <modelNameMappings>
+                                <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_request=RegisterRequest</modelNameMapping>
+                                <modelNameMapping>postAuthLogin_request=LoginRequest</modelNameMapping>
+                                <modelNameMapping>postAuthLogin_200_response=AccessTokenResponse</modelNameMapping>
+                                <modelNameMapping>postAuthRefresh_200_response=AccessTokenResponse</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_201_response=RegisteredUser</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_409_response=ErrorResponse</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_422_response=ErrorResponse</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_409_response_error=ErrorResponseError</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_422_response_error=ErrorResponseError</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_409_response_error_details_inner=ErrorDetail</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_422_response_error_details_inner=ErrorDetail</modelNameMapping>
+                            </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>
                                 <library>spring-boot</library>

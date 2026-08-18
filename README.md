@@ -2,7 +2,7 @@
 
 Java 25 LTS / Spring Boot 4.1 API for Gym Buddies (PostgreSQL 18). Product decisions live in [`gym-buddy-documentation`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation).
 
-This slice ships the local data plane, liveness/readiness, and JWT auth (`/api/v1/auth`). Friends, feed, and events come in later tickets. The HTTP contract is [`gym-buddy-openapi`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-openapi), not a running `/v3/api-docs`. `mvn` fetches [`openapi/bundled.yaml`](https://raw.githubusercontent.com/Projet-de-compensation-2025-2026/gym-buddy-openapi/develop/openapi/bundled.yaml) at generate-sources and emits models plus API interfaces under `target/generated-sources/openapi`. Controllers implement those interfaces. Do not commit a second YAML or hand-edit generated sources.
+This slice ships the local data plane, liveness/readiness, and JWT auth (`/api/v1/auth`). Friends, feed, and events come in later tickets. The HTTP contract is the versioned [`gym-buddy-openapi`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-openapi) package (`github:Projet-de-compensation-2025-2026/gym-buddy-openapi#v0.1.0`), not a running `/v3/api-docs`. `mvn` fetches that **tag** at generate-sources and points OpenAPI Generator at `openapi/openapi.yaml` so the `$ref` tree resolves. Controllers implement the generated interfaces. Do not commit a second YAML or hand-edit generated sources. Do not generate from `bundled.yaml` or a raw `develop` SHA.
 
 | Workflow | Trigger | Promise |
 | --- | --- | --- |
