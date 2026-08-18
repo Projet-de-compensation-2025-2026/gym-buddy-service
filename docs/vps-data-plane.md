@@ -94,7 +94,7 @@ docker compose --env-file /etc/gym-buddy/vps.env -f deploy/compose.yaml ps --for
 
 ## 3. Replace the API (first time, or any time)
 
-`replace.sh` still does `docker pull` + stop/rm + `docker run`. It is **not** `docker compose up` for the API.
+`replace.sh` still does stop/rm + `docker run`. Registry refs (`ghcr.io/...`) are `docker pull`ed (fail closed). A local name (`gym-buddy-service:local`) skips pull and requires `docker image inspect`. It is **not** `docker compose up` for the API.
 
 First proof before a new tag exists: build the Java 25 image on the VPS from this tree, then replace:
 

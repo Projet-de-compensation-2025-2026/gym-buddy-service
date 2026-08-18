@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Runs on the target VM. Pulls the tagged image and replaces the running API container.
+# Runs on the target VM. Ensures the image is present (pull registry refs; inspect
+# local tags) and replaces the running API container.
 # The container joins the private data-plane network created by deploy/compose.yaml
 # and receives application env from a VPS file that is not in git.
 set -euo pipefail
@@ -59,11 +60,29 @@ if [[ "${missing}" -ne 0 ]]; then
   exit 1
 fi
 
-if [[ -n "${GHCR_TOKEN:-}" ]]; then
-  echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USERNAME:?GHCR_USERNAME required when GHCR_TOKEN is set}" --password-stdin
-fi
+# Remote vs local: Docker treats the first path component as a registry host
+# when it contains '.' or ':' or is 'localhost' (see distribution/reference).
+# A slash alone is not enough — myorg/app:local is still a local/Hub-style name.
+# Bare names (gym-buddy-service:local) have no slash and stay on the host.
+image_from_registry() {
+  local ref="${1%%@*}"
+  [[ "$ref" == */* ]] || return 1
+  local first="${ref%%/*}"
+  [[ "$first" == *.* || "$first" == *:* || "$first" == "localhost" ]]
+}
 
-docker pull "$IMAGE"
+if image_from_registry "$IMAGE"; then
+  if [[ -n "${GHCR_TOKEN:-}" ]]; then
+    echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USERNAME:?GHCR_USERNAME required when GHCR_TOKEN is set}" --password-stdin
+  fi
+  docker pull "$IMAGE"
+else
+  if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+    echo "Local image ${IMAGE} is not on this host." >&2
+    echo "Build it first (docker build -t ${IMAGE} .) or pass a registry ref (ghcr.io/...)." >&2
+    exit 1
+  fi
+fi
 
 if ! docker network inspect "$NETWORK" >/dev/null 2>&1; then
   echo "Docker network ${NETWORK} is missing." >&2
