@@ -66,6 +66,9 @@ jobs:
       - name: Prepare changelog
         run: python3 .github/scripts/ci/prepare_changelog.py "${{ steps.version.outputs.version }}"
 
+      - name: Sync pom version
+        run: python3 .github/scripts/ci/sync_pom_version.py "${{ steps.version.outputs.version }}"
+
       - name: Commit release prep on develop
         run: |
           git config user.name "github-actions[bot]"

@@ -23,6 +23,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Release writes the computed SemVer into `pom.xml` before the tag (documentation ticket #53). Humans do not hand-edit that number. Auto bump still never chooses `1.0.0`.
 - OpenAPI Generator now consumes the versioned `gym-buddy-openapi` package tag `v0.1.0` (`openapi/openapi.yaml` `$ref` tree) instead of a raw `develop` GET of `bundled.yaml` (ticket #47).
 - Auth JSON follows the spec: `AccessTokenResponse` is `accessToken` only; register returns generated `RegisteredUser`; handle `minLength` is 1.
 - CI uses `actions/setup-java@v5` (Temurin 25) and `mvn` (no Maven wrapper binaries).

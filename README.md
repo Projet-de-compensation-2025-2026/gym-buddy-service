@@ -7,7 +7,7 @@ This slice ships the local data plane, liveness/readiness, and JWT auth (`/api/v
 | Workflow | Trigger | Promise |
 | --- | --- | --- |
 | CI | PR / push on `develop` | Spotless, JUnit (+ Testcontainers for `readyz` and auth), container answers `GET /api/v1/healthz` |
-| Release | `workflow_dispatch` | squash `develop` → `main`, tag `vX.Y.Z` |
+| Release | `workflow_dispatch` | write SemVer into `pom.xml`, squash `develop` → `main`, tag `vX.Y.Z` |
 | Deploy | that tag | push `ghcr.io/.../gym-buddy-service:vX.Y.Z` and replace the VM container when `DEPLOY_*` secrets exist |
 
 See [07-CI-CD.md](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation/blob/develop/70-Engineering-practices/07-CI-CD.md).
