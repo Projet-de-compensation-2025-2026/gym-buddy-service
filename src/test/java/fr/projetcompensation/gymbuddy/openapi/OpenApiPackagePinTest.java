@@ -16,7 +16,6 @@ class OpenApiPackagePinTest {
         assertThat(pom).contains("<inputSpec>${openapi.spec.file}</inputSpec>");
         assertThat(pom).doesNotContain("bundled.yaml");
         assertThat(pom)
-                .doesNotContain(
-                        "raw.githubusercontent.com/Projet-de-compensation-2025-2026/gym-buddy-openapi/develop");
+                .doesNotContain("raw.githubusercontent.com/Projet-de-compensation-2025-2026/gym-buddy-openapi/develop");
     }
 }
