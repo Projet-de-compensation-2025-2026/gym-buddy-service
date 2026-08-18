@@ -1,6 +1,7 @@
 package fr.projetcompensation.gymbuddy.auth.http;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,5 +43,10 @@ class AccessTokenFilterTest {
         mockMvc.perform(get("/api/v1/not-a-public-route"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+    }
+
+    @Test
+    void optionsPreflightIsNotBlockedByAccessToken() throws Exception {
+        mockMvc.perform(options("/api/v1/not-a-public-route")).andExpect(status().isNotFound());
     }
 }
