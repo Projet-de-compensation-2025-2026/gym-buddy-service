@@ -24,9 +24,10 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop @ 7fa5108, info.version 0.1.0. Fetch at generate time; do not vendor a second YAML. -->
-        <openapi.bundle.url>https://raw.githubusercontent.com/Projet-de-compensation-2025-2026/gym-buddy-openapi/develop/openapi/bundled.yaml</openapi.bundle.url>
-        <openapi.bundle.file>${project.build.directory}/openapi/bundled.yaml</openapi.bundle.file>
+        <!-- gym-buddy-openapi package tag v0.1.0 (9c7c123 / annotated 6373a11). Fetch the tagged $ref tree; do not vendor YAML. -->
+        <openapi.package.tag>v0.1.0</openapi.package.tag>
+        <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
+        <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
 
     <dependencyManagement>
@@ -143,15 +144,18 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>fetch-openapi-bundle</id>
+                        <id>fetch-openapi-package</id>
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>
                         <configuration>
                             <target>
-                                <mkdir dir="${project.build.directory}/openapi"/>
-                                <get src="${openapi.bundle.url}" dest="${openapi.bundle.file}" skipexisting="false"/>
+                                <exec executable="bash" failonerror="true" dir="${project.basedir}">
+                                    <arg value="${project.basedir}/scripts/fetch-openapi-tree.sh"/>
+                                    <arg value="${openapi.package.tag}"/>
+                                    <arg value="${openapi.package.dir}"/>
+                                </exec>
                             </target>
                         </configuration>
                     </execution>
@@ -169,7 +173,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${openapi.bundle.file}</inputSpec>
+                            <inputSpec>${openapi.spec.file}</inputSpec>
                             <generatorName>spring</generatorName>
                             <output>${project.build.directory}/generated-sources/openapi</output>
                             <apiPackage>fr.projetcompensation.gymbuddy.openapi.api</apiPackage>

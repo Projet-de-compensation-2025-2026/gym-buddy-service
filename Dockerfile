@@ -13,6 +13,7 @@ RUN apt-get update \
 
 COPY pom.xml .
 COPY .openapi-generator-ignore .
+COPY scripts ./scripts
 COPY src ./src
 RUN mvn -B -DskipTests package
 
