@@ -1,6 +1,7 @@
 package fr.projetcompensation.gymbuddy.auth.http;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,6 +27,14 @@ class AccessTokenFilterTest {
     @Test
     void healthzRemainsPublic() throws Exception {
         mockMvc.perform(get("/api/v1/healthz")).andExpect(status().isOk());
+    }
+
+    @Test
+    void publicAuthRoutesDoNotRequireAccessToken() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register")).andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/v1/auth/login")).andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/v1/auth/refresh")).andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/v1/auth/logout")).andExpect(status().isNotFound());
     }
 
     @Test

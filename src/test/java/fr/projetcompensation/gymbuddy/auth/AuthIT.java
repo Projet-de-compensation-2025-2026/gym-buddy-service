@@ -1,8 +1,11 @@
 package fr.projetcompensation.gymbuddy.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.time.Duration;
 import java.util.List;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,9 +18,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
@@ -28,16 +31,32 @@ class AuthIT {
     private static final String SECRET = "test-hs256-secret-that-is-long-enough";
     private static final String PASSWORD = "correct-horse";
 
-    @Container
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6");
 
-    @Container
     static final GenericContainer<?> REDIS = new GenericContainer<>("redis:8-alpine")
             .withExposedPorts(6379)
-            .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*", 1));
+            .waitingFor(Wait.forListeningPort())
+            .withStartupTimeout(Duration.ofMinutes(2));
+
+    static {
+        if (DockerClientFactory.instance().isDockerAvailable()) {
+            POSTGRES.start();
+            REDIS.start();
+        }
+    }
+
+    @BeforeAll
+    static void requireRunningContainers() {
+        assumeTrue(DockerClientFactory.instance().isDockerAvailable(), "Docker is required for AuthIT");
+        assumeTrue(POSTGRES.isRunning(), "PostgreSQL Testcontainer must stay up for AuthIT");
+        assumeTrue(REDIS.isRunning(), "Redis Testcontainer must stay up for AuthIT");
+    }
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
+        if (!POSTGRES.isRunning() || !REDIS.isRunning()) {
+            return;
+        }
         registry.add("DATABASE_URL", () -> "postgresql://%s:%s@%s:%d/%s"
                 .formatted(
                         POSTGRES.getUsername(),
@@ -52,7 +71,7 @@ class AuthIT {
     @LocalServerPort
     private int port;
 
-    @Autowired
+    @Autowired(required = false)
     private JdbcTemplate jdbcTemplate;
 
     @Test

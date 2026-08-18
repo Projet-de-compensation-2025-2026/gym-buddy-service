@@ -16,7 +16,6 @@ import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,25 +53,25 @@ public class AuthConfiguration {
     }
 
     @Bean(destroyMethod = "close")
-    @ConditionalOnBean(RedisClient.class)
+    @ConditionalOnProperty(name = "REDIS_URL")
     StatefulRedisConnection<String, String> redisConnection(RedisClient redisClient) {
         return redisClient.connect();
     }
 
     @Bean
-    @ConditionalOnBean(StatefulRedisConnection.class)
+    @ConditionalOnProperty(name = "REDIS_URL")
     RedisCommands<String, String> redisCommands(StatefulRedisConnection<String, String> connection) {
         return connection.sync();
     }
 
     @Bean
-    @ConditionalOnBean(RedisCommands.class)
+    @ConditionalOnProperty(name = "REDIS_URL")
     RefreshTokenStore refreshTokenStore(RedisCommands<String, String> redisCommands, Clock clock) {
         return new RedisRefreshTokenStore(redisCommands, clock);
     }
 
     @Bean
-    @ConditionalOnBean(PlatformTransactionManager.class)
+    @ConditionalOnProperty(name = "DATABASE_URL")
     TransactionRunner transactionRunner(PlatformTransactionManager transactionManager) {
         TransactionTemplate template = new TransactionTemplate(transactionManager);
         return new TransactionRunner() {
@@ -84,13 +83,7 @@ public class AuthConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean({
-        UserRepository.class,
-        ProfileRepository.class,
-        TokenService.class,
-        RefreshTokenStore.class,
-        TransactionRunner.class
-    })
+    @ConditionalOnProperty(name = {"JWT_ACCESS_SECRET", "REDIS_URL", "DATABASE_URL"})
     AuthService authService(
             UserRepository users,
             ProfileRepository profiles,
