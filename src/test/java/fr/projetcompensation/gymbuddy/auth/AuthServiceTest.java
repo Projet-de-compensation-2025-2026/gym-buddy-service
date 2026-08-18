@@ -46,6 +46,7 @@ class AuthServiceTest {
     void fsAcct01_registerCreatesUserWithEmailHandleAndDisplayName() {
         RegisteredUser registered = auth.register(register("alex@example.com", "alex", "Alex"));
 
+        assertThat(registered.email()).isEqualTo("alex@example.com");
         assertThat(registered.handle()).isEqualTo("alex");
         assertThat(registered.displayName()).isEqualTo("Alex");
         assertThat(users.findByEmail("alex@example.com")).isPresent();
@@ -112,12 +113,25 @@ class AuthServiceTest {
     }
 
     @Test
-    void loginWithUnknownEmailReturnsGenericInvalidCredentials() {
+    void loginWithUnknownEmailReturnsForbiddenInvalidCredentials() {
         assertThatThrownBy(() -> auth.login(new LoginCommand("missing@example.com", PASSWORD)))
                 .isInstanceOf(AuthException.class)
                 .satisfies(ex -> {
                     AuthException authEx = (AuthException) ex;
-                    assertThat(authEx.code()).isEqualTo(ErrorCode.UNAUTHENTICATED);
+                    assertThat(authEx.code()).isEqualTo(ErrorCode.FORBIDDEN);
+                    assertThat(authEx.getMessage()).isEqualTo("invalid credentials");
+                });
+    }
+
+    @Test
+    void loginWithWrongPasswordReturnsForbiddenInvalidCredentials() {
+        auth.register(register("alex@example.com", "alex", "Alex"));
+
+        assertThatThrownBy(() -> auth.login(new LoginCommand("alex@example.com", "wrong-password")))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> {
+                    AuthException authEx = (AuthException) ex;
+                    assertThat(authEx.code()).isEqualTo(ErrorCode.FORBIDDEN);
                     assertThat(authEx.getMessage()).isEqualTo("invalid credentials");
                 });
     }

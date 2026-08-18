@@ -41,7 +41,11 @@ class AuthControllerTest {
     void fsAcct01_registerReturnsCreatedUser() throws Exception {
         when(authService.register(any()))
                 .thenReturn(new RegisteredUser(
-                        UUID.fromString("11111111-1111-1111-1111-111111111111"), "alex", "Alex", UserRole.ADMIN));
+                        UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                        "alex@example.com",
+                        "alex",
+                        "Alex",
+                        UserRole.ADMIN));
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -49,6 +53,7 @@ class AuthControllerTest {
                                 {"email":"alex@example.com","handle":"alex","password":"correct-horse","displayName":"Alex"}
                                 """))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value("alex@example.com"))
                 .andExpect(jsonPath("$.handle").value("alex"))
                 .andExpect(jsonPath("$.displayName").value("Alex"))
                 .andExpect(jsonPath("$.role").value("admin"));
@@ -107,6 +112,18 @@ class AuthControllerTest {
                 .andExpect(cookie().secure("refresh", true))
                 .andExpect(cookie().path("refresh", "/api/v1/auth"))
                 .andExpect(cookie().sameSite("refresh", "Lax"));
+    }
+
+    @Test
+    void loginUnknownEmailReturnsForbiddenInvalidCredentials() throws Exception {
+        when(authService.login(any())).thenThrow(AuthException.forbidden("invalid credentials"));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"missing@example.com\",\"password\":\"correct-horse\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.error.message").value("invalid credentials"));
     }
 
     @Test

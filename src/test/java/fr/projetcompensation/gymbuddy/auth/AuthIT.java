@@ -16,10 +16,10 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers(disabledWithoutDocker = true)
@@ -29,7 +29,7 @@ class AuthIT {
     private static final String PASSWORD = "correct-horse";
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:18.6");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6");
 
     @Container
     static final GenericContainer<?> REDIS = new GenericContainer<>("redis:8-alpine")
@@ -66,7 +66,7 @@ class AuthIT {
                 .retrieve()
                 .toEntity(String.class);
         assertThat(first.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(first.getBody()).contains("\"role\":\"admin\"");
+        assertThat(first.getBody()).contains("\"email\":\"alex@example.com\"").contains("\"role\":\"admin\"");
 
         ResponseEntity<String> duplicate = client.post()
                 .uri("/api/v1/auth/register")
@@ -85,6 +85,28 @@ class AuthIT {
                 .toEntity(String.class);
         assertThat(weak.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
         assertThat(weak.getBody()).contains("\"code\":\"VALIDATION\"");
+
+        ResponseEntity<String> unknown = client.post()
+                .uri("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"email\":\"missing@example.com\",\"password\":\"correct-horse\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(unknown.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(unknown.getBody())
+                .contains("\"code\":\"FORBIDDEN\"")
+                .contains("\"message\":\"invalid credentials\"");
+
+        ResponseEntity<String> wrongPassword = client.post()
+                .uri("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"email\":\"alex@example.com\",\"password\":\"definitely-wrong\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(wrongPassword.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(wrongPassword.getBody())
+                .contains("\"code\":\"FORBIDDEN\"")
+                .contains("\"message\":\"invalid credentials\"");
 
         ResponseEntity<String> login = client.post()
                 .uri("/api/v1/auth/login")

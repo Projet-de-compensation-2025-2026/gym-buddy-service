@@ -71,7 +71,7 @@ public final class AuthService {
         } catch (DuplicateUserException ex) {
             throw AuthException.conflict("email or handle already registered", new FieldIssue("email", "duplicate"));
         }
-        return new RegisteredUser(user.id(), user.handle(), displayName, user.role());
+        return new RegisteredUser(user.id(), user.email(), user.handle(), displayName, user.role());
     }
 
     public AuthSession login(LoginCommand command) {
@@ -82,7 +82,7 @@ public final class AuthService {
         }
         Optional<User> found = users.findByEmail(email);
         if (found.isEmpty()) {
-            throw AuthException.unauthenticated(INVALID_CREDENTIALS);
+            throw AuthException.forbidden(INVALID_CREDENTIALS);
         }
         User user = found.get();
         if (user.locked()) {
@@ -90,7 +90,7 @@ public final class AuthService {
             throw AuthException.forbidden(ACCOUNT_LOCKED);
         }
         if (!user.active() || !passwords.matches(password, user.passwordHash())) {
-            throw AuthException.unauthenticated(INVALID_CREDENTIALS);
+            throw AuthException.forbidden(INVALID_CREDENTIALS);
         }
         return sessionFor(user);
     }

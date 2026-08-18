@@ -36,6 +36,7 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new RegisterResponse(
                         user.id(),
+                        user.email(),
                         user.handle(),
                         user.displayName(),
                         user.role().wireValue()));
