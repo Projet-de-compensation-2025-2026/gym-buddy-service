@@ -42,6 +42,9 @@ public class AccessTokenFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
         String path = publicPath(request);
         return PUBLIC_PATHS.contains(path) || !path.startsWith("/api/v1/");
     }
