@@ -12,6 +12,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Testcontainers coverage for `readyz`. Smoke hits `/api/v1/healthz` when `pom.xml` exists.
 - Local `compose.yaml` and `.env.example`: PostgreSQL 18, Redis, MinIO, API on `127.0.0.1`, optional MailHog profile. Not used on the VPS.
 - Runtime proof that local compose answers `healthz` and `readyz` 200 on `127.0.0.1` (`docs/local-compose-proof.md`). Not a VPS/Postgres-on-OVH claim.
+- VPS data-plane compose (`deploy/compose.yaml`): PostgreSQL 18, Redis, MinIO on private network `gym-buddy-data` with no published ports. `replace.sh` joins that network and injects VPS env (`DATABASE_URL`, `REDIS_URL`, `S3_*`, `JWT_ACCESS_SECRET`, `SPRING_PROFILES_ACTIVE=prod`). Operator runbook: `docs/vps-data-plane.md`.
 
 ### Fixed
 

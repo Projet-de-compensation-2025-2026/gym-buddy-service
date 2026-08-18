@@ -1,4 +1,5 @@
 # Local laptop stack only. Do not run this file on the VPS.
+# VPS data plane is deploy/compose.yaml (private network, no published ports).
 # VPS API replace stays deploy/replace.sh + docker run on 127.0.0.1:8080.
 # Runbook: gym-buddy-documentation 10-Getting-started/04-Environment-and-pipeline.md
 #
