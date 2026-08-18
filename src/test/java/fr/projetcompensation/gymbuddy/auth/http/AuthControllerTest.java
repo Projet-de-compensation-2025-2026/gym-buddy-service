@@ -76,10 +76,6 @@ class AuthControllerTest {
 
     @Test
     void fsAcct03_weakPasswordReturnsValidationEnvelope() throws Exception {
-        when(authService.register(any()))
-                .thenThrow(AuthException.validation(
-                        "password does not meet requirements", new FieldIssue("password", "minLength")));
-
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -87,7 +83,43 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION"))
-                .andExpect(jsonPath("$.error.details[0].issue").value("minLength"));
+                .andExpect(jsonPath("$.error.details[0].path").value("password"))
+                .andExpect(jsonPath("$.error.details[0].issue").value("size"));
+    }
+
+    @Test
+    void fsAcct03_passwordEqualToEmailReturnsValidationEnvelope() throws Exception {
+        when(authService.register(any()))
+                .thenThrow(AuthException.validation(
+                        "password does not meet requirements", new FieldIssue("password", "mustNotMatchIdentity")));
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"alex@example.com","handle":"alex","password":"alex@example.com","displayName":"Alex"}
+                                """))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION"))
+                .andExpect(jsonPath("$.error.details[0].issue").value("mustNotMatchIdentity"));
+    }
+
+    @Test
+    void registerAcceptsSingleCharacterHandleFromSpec() throws Exception {
+        when(authService.register(any()))
+                .thenReturn(new RegisteredUser(
+                        UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                        "alex@example.com",
+                        "a",
+                        "Alex",
+                        UserRole.MEMBER));
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"alex@example.com","handle":"a","password":"correct-horse","displayName":"Alex"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.handle").value("a"));
     }
 
     @Test
@@ -105,8 +137,8 @@ class AuthControllerTest {
                         .content("{\"email\":\"alex@example.com\",\"password\":\"correct-horse\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("access.jwt"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresIn").value(900))
+                .andExpect(jsonPath("$.tokenType").doesNotExist())
+                .andExpect(jsonPath("$.expiresIn").doesNotExist())
                 .andExpect(cookie().value("refresh", "refresh.jwt"))
                 .andExpect(cookie().httpOnly("refresh", true))
                 .andExpect(cookie().secure("refresh", true))

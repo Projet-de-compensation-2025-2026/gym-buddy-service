@@ -7,6 +7,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Build-time OpenAPI Generator: fetch `gym-buddy-openapi` `bundled.yaml` and generate models + API interfaces. `AuthController` / `HealthController` implement those interfaces (ticket #41).
 - `POST /api/v1/auth/register`, `/login`, `/refresh`, `/logout`: Argon2id passwords, HS256 access JWT, refresh cookie, Redis `jti` denylist (ticket #12).
 - Flyway `V2__users_and_profiles.sql` (`users` + `profiles`). First registered user is `admin`.
 - Java 25 LTS / Spring Boot 4.1 application (`pom.xml`): `GET /api/v1/healthz` and `GET /api/v1/readyz`.
@@ -22,6 +23,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Auth JSON follows the spec: `AccessTokenResponse` is `accessToken` only; register returns generated `RegisteredUser`; handle `minLength` is 1.
 - CI uses `actions/setup-java@v5` (Temurin 25) and `mvn` (no Maven wrapper binaries).
 - Document Java 25 LTS as the approved stack (README, CHANGELOG, Dockerfile comments).
 

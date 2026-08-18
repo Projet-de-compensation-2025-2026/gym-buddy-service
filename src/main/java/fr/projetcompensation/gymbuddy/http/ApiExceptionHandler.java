@@ -2,8 +2,10 @@ package fr.projetcompensation.gymbuddy.http;
 
 import fr.projetcompensation.gymbuddy.auth.AuthException;
 import fr.projetcompensation.gymbuddy.auth.ErrorCode;
-import fr.projetcompensation.gymbuddy.http.ErrorResponse.ErrorBody;
-import fr.projetcompensation.gymbuddy.http.ErrorResponse.ErrorDetail;
+import fr.projetcompensation.gymbuddy.openapi.model.ErrorDetail;
+import fr.projetcompensation.gymbuddy.openapi.model.ErrorResponse;
+import fr.projetcompensation.gymbuddy.openapi.model.ErrorResponseError;
+import fr.projetcompensation.gymbuddy.openapi.model.ErrorResponseError.CodeEnum;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,8 +41,9 @@ public class ApiExceptionHandler {
     }
 
     private static ResponseEntity<ErrorResponse> envelope(ErrorCode code, String message, List<ErrorDetail> details) {
-        return ResponseEntity.status(statusOf(code))
-                .body(new ErrorResponse(new ErrorBody(code.name(), message, details.isEmpty() ? null : details)));
+        ErrorResponseError error = new ErrorResponseError(CodeEnum.fromValue(code.name()), message);
+        error.setDetails(details.isEmpty() ? null : details);
+        return ResponseEntity.status(statusOf(code)).body(new ErrorResponse(error));
     }
 
     private static HttpStatus statusOf(ErrorCode code) {
