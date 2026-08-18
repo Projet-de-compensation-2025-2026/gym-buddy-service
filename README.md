@@ -2,7 +2,7 @@
 
 Java 25 LTS / Spring Boot 4.1 API for Gym Buddies (PostgreSQL 18). Product decisions live in [`gym-buddy-documentation`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation).
 
-This slice ships the local data plane, liveness/readiness, and JWT auth (`/api/v1/auth`). Friends, feed, and events come in later tickets. The HTTP contract is [`gym-buddy-openapi`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-openapi), not a running `/v3/api-docs`.
+This slice ships the local data plane, liveness/readiness, and JWT auth (`/api/v1/auth`). Friends, feed, and events come in later tickets. The HTTP contract is [`gym-buddy-openapi`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-openapi), not a running `/v3/api-docs`. `mvn` fetches [`openapi/bundled.yaml`](https://raw.githubusercontent.com/Projet-de-compensation-2025-2026/gym-buddy-openapi/develop/openapi/bundled.yaml) at generate-sources and emits models plus API interfaces under `target/generated-sources/openapi`. Controllers implement those interfaces. Do not commit a second YAML or hand-edit generated sources.
 
 | Workflow | Trigger | Promise |
 | --- | --- | --- |
@@ -27,6 +27,8 @@ Requires JDK 25 (Temurin) and Maven on the host if you run the app outside Compo
 mvn -B test
 mvn -B spring-boot:run
 ```
+
+`mvn -B test` is the repo test command (generate-sources, then JUnit / Testcontainers). There is no Maven wrapper in git.
 
 Every published port binds `127.0.0.1`:
 

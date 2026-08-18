@@ -1,0 +1,3 @@
+# HealthStatus stays the domain record so readyz can still name failed dependencies.
+# DefaultApi is mapped to fr.projetcompensation.gymbuddy.health.HealthStatus.
+**/model/HealthStatus.java
