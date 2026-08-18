@@ -192,8 +192,37 @@
                                 <importMapping>HealthStatus=fr.projetcompensation.gymbuddy.health.HealthStatus</importMapping>
                             </importMappings>
                             <schemaMappings>
-                                <HealthStatus>fr.projetcompensation.gymbuddy.health.HealthStatus</HealthStatus>
+                                <schemaMapping>HealthStatus=fr.projetcompensation.gymbuddy.health.HealthStatus</schemaMapping>
                             </schemaMappings>
+                            <!-- File $refs on path items become inline models. Map those names to the component schemas. -->
+                            <inlineSchemaNameMappings>
+                                <inlineSchemaNameMapping>getHealthz_200_response=HealthStatus</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_request=RegisterRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthLogin_request=LoginRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthLogin_200_response=AccessTokenResponse</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRefresh_200_response=AccessTokenResponse</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_201_response=RegisteredUser</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_409_response=ErrorResponse</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_422_response=ErrorResponse</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_409_response_error=ErrorResponseError</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_422_response_error=ErrorResponseError</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_409_response_error_details_inner=ErrorDetail</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthRegister_422_response_error_details_inner=ErrorDetail</inlineSchemaNameMapping>
+                            </inlineSchemaNameMappings>
+                            <modelNameMappings>
+                                <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_request=RegisterRequest</modelNameMapping>
+                                <modelNameMapping>postAuthLogin_request=LoginRequest</modelNameMapping>
+                                <modelNameMapping>postAuthLogin_200_response=AccessTokenResponse</modelNameMapping>
+                                <modelNameMapping>postAuthRefresh_200_response=AccessTokenResponse</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_201_response=RegisteredUser</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_409_response=ErrorResponse</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_422_response=ErrorResponse</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_409_response_error=ErrorResponseError</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_422_response_error=ErrorResponseError</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_409_response_error_details_inner=ErrorDetail</modelNameMapping>
+                                <modelNameMapping>postAuthRegister_422_response_error_details_inner=ErrorDetail</modelNameMapping>
+                            </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>
                                 <library>spring-boot</library>

@@ -14,6 +14,8 @@ class OpenApiPackagePinTest {
         assertThat(pom).contains("<openapi.package.tag>v0.1.0</openapi.package.tag>");
         assertThat(pom).contains("<openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>");
         assertThat(pom).contains("<inputSpec>${openapi.spec.file}</inputSpec>");
+        assertThat(pom).contains("getHealthz_200_response=HealthStatus");
+        assertThat(pom).contains("postAuthRegister_request=RegisterRequest");
         assertThat(pom).doesNotContain("bundled.yaml");
         assertThat(pom)
                 .doesNotContain("raw.githubusercontent.com/Projet-de-compensation-2025-2026/gym-buddy-openapi/develop");
