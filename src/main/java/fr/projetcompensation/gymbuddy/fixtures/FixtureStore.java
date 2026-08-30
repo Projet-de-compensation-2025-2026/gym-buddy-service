@@ -32,11 +32,14 @@ final class FixtureStore {
 
     void reset(UUID preserveUserId) {
         jdbc.update("DELETE FROM audit_events");
+        jdbc.update("DELETE FROM post_media");
+        jdbc.update("UPDATE events SET cover_media_id = NULL");
+        jdbc.update("UPDATE messages SET media_id = NULL");
+        jdbc.update("UPDATE profiles SET avatar_media_id = NULL");
         if (preserveUserId == null) {
             jdbc.update("DELETE FROM users");
             return;
         }
-        jdbc.update("UPDATE profiles SET avatar_media_id = NULL WHERE user_id = ?", preserveUserId);
         jdbc.update("DELETE FROM users WHERE id <> ?", preserveUserId);
     }
 
