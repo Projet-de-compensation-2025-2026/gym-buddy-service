@@ -7,6 +7,12 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+### Changed
+
+## [1.0.0] — 2026-08-30
+
+### Added
+
 - Deterministic Datafaker fixtures (ticket #70, FS-ADM-05). Seed `FIXTURE_SEED=20260813`. Factory classes plus CLI `mvn compile exec:java -Dexec.mainClass=fr.projetcompensation.gymbuddy.fixtures.FixturesCli -Dexec.args="--users 3000 --posts-per-user 5 --events 800 --reset"`. `POST /api/v1/admin/fixtures` generates (non-`prod`); `POST /api/v1/admin/fixtures/reset` truncates (`--reset`). Demo handles `demo.alex` / `demo.blake` / `demo.mod` / `demo.admin`. Media metadata reuses 10 stock MinIO keys. Integration tests use tens of rows, not the 3 000-user set. Pin gym-buddy-openapi develop SHA `f849a1dcd498c12fd9507b83f9d50d375d651347`.
 - Private messaging (FS-MSG-01..10). Ticket #67. Flyway `V10__messaging.sql`. `GET`/`POST /api/v1/conversations`, `GET`/`POST /api/v1/conversations/{id}/messages`, `DELETE /api/v1/messages/{id}`, `GET /api/v1/ws`. Friends-only direct pair. Text 1–4000. Image/audio via existing `/media` (`kind=message`). Sender tombstone within 10 minutes. Inbox unread counts. Persistence first; WebSocket fan-out. Non-friends `FORBIDDEN`; stranger conversation `NOT_FOUND`. HTTP write succeeds when the socket is down.
 - Admin and moderation (FS-ADM-01..09, FS-ACCT-08/09). Ticket #69. Flyway `V12__admin.sql` (`reports`, `audit_events`, media/comment hide columns). Staff `/api/v1/admin/*` (members `NOT_FOUND`). Moderator role PATCH is `FORBIDDEN`. Hide post → member `NOT_FOUND` plus `audit_events`. Last admin demote/lock is `CONFLICT`. Fixture trigger is implemented in ticket #70. Member `POST /api/v1/reports`. Pin gym-buddy-openapi develop SHA `8f89f1a72b1ddb6996d9598e6cedbac4d4788ace`.
@@ -69,5 +75,6 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 [Unreleased]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service
 
+[1.0.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.0.0
 [0.1.1]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v0.1.0
