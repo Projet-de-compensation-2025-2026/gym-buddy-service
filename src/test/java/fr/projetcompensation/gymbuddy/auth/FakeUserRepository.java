@@ -47,4 +47,19 @@ final class FakeUserRepository implements UserRepository {
     void replace(User user) {
         users.put(user.id(), user);
     }
+
+    @Override
+    public void update(User user) {
+        if (!users.containsKey(user.id())) {
+            throw new IllegalStateException("user not found");
+        }
+        boolean duplicate = users.values().stream()
+                .anyMatch(existing -> !existing.id().equals(user.id())
+                        && (existing.email().equalsIgnoreCase(user.email())
+                                || existing.handle().equalsIgnoreCase(user.handle())));
+        if (duplicate) {
+            throw new DuplicateUserException();
+        }
+        users.put(user.id(), user);
+    }
 }

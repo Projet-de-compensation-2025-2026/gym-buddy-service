@@ -3,7 +3,8 @@ package fr.projetcompensation.gymbuddy.users;
 public enum UserStatus {
     ACTIVE("active"),
     LOCKED("locked"),
-    PENDING_VERIFICATION("pending_verification");
+    PENDING_VERIFICATION("pending_verification"),
+    CLOSED("closed");
 
     private final String wireValue;
 

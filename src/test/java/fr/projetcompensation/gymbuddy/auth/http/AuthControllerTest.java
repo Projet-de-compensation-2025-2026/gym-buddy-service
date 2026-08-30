@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import fr.projetcompensation.gymbuddy.auth.AuthException;
+import fr.projetcompensation.gymbuddy.auth.AuthPrincipal;
 import fr.projetcompensation.gymbuddy.auth.AuthService;
 import fr.projetcompensation.gymbuddy.auth.AuthSession;
 import fr.projetcompensation.gymbuddy.auth.FieldIssue;
@@ -22,12 +23,16 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(controllers = AuthController.class)
+@WebMvcTest(
+        controllers = AuthController.class,
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = AccessTokenFilter.class))
 @Import(ApiExceptionHandler.class)
 class AuthControllerTest {
 
@@ -176,6 +181,34 @@ class AuthControllerTest {
                 .andExpect(status().isNoContent())
                 .andExpect(cookie().maxAge("refresh", 0))
                 .andExpect(cookie().path("refresh", "/api/v1/auth"));
+    }
+
+    @Test
+    void fsAcct05_changePasswordReturnsNoContentAndClearsCookie() throws Exception {
+        UUID userId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+        mockMvc.perform(post("/api/v1/auth/password")
+                        .requestAttr(
+                                AuthPrincipal.REQUEST_ATTRIBUTE, new AuthPrincipal(userId, "alex", UserRole.MEMBER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"currentPassword":"correct-horse","newPassword":"new-correct-horse"}
+                                """))
+                .andExpect(status().isNoContent())
+                .andExpect(cookie().maxAge("refresh", 0));
+    }
+
+    @Test
+    void fsAcct07_closeAccountReturnsNoContent() throws Exception {
+        UUID userId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+        mockMvc.perform(post("/api/v1/me/close")
+                        .requestAttr(
+                                AuthPrincipal.REQUEST_ATTRIBUTE, new AuthPrincipal(userId, "alex", UserRole.MEMBER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"password\":\"correct-horse\"}"))
+                .andExpect(status().isNoContent())
+                .andExpect(cookie().maxAge("refresh", 0));
     }
 
     @Test

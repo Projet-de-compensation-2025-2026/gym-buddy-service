@@ -1,6 +1,7 @@
 package fr.projetcompensation.gymbuddy.auth.http;
 
 import fr.projetcompensation.gymbuddy.auth.AuthException;
+import fr.projetcompensation.gymbuddy.auth.AuthPrincipal;
 import fr.projetcompensation.gymbuddy.auth.AuthService;
 import fr.projetcompensation.gymbuddy.auth.AuthSession;
 import fr.projetcompensation.gymbuddy.auth.IssuedTokens;
@@ -9,6 +10,8 @@ import fr.projetcompensation.gymbuddy.auth.LoginCommand;
 import fr.projetcompensation.gymbuddy.auth.RegisterCommand;
 import fr.projetcompensation.gymbuddy.openapi.api.AuthApi;
 import fr.projetcompensation.gymbuddy.openapi.model.AccessTokenResponse;
+import fr.projetcompensation.gymbuddy.openapi.model.ChangePasswordRequest;
+import fr.projetcompensation.gymbuddy.openapi.model.CloseAccountRequest;
 import fr.projetcompensation.gymbuddy.openapi.model.LoginRequest;
 import fr.projetcompensation.gymbuddy.openapi.model.RegisterRequest;
 import fr.projetcompensation.gymbuddy.openapi.model.RegisteredUser;
@@ -51,6 +54,24 @@ public class AuthController implements AuthApi {
     @Override
     public ResponseEntity<Void> postAuthLogout() {
         auth().logout(refreshCookie());
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, AuthCookies.clear().toString())
+                .build();
+    }
+
+    @Override
+    public ResponseEntity<Void> postAuthPassword(ChangePasswordRequest request) {
+        AuthPrincipal principal = AuthPrincipal.require(httpRequest);
+        auth().changePassword(principal.userId(), request.getCurrentPassword(), request.getNewPassword());
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, AuthCookies.clear().toString())
+                .build();
+    }
+
+    @Override
+    public ResponseEntity<Void> postMeClose(CloseAccountRequest request) {
+        AuthPrincipal principal = AuthPrincipal.require(httpRequest);
+        auth().closeAccount(principal.userId(), request.getPassword());
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, AuthCookies.clear().toString())
                 .build();

@@ -189,6 +189,56 @@ class AuthServiceTest {
     }
 
     @Test
+    void fsAcct05_changePasswordRequiresCurrentAndRevokesRefresh() {
+        RegisteredUser registered = auth.register(register("alex@example.com", "alex", "Alex"));
+        AuthSession session = auth.login(new LoginCommand("alex@example.com", PASSWORD));
+
+        auth.changePassword(registered.id(), PASSWORD, "new-correct-horse");
+
+        assertThatThrownBy(() -> auth.login(new LoginCommand("alex@example.com", PASSWORD)))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.FORBIDDEN));
+        AuthSession fresh = auth.login(new LoginCommand("alex@example.com", "new-correct-horse"));
+        assertThat(fresh.tokens().accessToken()).isNotBlank();
+        assertThatThrownBy(() -> auth.refresh(session.tokens().refreshToken()))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.UNAUTHENTICATED));
+    }
+
+    @Test
+    void fsAcct05_wrongCurrentPasswordDoesNotChangeHash() {
+        RegisteredUser registered = auth.register(register("alex@example.com", "alex", "Alex"));
+
+        assertThatThrownBy(() -> auth.changePassword(registered.id(), "wrong-password", "new-correct-horse"))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.FORBIDDEN));
+        AuthSession session = auth.login(new LoginCommand("alex@example.com", PASSWORD));
+        assertThat(session.tokens().accessToken()).isNotBlank();
+    }
+
+    @Test
+    void fsAcct07_closeAccountHidesLoginWithGenericForbidden() {
+        RegisteredUser registered = auth.register(register("alex@example.com", "alex", "Alex"));
+        AuthSession session = auth.login(new LoginCommand("alex@example.com", PASSWORD));
+
+        auth.closeAccount(registered.id(), PASSWORD);
+
+        assertThatThrownBy(() -> auth.login(new LoginCommand("alex@example.com", PASSWORD)))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> {
+                    AuthException authEx = (AuthException) ex;
+                    assertThat(authEx.code()).isEqualTo(ErrorCode.FORBIDDEN);
+                    assertThat(authEx.getMessage()).isEqualTo("account is locked");
+                });
+        assertThatThrownBy(() -> auth.login(new LoginCommand("alex@example.com", "wrong-password")))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).getMessage()).isEqualTo("account is locked"));
+        assertThatThrownBy(() -> auth.refresh(session.tokens().refreshToken()))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.FORBIDDEN));
+    }
+
+    @Test
     void lockedUserRefreshReturnsForbidden() {
         RegisteredUser registered = auth.register(register("alex@example.com", "alex", "Alex"));
         AuthSession session = auth.login(new LoginCommand("alex@example.com", PASSWORD));

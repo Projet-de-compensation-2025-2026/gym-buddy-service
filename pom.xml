@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi package tag v0.1.0 (9c7c123 / annotated 6373a11). Fetch the tagged $ref tree; do not vendor YAML. -->
-        <openapi.package.tag>v0.1.0</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after ticket #59 (profiles / password / close). Pin a 0.1.x tag when Release cuts one. -->
+        <openapi.package.tag>dc3488158a302de9475153f124f7f98a6e4dba9b</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -152,9 +152,9 @@
                         <configuration>
                             <target>
                                 <exec executable="bash" failonerror="true" dir="${project.basedir}">
-                                    <arg value="${project.basedir}/scripts/fetch-openapi-tree.sh"/>
+                                    <arg value="scripts/fetch-openapi-tree.sh"/>
                                     <arg value="${openapi.package.tag}"/>
-                                    <arg value="${openapi.package.dir}"/>
+                                    <arg value="target/openapi/gym-buddy-openapi"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -208,6 +208,15 @@
                                 <inlineSchemaNameMapping>postAuthRegister_422_response_error=ErrorResponseError</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>postAuthRegister_409_response_error_details_inner=ErrorDetail</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>postAuthRegister_422_response_error_details_inner=ErrorDetail</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAuthPassword_request=ChangePasswordRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postMeClose_request=CloseAccountRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getProfilesMe_200_response=Profile</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getProfilesMe_200_response_preferredWindows_inner=PreferredWindow</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchProfilesMe_request=PatchProfileRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchProfilesMe_200_response=Profile</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchProfilesMe_200_response_preferredWindows_inner=PreferredWindow</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getProfilesHandle_200_response=Profile</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getProfilesHandle_200_response_preferredWindows_inner=PreferredWindow</inlineSchemaNameMapping>
                             </inlineSchemaNameMappings>
                             <modelNameMappings>
                                 <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
@@ -222,6 +231,15 @@
                                 <modelNameMapping>postAuthRegister_422_response_error=ErrorResponseError</modelNameMapping>
                                 <modelNameMapping>postAuthRegister_409_response_error_details_inner=ErrorDetail</modelNameMapping>
                                 <modelNameMapping>postAuthRegister_422_response_error_details_inner=ErrorDetail</modelNameMapping>
+                                <modelNameMapping>postAuthPassword_request=ChangePasswordRequest</modelNameMapping>
+                                <modelNameMapping>postMeClose_request=CloseAccountRequest</modelNameMapping>
+                                <modelNameMapping>getProfilesMe_200_response=Profile</modelNameMapping>
+                                <modelNameMapping>getProfilesMe_200_response_preferredWindows_inner=PreferredWindow</modelNameMapping>
+                                <modelNameMapping>patchProfilesMe_request=PatchProfileRequest</modelNameMapping>
+                                <modelNameMapping>patchProfilesMe_200_response=Profile</modelNameMapping>
+                                <modelNameMapping>patchProfilesMe_200_response_preferredWindows_inner=PreferredWindow</modelNameMapping>
+                                <modelNameMapping>getProfilesHandle_200_response=Profile</modelNameMapping>
+                                <modelNameMapping>getProfilesHandle_200_response_preferredWindows_inner=PreferredWindow</modelNameMapping>
                             </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>

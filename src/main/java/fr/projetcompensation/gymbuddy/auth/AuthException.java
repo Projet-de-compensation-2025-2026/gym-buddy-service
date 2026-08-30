@@ -40,4 +40,8 @@ public final class AuthException extends RuntimeException {
     public static AuthException unauthenticated(String message) {
         return new AuthException(ErrorCode.UNAUTHENTICATED, message);
     }
+
+    public static AuthException notFound(String message) {
+        return new AuthException(ErrorCode.NOT_FOUND, message);
+    }
 }

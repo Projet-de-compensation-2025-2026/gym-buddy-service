@@ -2,6 +2,7 @@ package fr.projetcompensation.gymbuddy.auth;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -34,5 +35,17 @@ final class FakeRefreshTokenStore implements RefreshTokenStore {
 
     boolean revoked(String jti) {
         return denied.contains(jti);
+    }
+
+    @Override
+    public void revokeAll(UUID userId) {
+        List<String> jtis = allowed.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(userId))
+                .map(Map.Entry::getKey)
+                .toList();
+        for (String jti : jtis) {
+            allowed.remove(jti);
+            denied.add(jti);
+        }
     }
 }
