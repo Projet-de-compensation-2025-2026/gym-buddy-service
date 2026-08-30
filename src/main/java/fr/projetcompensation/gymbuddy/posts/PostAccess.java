@@ -8,7 +8,7 @@ public final class PostAccess {
 
     private PostAccess() {}
 
-    static boolean canView(Post post, User viewer, FriendshipRepository friendships, UserRepository users) {
+    public static boolean canView(Post post, User viewer, FriendshipRepository friendships, UserRepository users) {
         if (post == null || post.deleted() || post.hidden()) {
             return false;
         }

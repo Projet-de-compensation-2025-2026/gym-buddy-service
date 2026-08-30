@@ -18,23 +18,23 @@ public record Comment(
     public static final int MAX_DEPTH = 4;
     public static final int MAX_BODY = 1000;
 
-    boolean deleted() {
+    public boolean deleted() {
         return deletedAt != null;
     }
 
-    boolean hidden() {
+    public boolean hidden() {
         return hiddenAt != null;
     }
 
-    boolean tombstoned() {
+    public boolean tombstoned() {
         return deleted() || hidden();
     }
 
-    String visibleBody() {
+    public String visibleBody() {
         return tombstoned() ? TOMBSTONE : body;
     }
 
-    Comment tombstone(Instant at) {
+    public Comment tombstone(Instant at) {
         return new Comment(id, postId, authorId, parentId, TOMBSTONE, depth, createdAt, at, hiddenAt);
     }
 }
