@@ -35,16 +35,14 @@ public class JdbcSearchCatalog implements SearchCatalog {
 
     @Override
     public List<PersonCandidate> people() {
-        return jdbc.query(
-                """
+        return jdbc.query("""
                 SELECT u.id, u.email, u.handle, u.password_hash, u.role, u.status, u.created_at,
                        p.user_id, p.display_name, p.bio, p.visibility, p.sports, p.experience_level,
                        p.city, p.lat, p.lng, p.preferred_windows::text AS preferred_windows, p.avatar_media_id
                 FROM users u
                 JOIN profiles p ON p.user_id = u.id
                 WHERE u.status = 'active'
-                """,
-                this::mapPerson);
+                """, this::mapPerson);
     }
 
     @Override
@@ -54,8 +52,7 @@ public class JdbcSearchCatalog implements SearchCatalog {
             return List.of();
         }
         Instant now = Instant.now();
-        List<EventCandidate> rows = jdbc.query(
-                """
+        List<EventCandidate> rows = jdbc.query("""
                 SELECT e.id, e.organizer_id, e.title, e.description, e.activity, e.place, e.lat, e.lng,
                        COALESCE((
                            SELECT MIN(o.starts_at) FROM event_occurrences o
@@ -82,13 +79,10 @@ public class JdbcSearchCatalog implements SearchCatalog {
                 JOIN users u ON u.id = e.organizer_id
                 JOIN profiles p ON p.user_id = e.organizer_id
                 WHERE u.status = 'active'
-                """,
-                this::mapEvent,
-                Timestamp.from(now),
-                Timestamp.from(now));
+                """, this::mapEvent, Timestamp.from(now), Timestamp.from(now));
         Map<UUID, Set<UUID>> invitees = loadPairs("SELECT event_id, user_id FROM event_invites");
-        Map<UUID, Set<UUID>> accepted = loadPairs(
-                "SELECT event_id, user_id FROM event_applications WHERE status = 'accepted'");
+        Map<UUID, Set<UUID>> accepted =
+                loadPairs("SELECT event_id, user_id FROM event_applications WHERE status = 'accepted'");
         List<EventCandidate> out = new ArrayList<>(rows.size());
         for (EventCandidate row : rows) {
             out.add(new EventCandidate(

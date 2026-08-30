@@ -66,7 +66,8 @@ public final class SearchService {
         Integer radius = radiusKm(radiusKm);
         ExperienceLevel level = experience(experience);
         int pageSize = pageSize(size);
-        Profile viewerProfile = profiles.findByUserId(caller.id()).orElse(Profile.created(caller.id(), caller.handle()));
+        Profile viewerProfile =
+                profiles.findByUserId(caller.id()).orElse(Profile.created(caller.id(), caller.handle()));
         Set<UUID> friendIds = acceptedFriendIds(caller.id());
         Set<UUID> fofIds = friendOfFriendIds(caller.id(), friendIds);
         List<String> terms = SearchText.tokens(q);
@@ -111,7 +112,8 @@ public final class SearchService {
         SearchSort parsedSort = eventSort(sort);
         Integer radius = radiusKm(radiusKm);
         int pageSize = pageSize(size);
-        Profile viewerProfile = profiles.findByUserId(caller.id()).orElse(Profile.created(caller.id(), caller.handle()));
+        Profile viewerProfile =
+                profiles.findByUserId(caller.id()).orElse(Profile.created(caller.id(), caller.handle()));
         Set<UUID> friendIds = acceptedFriendIds(caller.id());
         List<String> terms = SearchText.tokens(q);
         Instant now = clock.instant();
@@ -193,10 +195,9 @@ public final class SearchService {
         double geo = SearchRank.geo(distanceKm);
         double social = SearchRank.peopleSocial(friend, fofIds.contains(owner.id()));
         double rank = SearchRank.composite(tsRank, recency, geo, social);
-        String reason = debug
-                ? peopleReason(terms, sports, city, radiusKm, distanceKm, friend)
-                : null;
-        return Optional.of(new PeopleSearchHit(owner, profile, distanceKm, friendStateOf(caller.id(), owner.id(), friend), rank, reason));
+        String reason = debug ? peopleReason(terms, sports, city, radiusKm, distanceKm, friend) : null;
+        return Optional.of(new PeopleSearchHit(
+                owner, profile, distanceKm, friendStateOf(caller.id(), owner.id(), friend), rank, reason));
     }
 
     private Optional<EventSearchHit> eventHit(
@@ -257,9 +258,8 @@ public final class SearchService {
         double geo = SearchRank.geo(distanceKm);
         double social = SearchRank.eventSocial(organizerFriend);
         double rank = SearchRank.composite(tsRank, recency, geo, social);
-        String reason = debug
-                ? eventReason(terms, activity, remainingOnly, radiusKm, distanceKm, organizerFriend)
-                : null;
+        String reason =
+                debug ? eventReason(terms, activity, remainingOnly, radiusKm, distanceKm, organizerFriend) : null;
         return Optional.of(new EventSearchHit(
                 event.id(),
                 event.title(),
@@ -293,8 +293,8 @@ public final class SearchService {
         Comparator<PeopleSearchHit> byId =
                 Comparator.comparing((PeopleSearchHit hit) -> hit.user().id()).reversed();
         if (sort == SearchSort.DISTANCE) {
-            hits.sort(Comparator.comparing(
-                            (PeopleSearchHit hit) -> hit.distanceKm() == null ? Double.POSITIVE_INFINITY : hit.distanceKm())
+            hits.sort(Comparator.comparing((PeopleSearchHit hit) ->
+                            hit.distanceKm() == null ? Double.POSITIVE_INFINITY : hit.distanceKm())
                     .thenComparing(byId));
             return;
         }
@@ -302,17 +302,18 @@ public final class SearchService {
     }
 
     private static void sortEvents(List<EventSearchHit> hits, SearchSort sort) {
-        Comparator<EventSearchHit> byId = Comparator.comparing(EventSearchHit::id).reversed();
+        Comparator<EventSearchHit> byId =
+                Comparator.comparing(EventSearchHit::id).reversed();
         if (sort == SearchSort.DISTANCE) {
-            hits.sort(Comparator.comparing(
-                            (EventSearchHit hit) -> hit.distanceKm() == null ? Double.POSITIVE_INFINITY : hit.distanceKm())
+            hits.sort(Comparator.comparing((EventSearchHit hit) ->
+                            hit.distanceKm() == null ? Double.POSITIVE_INFINITY : hit.distanceKm())
                     .thenComparing(byId));
             return;
         }
         if (sort == SearchSort.STARTS_AT) {
-            hits.sort(Comparator.comparing(
-                            (EventSearchHit hit) -> hit.startsAt() == null ? Instant.MAX : hit.startsAt())
-                    .thenComparing(byId));
+            hits.sort(
+                    Comparator.comparing((EventSearchHit hit) -> hit.startsAt() == null ? Instant.MAX : hit.startsAt())
+                            .thenComparing(byId));
             return;
         }
         hits.sort(Comparator.comparingDouble(EventSearchHit::rank).reversed().thenComparing(byId));

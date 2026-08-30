@@ -57,17 +57,65 @@ class SearchServiceTest {
         catalog = new InMemoryCatalog();
         search = new SearchService(catalog, friendships, users, profiles, Clock.fixed(NOW, ZoneOffset.UTC));
         alex = member("alex");
-        profile(alex, "Alex", ProfileVisibility.PUBLIC, List.of("weightlifting"), ExperienceLevel.INTERMEDIATE, "Lyon", LYON_LAT, LYON_LNG);
+        profile(
+                alex,
+                "Alex",
+                ProfileVisibility.PUBLIC,
+                List.of("weightlifting"),
+                ExperienceLevel.INTERMEDIATE,
+                "Lyon",
+                LYON_LAT,
+                LYON_LNG);
         sarah = member("sarahj");
-        profile(sarah, "Sarah J.", ProfileVisibility.PUBLIC, List.of("weightlifting"), ExperienceLevel.INTERMEDIATE, "Lyon", 45.76, 4.86);
+        profile(
+                sarah,
+                "Sarah J.",
+                ProfileVisibility.PUBLIC,
+                List.of("weightlifting"),
+                ExperienceLevel.INTERMEDIATE,
+                "Lyon",
+                45.76,
+                4.86);
         privateStranger = member("hidden");
-        profile(privateStranger, "Hidden Lifter", ProfileVisibility.PRIVATE, List.of("weightlifting"), ExperienceLevel.ADVANCED, "Lyon", 45.75, 4.85);
+        profile(
+                privateStranger,
+                "Hidden Lifter",
+                ProfileVisibility.PRIVATE,
+                List.of("weightlifting"),
+                ExperienceLevel.ADVANCED,
+                "Lyon",
+                45.75,
+                4.85);
         privateFriend = member("buddy");
-        profile(privateFriend, "Buddy Lift", ProfileVisibility.PRIVATE, List.of("weightlifting"), ExperienceLevel.BEGINNER, "Lyon", 45.74, 4.84);
+        profile(
+                privateFriend,
+                "Buddy Lift",
+                ProfileVisibility.PRIVATE,
+                List.of("weightlifting"),
+                ExperienceLevel.BEGINNER,
+                "Lyon",
+                45.74,
+                4.84);
         blocked = member("blocked");
-        profile(blocked, "Blocked Lifter", ProfileVisibility.PUBLIC, List.of("weightlifting"), ExperienceLevel.INTERMEDIATE, "Lyon", 45.75, 4.85);
+        profile(
+                blocked,
+                "Blocked Lifter",
+                ProfileVisibility.PUBLIC,
+                List.of("weightlifting"),
+                ExperienceLevel.INTERMEDIATE,
+                "Lyon",
+                45.75,
+                4.85);
         parisRunner = member("parisrun");
-        profile(parisRunner, "Paris Runner", ProfileVisibility.PUBLIC, List.of("running"), ExperienceLevel.ADVANCED, "Paris", 48.86, 2.35);
+        profile(
+                parisRunner,
+                "Paris Runner",
+                ProfileVisibility.PUBLIC,
+                List.of("running"),
+                ExperienceLevel.ADVANCED,
+                "Paris",
+                48.86,
+                2.35);
         friendships.accept(alex.id(), privateFriend.id());
         friendships.block(alex.id(), blocked.id());
     }
@@ -81,7 +129,9 @@ class SearchServiceTest {
                 .extracting(hit -> hit.user().handle())
                 .contains("sarahj", "buddy")
                 .doesNotContain("hidden", "alex", "blocked", "parisrun");
-        assertThat(page.data().stream().anyMatch(hit -> hit.matchReason() != null && hit.matchReason().contains("sports")))
+        assertThat(page.data().stream()
+                        .anyMatch(hit ->
+                                hit.matchReason() != null && hit.matchReason().contains("sports")))
                 .isTrue();
     }
 
@@ -104,15 +154,30 @@ class SearchServiceTest {
     @Test
     void fsSrch03_notFriendsExcludesAcceptedFriends() {
         PeopleSearchList page = search.searchPeople(
-                alex.id(), null, List.of("weightlifting"), null, "Lyon", null, "not-friends", "relevance", false, null, 20);
+                alex.id(),
+                null,
+                List.of("weightlifting"),
+                null,
+                "Lyon",
+                null,
+                "not-friends",
+                "relevance",
+                false,
+                null,
+                20);
 
-        assertThat(page.data()).extracting(hit -> hit.user().handle()).contains("sarahj").doesNotContain("buddy");
+        assertThat(page.data())
+                .extracting(hit -> hit.user().handle())
+                .contains("sarahj")
+                .doesNotContain("buddy");
     }
 
     @Test
     void fsSrch04_fullEventsOmittedWhenRemainingTrue() {
-        EventCandidate open = event("Weekend HIIT", "hiit", "Lyon", 4, SearchEventVisibility.PUBLIC, alex, NOW.plusSeconds(3600));
-        EventCandidate full = event("Packed Hall", "hiit", "Lyon", 0, SearchEventVisibility.PUBLIC, sarah, NOW.plusSeconds(7200));
+        EventCandidate open =
+                event("Weekend HIIT", "hiit", "Lyon", 4, SearchEventVisibility.PUBLIC, alex, NOW.plusSeconds(3600));
+        EventCandidate full =
+                event("Packed Hall", "hiit", "Lyon", 0, SearchEventVisibility.PUBLIC, sarah, NOW.plusSeconds(7200));
         catalog.events.add(open);
         catalog.events.add(full);
 
@@ -127,8 +192,16 @@ class SearchServiceTest {
 
     @Test
     void fsSrch07_changingOnlySortDoesNotChangeSet() {
-        EventCandidate first = event("Morning Track", "running", "Lyon", 3, SearchEventVisibility.PUBLIC, sarah, NOW.plusSeconds(3600));
-        EventCandidate second = event("Evening Track", "running", "Lyon", 3, SearchEventVisibility.PUBLIC, parisRunner, NOW.plusSeconds(10_000));
+        EventCandidate first = event(
+                "Morning Track", "running", "Lyon", 3, SearchEventVisibility.PUBLIC, sarah, NOW.plusSeconds(3600));
+        EventCandidate second = event(
+                "Evening Track",
+                "running",
+                "Lyon",
+                3,
+                SearchEventVisibility.PUBLIC,
+                parisRunner,
+                NOW.plusSeconds(10_000));
         catalog.events.add(first);
         catalog.events.add(second);
 
@@ -146,20 +219,29 @@ class SearchServiceTest {
 
     @Test
     void fsSrch04_friendsOnlyEventHiddenFromStranger() {
-        EventCandidate friendsOnly =
-                event("Crew Lifts", "weightlifting", "Lyon", 5, SearchEventVisibility.FRIENDS, privateFriend, NOW.plusSeconds(3600));
-        EventCandidate publicEvent =
-                event("Open Gym", "weightlifting", "Lyon", 5, SearchEventVisibility.PUBLIC, sarah, NOW.plusSeconds(3600));
+        EventCandidate friendsOnly = event(
+                "Crew Lifts",
+                "weightlifting",
+                "Lyon",
+                5,
+                SearchEventVisibility.FRIENDS,
+                privateFriend,
+                NOW.plusSeconds(3600));
+        EventCandidate publicEvent = event(
+                "Open Gym", "weightlifting", "Lyon", 5, SearchEventVisibility.PUBLIC, sarah, NOW.plusSeconds(3600));
         catalog.events.add(friendsOnly);
         catalog.events.add(publicEvent);
 
-        EventSearchList asFriend = search.searchEvents(
-                alex.id(), null, null, null, null, null, null, null, "relevance", false, null, 20);
+        EventSearchList asFriend =
+                search.searchEvents(alex.id(), null, null, null, null, null, null, null, "relevance", false, null, 20);
         EventSearchList asStranger = search.searchEvents(
                 parisRunner.id(), null, null, null, null, null, null, null, "relevance", false, null, 20);
 
         assertThat(asFriend.data()).extracting(EventSearchHit::title).contains("Crew Lifts", "Open Gym");
-        assertThat(asStranger.data()).extracting(EventSearchHit::title).contains("Open Gym").doesNotContain("Crew Lifts");
+        assertThat(asStranger.data())
+                .extracting(EventSearchHit::title)
+                .contains("Open Gym")
+                .doesNotContain("Crew Lifts");
     }
 
     @Test
@@ -183,8 +265,8 @@ class SearchServiceTest {
 
     @Test
     void fsSrchRadiusOutOfRangeIsValidation() {
-        assertThatThrownBy(() -> search.searchPeople(
-                        alex.id(), null, List.of(), null, null, 80, null, null, false, null, 20))
+        assertThatThrownBy(() ->
+                        search.searchPeople(alex.id(), null, List.of(), null, null, 80, null, null, false, null, 20))
                 .isInstanceOf(AuthException.class)
                 .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.VALIDATION));
     }
@@ -214,7 +296,17 @@ class SearchServiceTest {
             double lat,
             double lng) {
         Profile profile = new Profile(
-                user.id(), displayName, displayName + " bio", visibility, sports, experience, city, lat, lng, List.of(), null);
+                user.id(),
+                displayName,
+                displayName + " bio",
+                visibility,
+                sports,
+                experience,
+                city,
+                lat,
+                lng,
+                List.of(),
+                null);
         profiles.save(profile);
         catalog.people.add(new PersonCandidate(user, profile, user.createdAt()));
     }
@@ -227,7 +319,8 @@ class SearchServiceTest {
             SearchEventVisibility visibility,
             User organizer,
             Instant startsAt) {
-        Profile organizerProfile = profiles.findByUserId(organizer.id()).orElse(Profile.created(organizer.id(), organizer.handle()));
+        Profile organizerProfile =
+                profiles.findByUserId(organizer.id()).orElse(Profile.created(organizer.id(), organizer.handle()));
         return new EventCandidate(
                 UUID.randomUUID(),
                 organizer,
@@ -324,14 +417,12 @@ class SearchServiceTest {
         private final Map<UUID, Friendship> store = new HashMap<>();
 
         void accept(UUID left, UUID right) {
-            Friendship row = new Friendship(
-                    UUID.randomUUID(), left, right, FriendshipStatus.ACCEPTED, NOW, NOW);
+            Friendship row = new Friendship(UUID.randomUUID(), left, right, FriendshipStatus.ACCEPTED, NOW, NOW);
             store.put(row.id(), row);
         }
 
         void block(UUID blocker, UUID target) {
-            Friendship row = new Friendship(
-                    UUID.randomUUID(), blocker, target, FriendshipStatus.BLOCKED, NOW, NOW);
+            Friendship row = new Friendship(UUID.randomUUID(), blocker, target, FriendshipStatus.BLOCKED, NOW, NOW);
             store.put(row.id(), row);
         }
 

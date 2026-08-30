@@ -22,13 +22,15 @@ final class SearchResponses {
     static PeopleSearchPage toPeoplePage(PeopleSearchList list) {
         Page page = new Page(list.size());
         page.setNext(list.next());
-        return new PeopleSearchPage(list.data().stream().map(SearchResponses::toApi).toList(), page);
+        return new PeopleSearchPage(
+                list.data().stream().map(SearchResponses::toApi).toList(), page);
     }
 
     static EventSearchPage toEventPage(EventSearchList list) {
         Page page = new Page(list.size());
         page.setNext(list.next());
-        return new EventSearchPage(list.data().stream().map(SearchResponses::toApi).toList(), page);
+        return new EventSearchPage(
+                list.data().stream().map(SearchResponses::toApi).toList(), page);
     }
 
     static PeopleSearchHit toApi(fr.projetcompensation.gymbuddy.search.PeopleSearchHit hit) {
@@ -50,7 +52,9 @@ final class SearchResponses {
 
     static EventSearchHit toApi(fr.projetcompensation.gymbuddy.search.EventSearchHit hit) {
         PostAuthor organizer = new PostAuthor(
-                hit.organizer().id(), hit.organizer().handle(), hit.organizerProfile().displayName());
+                hit.organizer().id(),
+                hit.organizer().handle(),
+                hit.organizerProfile().displayName());
         organizer.setAvatarMediaId(hit.organizerProfile().avatarMediaId());
         EventSearchHit body = new EventSearchHit(
                 hit.id(),
