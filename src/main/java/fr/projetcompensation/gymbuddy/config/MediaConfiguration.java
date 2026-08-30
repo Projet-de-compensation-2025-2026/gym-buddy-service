@@ -1,5 +1,6 @@
 package fr.projetcompensation.gymbuddy.config;
 
+import fr.projetcompensation.gymbuddy.media.AttachedMediaAccess;
 import fr.projetcompensation.gymbuddy.media.MediaRepository;
 import fr.projetcompensation.gymbuddy.media.MediaService;
 import fr.projetcompensation.gymbuddy.media.ObjectStorage;
@@ -8,6 +9,7 @@ import fr.projetcompensation.gymbuddy.profiles.FriendshipQueries;
 import fr.projetcompensation.gymbuddy.profiles.ProfileRepository;
 import fr.projetcompensation.gymbuddy.users.UserRepository;
 import java.time.Clock;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
@@ -35,8 +37,16 @@ public class MediaConfiguration {
             UserRepository users,
             ProfileRepository profiles,
             FriendshipQueries friendships,
-            Clock clock) {
-        return new MediaService(media, storage, users, profiles, friendships, clock);
+            Clock clock,
+            ObjectProvider<AttachedMediaAccess> attachedMedia) {
+        return new MediaService(
+                media,
+                storage,
+                users,
+                profiles,
+                friendships,
+                clock,
+                attachedMedia.getIfAvailable(AttachedMediaAccess::none));
     }
 
     @Bean

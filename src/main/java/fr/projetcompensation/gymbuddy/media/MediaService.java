@@ -27,6 +27,7 @@ public final class MediaService {
     private final FriendshipQueries friendships;
     private final Clock clock;
     private final MediaProcessor processor;
+    private final AttachedMediaAccess attachedMedia;
 
     public MediaService(
             MediaRepository media,
@@ -35,6 +36,17 @@ public final class MediaService {
             ProfileRepository profiles,
             FriendshipQueries friendships,
             Clock clock) {
+        this(media, storage, users, profiles, friendships, clock, AttachedMediaAccess.none());
+    }
+
+    public MediaService(
+            MediaRepository media,
+            ObjectStorage storage,
+            UserRepository users,
+            ProfileRepository profiles,
+            FriendshipQueries friendships,
+            Clock clock,
+            AttachedMediaAccess attachedMedia) {
         this.media = media;
         this.storage = storage;
         this.users = users;
@@ -42,6 +54,7 @@ public final class MediaService {
         this.friendships = friendships;
         this.clock = clock;
         this.processor = new MediaProcessor(storage);
+        this.attachedMedia = attachedMedia == null ? AttachedMediaAccess.none() : attachedMedia;
     }
 
     public CreateUpload create(UUID ownerId, String kindWire, String mime, long bytes) {
@@ -138,6 +151,9 @@ public final class MediaService {
         }
         if (viewer.id().equals(row.ownerId())) {
             return true;
+        }
+        if (row.kind() == MediaKind.POST) {
+            return attachedMedia.canRead(viewer.id(), row);
         }
         if (row.kind() != MediaKind.AVATAR) {
             return false;
