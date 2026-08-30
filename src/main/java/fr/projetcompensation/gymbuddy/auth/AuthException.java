@@ -44,4 +44,12 @@ public final class AuthException extends RuntimeException {
     public static AuthException notFound(String message) {
         return new AuthException(ErrorCode.NOT_FOUND, message);
     }
+
+    public static AuthException payloadTooLarge(String message) {
+        return new AuthException(ErrorCode.PAYLOAD_TOO_LARGE, message);
+    }
+
+    public static AuthException quotaExceeded(String message) {
+        return new AuthException(ErrorCode.QUOTA_EXCEEDED, message);
+    }
 }
