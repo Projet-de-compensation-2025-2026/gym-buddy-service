@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #64 (events). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>2ebc892909eed2a79841a4aea572aef1968747b4</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after ticket #65 (search). Pin a 0.1.x tag when Release cuts one. -->
+        <openapi.package.tag>2550b32f95dcb881b0bfaa37e30f130595dbe9d3</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -344,6 +344,14 @@
                                 <inlineSchemaNameMapping>EventApplicant_application=EventApplication</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>EventApplicant_application_applicant=PostAuthor</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>EventApplication_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSearchPeople_200_response=PeopleSearchPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSearchPeople_200_response_data_inner=PeopleSearchHit</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSearchPeople_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSearchEvents_200_response=EventSearchPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSearchEvents_200_response_data_inner=EventSearchHit</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSearchEvents_200_response_data_inner_organizer=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSearchEvents_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>EventSearchHit_organizer=PostAuthor</inlineSchemaNameMapping>
                             </inlineSchemaNameMappings>
                             <modelNameMappings>
                                 <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
@@ -474,6 +482,14 @@
                                 <modelNameMapping>EventApplicant_application=EventApplication</modelNameMapping>
                                 <modelNameMapping>EventApplicant_application_applicant=PostAuthor</modelNameMapping>
                                 <modelNameMapping>EventApplication_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getSearchPeople_200_response=PeopleSearchPage</modelNameMapping>
+                                <modelNameMapping>getSearchPeople_200_response_data_inner=PeopleSearchHit</modelNameMapping>
+                                <modelNameMapping>getSearchPeople_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>getSearchEvents_200_response=EventSearchPage</modelNameMapping>
+                                <modelNameMapping>getSearchEvents_200_response_data_inner=EventSearchHit</modelNameMapping>
+                                <modelNameMapping>getSearchEvents_200_response_data_inner_organizer=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getSearchEvents_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>EventSearchHit_organizer=PostAuthor</modelNameMapping>
                             </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>
