@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #59 (profiles / password / close). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>dc3488158a302de9475153f124f7f98a6e4dba9b</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after ticket #60 (friendships / blocks). Pin a 0.1.x tag when Release cuts one. -->
+        <openapi.package.tag>3e63187727035b5277738db90c44744406057b4c</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -217,6 +217,16 @@
                                 <inlineSchemaNameMapping>patchProfilesMe_200_response_preferredWindows_inner=PreferredWindow</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getProfilesHandle_200_response=Profile</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getProfilesHandle_200_response_preferredWindows_inner=PreferredWindow</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postFriendships_request=CreateFriendshipRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postBlocks_request=CreateBlockRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getFriendships_200_response=FriendshipPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getFriendships_200_response_data_inner=Friendship</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getFriendships_200_response_data_inner_peer=FriendshipPeer</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getFriendships_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postFriendships_201_response=Friendship</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postFriendships_201_response_peer=FriendshipPeer</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postFriendshipsIdAccept_200_response=Friendship</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postFriendshipsIdAccept_200_response_peer=FriendshipPeer</inlineSchemaNameMapping>
                             </inlineSchemaNameMappings>
                             <modelNameMappings>
                                 <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
@@ -240,6 +250,16 @@
                                 <modelNameMapping>patchProfilesMe_200_response_preferredWindows_inner=PreferredWindow</modelNameMapping>
                                 <modelNameMapping>getProfilesHandle_200_response=Profile</modelNameMapping>
                                 <modelNameMapping>getProfilesHandle_200_response_preferredWindows_inner=PreferredWindow</modelNameMapping>
+                                <modelNameMapping>postFriendships_request=CreateFriendshipRequest</modelNameMapping>
+                                <modelNameMapping>postBlocks_request=CreateBlockRequest</modelNameMapping>
+                                <modelNameMapping>getFriendships_200_response=FriendshipPage</modelNameMapping>
+                                <modelNameMapping>getFriendships_200_response_data_inner=Friendship</modelNameMapping>
+                                <modelNameMapping>getFriendships_200_response_data_inner_peer=FriendshipPeer</modelNameMapping>
+                                <modelNameMapping>getFriendships_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>postFriendships_201_response=Friendship</modelNameMapping>
+                                <modelNameMapping>postFriendships_201_response_peer=FriendshipPeer</modelNameMapping>
+                                <modelNameMapping>postFriendshipsIdAccept_200_response=Friendship</modelNameMapping>
+                                <modelNameMapping>postFriendshipsIdAccept_200_response_peer=FriendshipPeer</modelNameMapping>
                             </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>

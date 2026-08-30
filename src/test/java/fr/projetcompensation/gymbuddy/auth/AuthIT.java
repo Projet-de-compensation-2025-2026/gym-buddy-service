@@ -78,6 +78,7 @@ class AuthIT {
     @BeforeEach
     void resetUsers() {
         if (jdbcTemplate != null) {
+            jdbcTemplate.update("DELETE FROM friendships");
             jdbcTemplate.update("DELETE FROM profiles");
             jdbcTemplate.update("DELETE FROM users");
         }
@@ -354,6 +355,115 @@ class AuthIT {
                 .contains("\"view\":\"full\"")
                 .contains("secret-bio")
                 .contains("Austin, TX");
+    }
+
+    @Test
+    void fsFrnd_requestAcceptUnlocksPrivateProfileAndBlockHides() {
+        RestClient client = restClient();
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("alex@example.com", "alex", PASSWORD, "Alex"))
+                .retrieve()
+                .toEntity(String.class);
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("blake@example.com", "blake", PASSWORD, "Blake"))
+                .retrieve()
+                .toEntity(String.class);
+        String alexAccess = jsonField(
+                client.post()
+                        .uri("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"email\":\"alex@example.com\",\"password\":\"correct-horse\"}")
+                        .retrieve()
+                        .toEntity(String.class)
+                        .getBody(),
+                "accessToken");
+        String blakeAccess = jsonField(
+                client.post()
+                        .uri("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"email\":\"blake@example.com\",\"password\":\"correct-horse\"}")
+                        .retrieve()
+                        .toEntity(String.class)
+                        .getBody(),
+                "accessToken");
+        client.patch()
+                .uri("/api/v1/profiles/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + blakeAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"visibility\":\"private\",\"bio\":\"secret-bio\"}")
+                .retrieve()
+                .toEntity(String.class);
+
+        ResponseEntity<String> self = client.post()
+                .uri("/api/v1/friendships")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + alexAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"handle\":\"alex\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(self.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+
+        ResponseEntity<String> created = client.post()
+                .uri("/api/v1/friendships")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + alexAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"handle\":\"blake\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        String friendshipId = jsonField(created.getBody(), "id");
+
+        ResponseEntity<String> duplicate = client.post()
+                .uri("/api/v1/friendships")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + alexAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"handle\":\"blake\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(duplicate.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        ResponseEntity<String> stub = client.get()
+                .uri("/api/v1/profiles/blake")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + alexAccess)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(stub.getBody()).contains("\"view\":\"stub\"");
+
+        ResponseEntity<String> accepted = client.post()
+                .uri("/api/v1/friendships/" + friendshipId + "/accept")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + blakeAccess)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(accepted.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ResponseEntity<String> full = client.get()
+                .uri("/api/v1/profiles/blake")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + alexAccess)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(full.getBody()).contains("\"view\":\"full\"").contains("secret-bio");
+
+        ResponseEntity<String> blocked = client.post()
+                .uri("/api/v1/blocks")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + blakeAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"userId\":\"" + jsonField(created.getBody(), "requesterId") + "\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        ResponseEntity<String> afterBlock = client.post()
+                .uri("/api/v1/friendships")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + alexAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"handle\":\"blake\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(afterBlock.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test

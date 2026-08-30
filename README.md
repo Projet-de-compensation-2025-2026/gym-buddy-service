@@ -2,7 +2,7 @@
 
 Java 25 LTS / Spring Boot 4.1 API for Gym Buddies (PostgreSQL 18). Product decisions live in [`gym-buddy-documentation`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation).
 
-This slice ships the local data plane, liveness/readiness, and JWT auth (`/api/v1/auth`). Friends, feed, and events come in later tickets. The HTTP contract is the versioned [`gym-buddy-openapi`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-openapi) package, not a running `/v3/api-docs`. `mvn` fetches a **git tag or 40-character commit SHA** (`openapi.package.tag`) at generate-sources and points OpenAPI Generator at `openapi/openapi.yaml` so the `$ref` tree resolves. Ticket #59 pins develop SHA `dc3488158a302de9475153f124f7f98a6e4dba9b` until the next 0.1.x tag. Controllers implement the generated interfaces. Do not commit a second YAML or hand-edit generated sources. Do not generate from `bundled.yaml` or the branch name `develop`.
+This slice ships the local data plane, liveness/readiness, and JWT auth (`/api/v1/auth`). Friends, feed, and events come in later tickets. The HTTP contract is the versioned [`gym-buddy-openapi`](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-openapi) package, not a running `/v3/api-docs`. `mvn` fetches a **git tag or 40-character commit SHA** (`openapi.package.tag`) at generate-sources and points OpenAPI Generator at `openapi/openapi.yaml` so the `$ref` tree resolves. Ticket #60 pins develop SHA `3e63187727035b5277738db90c44744406057b4c` until the next 0.1.x tag. Controllers implement the generated interfaces. Do not commit a second YAML or hand-edit generated sources. Do not generate from `bundled.yaml` or the branch name `develop`.
 
 | Workflow | Trigger | Promise |
 | --- | --- | --- |

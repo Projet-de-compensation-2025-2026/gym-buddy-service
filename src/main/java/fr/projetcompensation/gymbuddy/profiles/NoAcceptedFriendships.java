@@ -1,10 +1,8 @@
 package fr.projetcompensation.gymbuddy.profiles;
 
 import java.util.UUID;
-import org.springframework.stereotype.Component;
 
-/** Ticket #60 owns the friendship table. Until then, nobody is an accepted friend. */
-@Component
+/** Fallback when no friendship rows exist (tests without JDBC). */
 public final class NoAcceptedFriendships implements FriendshipQueries {
 
     @Override
