@@ -53,6 +53,8 @@ public class ApiExceptionHandler {
             case FORBIDDEN -> HttpStatus.FORBIDDEN;
             case UNAUTHENTICATED -> HttpStatus.UNAUTHORIZED;
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case PAYLOAD_TOO_LARGE -> HttpStatus.PAYLOAD_TOO_LARGE;
+            case QUOTA_EXCEEDED -> HttpStatus.CONFLICT;
         };
     }
 

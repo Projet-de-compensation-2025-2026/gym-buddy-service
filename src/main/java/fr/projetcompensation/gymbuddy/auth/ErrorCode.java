@@ -5,5 +5,7 @@ public enum ErrorCode {
     CONFLICT,
     FORBIDDEN,
     UNAUTHENTICATED,
-    NOT_FOUND
+    NOT_FOUND,
+    PAYLOAD_TOO_LARGE,
+    QUOTA_EXCEEDED
 }
