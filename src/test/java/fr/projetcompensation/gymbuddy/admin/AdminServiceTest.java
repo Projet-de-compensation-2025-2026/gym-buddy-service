@@ -181,13 +181,7 @@ class AdminServiceTest {
     @Test
     void fsAdm03_staffListsHideableContentAndMembersSeeNotFound() {
         ListedAdminContent hiddenPost = new ListedAdminContent(
-                "post",
-                UUID.randomUUID(),
-                "owner",
-                "spam shake",
-                NOW.minusSeconds(30),
-                true,
-                "spam / solicitation");
+                "post", UUID.randomUUID(), "owner", "spam shake", NOW.minusSeconds(30), true, "spam / solicitation");
         catalog.contents.add(hiddenPost);
 
         AdminPage<ListedAdminContent> page = admin.listContent(moderator.id(), "post", null, true, null, 20);

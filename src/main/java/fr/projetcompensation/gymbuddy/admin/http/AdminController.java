@@ -63,8 +63,8 @@ public class AdminController implements AdminApi {
     @Override
     public ResponseEntity<AdminContentPage> getAdminContent(
             String type, @Nullable String q, @Nullable Boolean hidden, @Nullable String after, Integer size) {
-        return ResponseEntity.ok(
-                AdminResponses.toContentPage(service().listContent(principal().userId(), type, q, hidden, after, size)));
+        return ResponseEntity.ok(AdminResponses.toContentPage(
+                service().listContent(principal().userId(), type, q, hidden, after, size)));
     }
 
     @Override
