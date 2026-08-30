@@ -499,6 +499,12 @@ class AuthIT {
         client.post()
                 .uri("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("first@example.com", "first", PASSWORD, "First"))
+                .retrieve()
+                .toEntity(String.class);
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(registerBody("member@example.com", "member", PASSWORD, "Member"))
                 .retrieve()
                 .toEntity(String.class);
