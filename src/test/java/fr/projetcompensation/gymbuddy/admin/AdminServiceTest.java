@@ -100,6 +100,16 @@ class AdminServiceTest {
     }
 
     @Test
+    void listContentMemberIsNotFound() {
+        assertThatThrownBy(() -> admin.listContent(member.id(), "post", null, null, null, 20))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+        assertThat(admin.listContent(moderator.id(), "post", null, null, null, 20)
+                        .data())
+                .isEmpty();
+    }
+
+    @Test
     void fsAdm02_moderatorRolePatchIsForbidden() {
         assertThatThrownBy(() -> admin.changeRole(moderator.id(), member.id(), "moderator", "promo"))
                 .isInstanceOf(AuthException.class)
@@ -271,6 +281,12 @@ class AdminServiceTest {
 
         @Override
         public List<ListedAdminMedia> listMedia(String q, InstantIdCursor after, int limit) {
+            return List.of();
+        }
+
+        @Override
+        public List<ListedAdminContent> listContent(
+                String type, String q, Boolean hidden, InstantIdCursor after, int limit) {
             return List.of();
         }
     }

@@ -14,6 +14,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Refresh cookie is `SameSite=None; Secure; HttpOnly; Partitioned; Path=/api/v1/auth` so GitHub Pages can send it (ticket **#89**). Access JWT stays in memory.
 - `POST /auth/register` and profile handle patch reject handles that contain `@` or equal the email (`VALIDATION`, ticket **#103**).
 - Env-gated `GYM_BUDDY_BOOTSTRAP_STAFF` inserts missing `demo.admin` / `demo.mod` without enabling `POST /admin/fixtures` on `prod` (ticket **#78**).
+- Staff `GET /admin/content` lists hideable posts, comments, events, and media (FS-ADM-03). Members stay `NOT_FOUND`. Pin gym-buddy-openapi `16fd67df7691461062a797c25cbe2bb75531514d`.
 
 - CI allows working `pom.xml` **1.0.0** now that tag **v1.0.0** exists. Auto bump still refuses an unattended 1.x; 2.0.0 stays rejected.
 

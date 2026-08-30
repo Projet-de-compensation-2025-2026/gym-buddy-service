@@ -34,6 +34,7 @@ class OpenApiPackagePinTest {
         assertThat(pom).contains("getSearchPeople_200_response=PeopleSearchPage");
         assertThat(pom).contains("getSearchEvents_200_response=EventSearchPage");
         assertThat(pom).contains("getSearchEvents_200_response_data_inner_organizer=PostAuthor");
+        assertThat(pom).contains("getAdminContent_200_response=AdminContentPage");
         assertThat(pom).contains("getAdminUsers_200_response=AdminUserPage");
         assertThat(pom).contains("patchAdminUsersIdRole_request=PatchUserRoleRequest");
         assertThat(pom).contains("postAdminContentTypeIdHide_request=HideContentRequest");

@@ -10,4 +10,6 @@ public interface AdminCatalog {
     long countAdmins();
 
     List<ListedAdminMedia> listMedia(String q, InstantIdCursor after, int limit);
+
+    List<ListedAdminContent> listContent(String type, String q, Boolean hidden, InstantIdCursor after, int limit);
 }
