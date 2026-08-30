@@ -1,5 +1,6 @@
 package fr.projetcompensation.gymbuddy.posts;
 
+import fr.projetcompensation.gymbuddy.feed.FeedActivity;
 import fr.projetcompensation.gymbuddy.friends.InstantIdCursor;
 import java.time.Instant;
 import java.util.List;
@@ -37,4 +38,6 @@ public interface PostRepository {
     long repostCount(UUID postId);
 
     long commentCount(UUID postId);
+
+    List<FeedActivity> listFeed(UUID viewerId, InstantIdCursor before, int limit);
 }

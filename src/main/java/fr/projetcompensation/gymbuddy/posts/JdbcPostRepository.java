@@ -1,6 +1,9 @@
 package fr.projetcompensation.gymbuddy.posts;
 
+import fr.projetcompensation.gymbuddy.feed.FeedActivity;
+import fr.projetcompensation.gymbuddy.feed.FeedKind;
 import fr.projetcompensation.gymbuddy.friends.InstantIdCursor;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -19,6 +22,61 @@ public class JdbcPostRepository implements PostRepository {
     private static final String SELECT = """
             SELECT id, author_id, body, visibility, created_at, edited_at, deleted_at, hidden_at, hidden_reason
             FROM posts
+            """;
+
+    private static final String FEED_CTE = """
+            WITH actors AS (
+              SELECT CAST(? AS uuid) AS user_id
+              UNION
+              SELECT CASE WHEN requester_id = ? THEN addressee_id ELSE requester_id END
+              FROM friendships
+              WHERE status = 'accepted' AND (requester_id = ? OR addressee_id = ?)
+            ),
+            visible_posts AS (
+              SELECT p.id, p.author_id, p.created_at
+              FROM posts p
+              JOIN users u ON u.id = p.author_id AND u.status = 'active'
+              WHERE p.deleted_at IS NULL
+                AND p.hidden_at IS NULL
+                AND NOT EXISTS (
+                  SELECT 1 FROM friendships f
+                  WHERE f.status = 'blocked'
+                    AND LEAST(f.requester_id, f.addressee_id) = LEAST(?, p.author_id)
+                    AND GREATEST(f.requester_id, f.addressee_id) = GREATEST(?, p.author_id)
+                )
+                AND (
+                  p.author_id = ?
+                  OR p.visibility = 'public'
+                  OR (
+                    p.visibility = 'friends'
+                    AND EXISTS (
+                      SELECT 1 FROM friendships f
+                      WHERE f.status = 'accepted'
+                        AND LEAST(f.requester_id, f.addressee_id) = LEAST(?, p.author_id)
+                        AND GREATEST(f.requester_id, f.addressee_id) = GREATEST(?, p.author_id)
+                    )
+                  )
+                )
+            ),
+            activities AS (
+              SELECT p.id AS activity_id,
+                     'post' AS kind,
+                     p.author_id AS actor_id,
+                     p.id AS post_id,
+                     p.created_at AS activity_at
+              FROM visible_posts p
+              JOIN actors a ON a.user_id = p.author_id
+              UNION ALL
+              SELECT r.id,
+                     'repost',
+                     r.user_id,
+                     r.post_id,
+                     r.created_at
+              FROM reposts r
+              JOIN actors a ON a.user_id = r.user_id
+              JOIN users actor ON actor.id = r.user_id AND actor.status = 'active'
+              JOIN visible_posts p ON p.id = r.post_id
+            )
             """;
 
     private final JdbcTemplate jdbc;
@@ -181,6 +239,39 @@ public class JdbcPostRepository implements PostRepository {
         return count == null ? 0L : count;
     }
 
+    @Override
+    public List<FeedActivity> listFeed(UUID viewerId, InstantIdCursor before, int limit) {
+        if (before == null) {
+            return jdbc.query(
+                    FEED_CTE + """
+                    SELECT activity_id, kind, actor_id, post_id, activity_at
+                    FROM activities
+                    ORDER BY activity_at DESC, activity_id DESC
+                    LIMIT ?
+                    """,
+                    ps -> {
+                        bindViewer(ps, viewerId);
+                        ps.setInt(10, limit);
+                    },
+                    this::mapActivity);
+        }
+        return jdbc.query(
+                FEED_CTE + """
+                SELECT activity_id, kind, actor_id, post_id, activity_at
+                FROM activities
+                WHERE (activity_at, activity_id) < (?, ?)
+                ORDER BY activity_at DESC, activity_id DESC
+                LIMIT ?
+                """,
+                ps -> {
+                    bindViewer(ps, viewerId);
+                    ps.setTimestamp(10, Timestamp.from(before.at()));
+                    ps.setObject(11, before.id());
+                    ps.setInt(12, limit);
+                },
+                this::mapActivity);
+    }
+
     private Post map(ResultSet rs, int rowNum) throws SQLException {
         Timestamp created = rs.getTimestamp("created_at");
         Timestamp edited = rs.getTimestamp("edited_at");
@@ -202,5 +293,20 @@ public class JdbcPostRepository implements PostRepository {
         return new LikeRow(
                 rs.getObject("user_id", UUID.class),
                 rs.getTimestamp("created_at").toInstant());
+    }
+
+    private FeedActivity mapActivity(ResultSet rs, int rowNum) throws SQLException {
+        return new FeedActivity(
+                rs.getObject("activity_id", UUID.class),
+                FeedKind.fromWire(rs.getString("kind")),
+                rs.getObject("actor_id", UUID.class),
+                rs.getObject("post_id", UUID.class),
+                rs.getTimestamp("activity_at").toInstant());
+    }
+
+    private static void bindViewer(PreparedStatement ps, UUID viewerId) throws SQLException {
+        for (int i = 1; i <= 9; i++) {
+            ps.setObject(i, viewerId);
+        }
     }
 }

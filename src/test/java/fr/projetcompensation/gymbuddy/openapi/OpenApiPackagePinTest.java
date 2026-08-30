@@ -11,7 +11,7 @@ class OpenApiPackagePinTest {
     @Test
     void generateSourcesPinsVersionedPackageRefTree() throws Exception {
         String pom = Files.readString(Path.of("pom.xml"));
-        assertThat(pom).contains("<openapi.package.tag>01ab3d50195833296b10e8ca44aa89d1e046683a</openapi.package.tag>");
+        assertThat(pom).contains("<openapi.package.tag>82d0eadb592c023fe3934836c7ce0ca15ca56abd</openapi.package.tag>");
         assertThat(pom).contains("<openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>");
         assertThat(pom).contains("<inputSpec>${openapi.spec.file}</inputSpec>");
         assertThat(pom).contains("getHealthz_200_response=HealthStatus");
@@ -26,6 +26,8 @@ class OpenApiPackagePinTest {
         assertThat(pom).contains("postPostsIdComments_request=CreateCommentRequest");
         assertThat(pom).contains("getPostsIdComments_200_response=CommentPage");
         assertThat(pom).contains("getCommentsIdReplies_200_response=CommentPage");
+        assertThat(pom).contains("getFeed_200_response=FeedPage");
+        assertThat(pom).contains("getFeed_200_response_data_inner=FeedItem");
         assertThat(pom).doesNotContain("bundled.yaml");
         assertThat(pom)
                 .doesNotContain("raw.githubusercontent.com/Projet-de-compensation-2025-2026/gym-buddy-openapi/develop");

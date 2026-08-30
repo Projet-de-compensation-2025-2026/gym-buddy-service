@@ -6,6 +6,7 @@ import fr.projetcompensation.gymbuddy.openapi.model.ErrorDetail;
 import fr.projetcompensation.gymbuddy.openapi.model.ErrorResponse;
 import fr.projetcompensation.gymbuddy.openapi.model.ErrorResponseError;
 import fr.projetcompensation.gymbuddy.openapi.model.ErrorResponseError.CodeEnum;
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -40,6 +42,20 @@ public class ApiExceptionHandler {
         return envelope(ErrorCode.VALIDATION, "request is not valid", List.of());
     }
 
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraint(ConstraintViolationException ex) {
+        List<ErrorDetail> details = ex.getConstraintViolations().stream()
+                .map(violation ->
+                        new ErrorDetail(pathOf(violation.getPropertyPath().toString()), "range"))
+                .toList();
+        return envelope(ErrorCode.VALIDATION, "request is not valid", details);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleMethodValidation(HandlerMethodValidationException ex) {
+        return envelope(ErrorCode.VALIDATION, "request is not valid", List.of());
+    }
+
     private static ResponseEntity<ErrorResponse> envelope(ErrorCode code, String message, List<ErrorDetail> details) {
         ErrorResponseError error = new ErrorResponseError(CodeEnum.fromValue(code.name()), message);
         error.setDetails(details.isEmpty() ? null : details);
@@ -56,6 +72,14 @@ public class ApiExceptionHandler {
             case PAYLOAD_TOO_LARGE -> HttpStatus.PAYLOAD_TOO_LARGE;
             case QUOTA_EXCEEDED -> HttpStatus.CONFLICT;
         };
+    }
+
+    private static String pathOf(String propertyPath) {
+        if (propertyPath == null || propertyPath.isBlank()) {
+            return "value";
+        }
+        int dot = propertyPath.lastIndexOf('.');
+        return dot < 0 ? propertyPath : propertyPath.substring(dot + 1);
     }
 
     private static String issueFor(String code) {
