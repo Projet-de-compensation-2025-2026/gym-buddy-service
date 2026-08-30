@@ -29,19 +29,19 @@ public record Event(
         tags = tags == null ? List.of() : List.copyOf(tags);
     }
 
-    boolean instant() {
+    public boolean instant() {
         return recurrence == null || recurrence.isBlank();
     }
 
-    String kindWire() {
+    public String kindWire() {
         return instant() ? "instant" : "recurring";
     }
 
-    boolean cancelled() {
+    public boolean cancelled() {
         return cancelledAt != null;
     }
 
-    boolean hidden() {
+    public boolean hidden() {
         return hiddenAt != null;
     }
 

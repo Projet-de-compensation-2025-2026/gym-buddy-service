@@ -5,11 +5,11 @@ import java.util.UUID;
 
 public record EventOccurrence(UUID id, UUID eventId, Instant startsAt, Instant cancelledAt) {
 
-    boolean cancelled() {
+    public boolean cancelled() {
         return cancelledAt != null;
     }
 
-    boolean past(Instant now) {
+    public boolean past(Instant now) {
         return !startsAt.isAfter(now);
     }
 
