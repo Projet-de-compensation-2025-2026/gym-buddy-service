@@ -182,9 +182,8 @@ public final class AdminService {
             throw AuthException.validation("status is not allowed", new FieldIssue("status", "enum"));
         }
         return AdminPage.of(
-                reports.list(filter, blankToNull(q), cursor(after), pageSize + 1),
-                pageSize,
-                row -> row.cursor().encode());
+                reports.list(filter, blankToNull(q), cursor(after), pageSize + 1), pageSize, row -> row.cursor()
+                        .encode());
     }
 
     public Report resolve(UUID callerId, UUID reportId, String reason) {
@@ -220,9 +219,8 @@ public final class AdminService {
         requireStaff(callerId);
         int pageSize = pageSize(size);
         return AdminPage.of(
-                catalog.listMedia(blankToNull(q), cursor(after), pageSize + 1),
-                pageSize,
-                row -> row.cursor().encode());
+                catalog.listMedia(blankToNull(q), cursor(after), pageSize + 1), pageSize, row -> row.cursor()
+                        .encode());
     }
 
     public void generateFixtures(UUID callerId) {
@@ -287,8 +285,7 @@ public final class AdminService {
     }
 
     private ListedAdminUser view(User user) {
-        String displayName = profiles
-                .findByUserId(user.id())
+        String displayName = profiles.findByUserId(user.id())
                 .map(profile -> profile.displayName())
                 .orElse(user.handle());
         return new ListedAdminUser(user, displayName, lastAdmin(user));
@@ -366,8 +363,8 @@ public final class AdminService {
             return null;
         }
         return InstantIdCursor.parse(after)
-                .orElseThrow(
-                        () -> AuthException.validation("after is not a valid cursor", new FieldIssue("after", "format")));
+                .orElseThrow(() ->
+                        AuthException.validation("after is not a valid cursor", new FieldIssue("after", "format")));
     }
 
     private static String blankToNull(String value) {

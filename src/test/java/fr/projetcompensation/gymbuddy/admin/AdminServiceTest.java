@@ -74,18 +74,7 @@ class AdminServiceTest {
         catalog = new InMemoryCatalog();
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
         admin = new AdminService(
-                users,
-                profiles,
-                posts,
-                comments,
-                events,
-                media,
-                friendships,
-                reports,
-                audit,
-                catalog,
-                clock,
-                false);
+                users, profiles, posts, comments, events, media, friendships, reports, audit, catalog, clock, false);
         postService = new PostService(posts, media, friendships, users, profiles, clock);
         owner = user("owner", UserRole.MEMBER);
         member = user("member", UserRole.MEMBER);
@@ -122,13 +111,12 @@ class AdminServiceTest {
                 .isInstanceOf(AuthException.class)
                 .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
         assertThat(posts.findById(post.id()).orElseThrow().hidden()).isTrue();
-        assertThat(audit.events)
-                .anySatisfy(event -> {
-                    assertThat(event.action()).isEqualTo(AuditEvent.HIDE_CONTENT);
-                    assertThat(event.targetId()).isEqualTo(post.id());
-                    assertThat(event.actorId()).isEqualTo(moderator.id());
-                    assertThat(event.reason()).isEqualTo("spam / solicitation");
-                });
+        assertThat(audit.events).anySatisfy(event -> {
+            assertThat(event.action()).isEqualTo(AuditEvent.HIDE_CONTENT);
+            assertThat(event.targetId()).isEqualTo(post.id());
+            assertThat(event.actorId()).isEqualTo(moderator.id());
+            assertThat(event.reason()).isEqualTo("spam / solicitation");
+        });
     }
 
     @Test
@@ -172,8 +160,7 @@ class AdminServiceTest {
 
     @Test
     void fsAdm03_missingHideReasonIsValidation() {
-        Post post = new Post(
-                UUID.randomUUID(), owner.id(), "body", PostVisibility.PUBLIC, NOW, null, null, null, null);
+        Post post = new Post(UUID.randomUUID(), owner.id(), "body", PostVisibility.PUBLIC, NOW, null, null, null, null);
         posts.save(post, List.of());
         assertThatThrownBy(() -> admin.hide(administrator.id(), "post", post.id(), "  "))
                 .isInstanceOf(AuthException.class)
@@ -196,8 +183,7 @@ class AdminServiceTest {
 
     @Test
     void fsAdm07_memberCanReportVisiblePost() {
-        Post post = new Post(
-                UUID.randomUUID(), owner.id(), "body", PostVisibility.PUBLIC, NOW, null, null, null, null);
+        Post post = new Post(UUID.randomUUID(), owner.id(), "body", PostVisibility.PUBLIC, NOW, null, null, null, null);
         posts.save(post, List.of());
         Report created = admin.createReport(member.id(), "post", post.id(), "harassment");
         assertThat(created.status()).isEqualTo(Report.OPEN);
@@ -236,9 +222,7 @@ class AdminServiceTest {
             return users.stream()
                     .sorted(Comparator.comparing(User::createdAt).reversed().thenComparing(User::id))
                     .map(user -> new ListedAdminUser(
-                            user,
-                            user.handle(),
-                            user.role() == UserRole.ADMIN && countAdmins() <= 1))
+                            user, user.handle(), user.role() == UserRole.ADMIN && countAdmins() <= 1))
                     .limit(limit)
                     .toList();
         }
@@ -675,7 +659,10 @@ class AdminServiceTest {
 
         @Override
         public List<Report> list(String status, String q, InstantIdCursor after, int limit) {
-            return store.values().stream().filter(row -> row.status().equals(status)).limit(limit).toList();
+            return store.values().stream()
+                    .filter(row -> row.status().equals(status))
+                    .limit(limit)
+                    .toList();
         }
     }
 

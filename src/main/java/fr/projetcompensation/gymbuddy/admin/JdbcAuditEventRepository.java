@@ -14,8 +14,7 @@ import org.springframework.stereotype.Repository;
 @ConditionalOnProperty(name = "DATABASE_URL")
 public class JdbcAuditEventRepository implements AuditEventRepository {
 
-    private static final String SELECT =
-            """
+    private static final String SELECT = """
             SELECT a.id, a.actor_id, u.handle AS actor_handle, a.action, a.target_type, a.target_id, a.reason, a.at
             FROM audit_events a
             JOIN users u ON u.id = a.actor_id
@@ -49,8 +48,7 @@ public class JdbcAuditEventRepository implements AuditEventRepository {
         String like = q == null ? null : "%" + q + "%";
         if (after == null) {
             return jdbc.query(
-                    SELECT
-                            + """
+                    SELECT + """
                               WHERE (?::uuid IS NULL OR a.actor_id = ?)
                                 AND (? = FALSE OR a.action IN ('hide_content', 'unhide_content') OR a.actor_id = ?)
                                 AND (? IS NULL OR a.action = ?)
@@ -72,8 +70,7 @@ public class JdbcAuditEventRepository implements AuditEventRepository {
                     limit);
         }
         return jdbc.query(
-                SELECT
-                        + """
+                SELECT + """
                           WHERE (?::uuid IS NULL OR a.actor_id = ?)
                             AND (? = FALSE OR a.action IN ('hide_content', 'unhide_content') OR a.actor_id = ?)
                             AND (? IS NULL OR a.action = ?)

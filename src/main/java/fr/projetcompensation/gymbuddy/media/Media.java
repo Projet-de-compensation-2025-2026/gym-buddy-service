@@ -28,19 +28,7 @@ public record Media(
             String objectKey,
             Instant createdAt,
             Instant deletedAt) {
-        this(
-                id,
-                ownerId,
-                kind,
-                mime,
-                bytes,
-                variantBytes,
-                status,
-                objectKey,
-                createdAt,
-                deletedAt,
-                null,
-                null);
+        this(id, ownerId, kind, mime, bytes, variantBytes, status, objectKey, createdAt, deletedAt, null, null);
     }
 
     boolean ready() {
@@ -121,7 +109,18 @@ public record Media(
 
     Media deleted(Instant at) {
         return new Media(
-                id, ownerId, kind, mime, bytes, variantBytes, MediaStatus.DELETED, objectKey, createdAt, at, hiddenAt, hiddenReason);
+                id,
+                ownerId,
+                kind,
+                mime,
+                bytes,
+                variantBytes,
+                MediaStatus.DELETED,
+                objectKey,
+                createdAt,
+                at,
+                hiddenAt,
+                hiddenReason);
     }
 
     public Media hide(Instant at, String reason) {

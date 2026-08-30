@@ -27,7 +27,8 @@ public class ReportsController implements ReportsApi {
     @Override
     public ResponseEntity<Report> postReports(CreateReportRequest request, @Nullable String idempotencyKey) {
         AuthPrincipal principal = AuthPrincipal.require(httpRequest);
-        String targetType = request.getTargetType() == null ? null : request.getTargetType().getValue();
+        String targetType =
+                request.getTargetType() == null ? null : request.getTargetType().getValue();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(AdminResponses.toReport(service()
                         .createReport(principal.userId(), targetType, request.getTargetId(), request.getReason())));

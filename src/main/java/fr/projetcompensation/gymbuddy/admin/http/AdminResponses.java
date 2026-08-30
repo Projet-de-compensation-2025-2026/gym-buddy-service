@@ -36,7 +36,8 @@ public final class AdminResponses {
     public static AdminUserPage toUserPage(AdminPage<ListedAdminUser> page) {
         Page meta = new Page(page.size());
         meta.setNext(page.next());
-        return new AdminUserPage(page.data().stream().map(AdminResponses::toUser).toList(), meta);
+        return new AdminUserPage(
+                page.data().stream().map(AdminResponses::toUser).toList(), meta);
     }
 
     public static fr.projetcompensation.gymbuddy.openapi.model.Report toReport(Report row) {
@@ -78,7 +79,8 @@ public final class AdminResponses {
     public static AdminMediaPage toMediaPage(AdminPage<ListedAdminMedia> page) {
         Page meta = new Page(page.size());
         meta.setNext(page.next());
-        return new AdminMediaPage(page.data().stream().map(AdminResponses::toMedia).toList(), meta);
+        return new AdminMediaPage(
+                page.data().stream().map(AdminResponses::toMedia).toList(), meta);
     }
 
     public static fr.projetcompensation.gymbuddy.openapi.model.AuditEvent toAudit(AuditEvent row) {
@@ -99,6 +101,7 @@ public final class AdminResponses {
     public static AuditEventPage toAuditPage(AdminPage<AuditEvent> page) {
         Page meta = new Page(page.size());
         meta.setNext(page.next());
-        return new AuditEventPage(page.data().stream().map(AdminResponses::toAudit).toList(), meta);
+        return new AuditEventPage(
+                page.data().stream().map(AdminResponses::toAudit).toList(), meta);
     }
 }

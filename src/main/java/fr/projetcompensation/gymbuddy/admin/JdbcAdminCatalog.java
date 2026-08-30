@@ -89,8 +89,7 @@ public class JdbcAdminCatalog implements AdminCatalog {
     public List<ListedAdminMedia> listMedia(String q, InstantIdCursor after, int limit) {
         String like = q == null ? null : "%" + q + "%";
         if (after == null) {
-            return jdbc.query(
-                    """
+            return jdbc.query("""
                     SELECT m.id, m.owner_id, u.handle AS owner_handle, m.kind, m.mime, m.bytes, m.variant_bytes,
                            m.status, m.object_key, m.created_at, m.deleted_at, m.hidden_at, m.hidden_reason
                     FROM media m
@@ -98,16 +97,9 @@ public class JdbcAdminCatalog implements AdminCatalog {
                     WHERE (? IS NULL OR u.handle ILIKE ? OR m.object_key ILIKE ? OR m.id::text ILIKE ?)
                     ORDER BY m.created_at DESC, m.id DESC
                     LIMIT ?
-                    """,
-                    this::mapMedia,
-                    like,
-                    like,
-                    like,
-                    like,
-                    limit);
+                    """, this::mapMedia, like, like, like, like, limit);
         }
-        return jdbc.query(
-                """
+        return jdbc.query("""
                 SELECT m.id, m.owner_id, u.handle AS owner_handle, m.kind, m.mime, m.bytes, m.variant_bytes,
                        m.status, m.object_key, m.created_at, m.deleted_at, m.hidden_at, m.hidden_reason
                 FROM media m
@@ -116,15 +108,7 @@ public class JdbcAdminCatalog implements AdminCatalog {
                   AND (m.created_at, m.id) < (?, ?)
                 ORDER BY m.created_at DESC, m.id DESC
                 LIMIT ?
-                """,
-                this::mapMedia,
-                like,
-                like,
-                like,
-                like,
-                Timestamp.from(after.at()),
-                after.id(),
-                limit);
+                """, this::mapMedia, like, like, like, like, Timestamp.from(after.at()), after.id(), limit);
     }
 
     private ListedAdminUser mapUser(ResultSet rs, long admins) throws SQLException {

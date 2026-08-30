@@ -34,17 +34,20 @@ public class AdminController implements AdminApi {
     @Override
     public ResponseEntity<AdminUserPage> getAdminUsers(
             @Nullable String q, @Nullable String role, @Nullable String status, @Nullable String after, Integer size) {
-        return ResponseEntity.ok(AdminResponses.toUserPage(service().listUsers(principal().userId(), q, role, status, after, size)));
+        return ResponseEntity.ok(
+                AdminResponses.toUserPage(service().listUsers(principal().userId(), q, role, status, after, size)));
     }
 
     @Override
     public ResponseEntity<AdminUser> postAdminUsersIdLock(UUID id, @Nullable StaffReasonRequest request) {
-        return ResponseEntity.ok(AdminResponses.toUser(service().lock(principal().userId(), id, reason(request))));
+        return ResponseEntity.ok(
+                AdminResponses.toUser(service().lock(principal().userId(), id, reason(request))));
     }
 
     @Override
     public ResponseEntity<AdminUser> postAdminUsersIdUnlock(UUID id, @Nullable StaffReasonRequest request) {
-        return ResponseEntity.ok(AdminResponses.toUser(service().unlock(principal().userId(), id, reason(request))));
+        return ResponseEntity.ok(
+                AdminResponses.toUser(service().unlock(principal().userId(), id, reason(request))));
     }
 
     @Override
@@ -76,12 +79,14 @@ public class AdminController implements AdminApi {
 
     @Override
     public ResponseEntity<Report> postAdminReportsIdResolve(UUID id, @Nullable StaffReasonRequest request) {
-        return ResponseEntity.ok(AdminResponses.toReport(service().resolve(principal().userId(), id, reason(request))));
+        return ResponseEntity.ok(
+                AdminResponses.toReport(service().resolve(principal().userId(), id, reason(request))));
     }
 
     @Override
     public ResponseEntity<AdminMediaPage> getAdminMedia(@Nullable String q, @Nullable String after, Integer size) {
-        return ResponseEntity.ok(AdminResponses.toMediaPage(service().listMedia(principal().userId(), q, after, size)));
+        return ResponseEntity.ok(
+                AdminResponses.toMediaPage(service().listMedia(principal().userId(), q, after, size)));
     }
 
     @Override
