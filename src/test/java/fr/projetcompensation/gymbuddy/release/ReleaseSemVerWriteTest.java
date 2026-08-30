@@ -27,9 +27,10 @@ class ReleaseSemVerWriteTest {
     }
 
     @Test
-    void workingPomIsNotTheAcademicShip() throws Exception {
+    void workingPomMatchesTaggedReleaseLine() throws Exception {
         String pom = Files.readString(Path.of("pom.xml"));
         assertThat(pom).contains("<artifactId>gym-buddy-service</artifactId>");
-        assertThat(pom).doesNotContain("<version>1.0.0</version>");
+        assertThat(pom).contains("<version>1.0.0</version>");
+        assertThat(pom).doesNotContain("<version>2.0.0</version>");
     }
 }

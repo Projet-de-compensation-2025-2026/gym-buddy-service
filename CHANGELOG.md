@@ -9,6 +9,8 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- CI allows working `pom.xml` **1.0.0** now that tag **v1.0.0** exists. Auto bump still refuses an unattended 1.x; 2.0.0 stays rejected.
+
 ## [1.0.0] — 2026-08-30
 
 ### Added
