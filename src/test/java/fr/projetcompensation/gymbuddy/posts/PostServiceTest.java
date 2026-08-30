@@ -559,5 +559,10 @@ class PostServiceTest {
         public long repostCount(UUID postId) {
             return reposts.getOrDefault(postId, Map.of()).size();
         }
+
+        @Override
+        public long commentCount(UUID postId) {
+            return 0;
+        }
     }
 }

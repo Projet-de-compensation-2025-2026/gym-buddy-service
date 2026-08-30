@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #61 (posts). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>d58a824e0720c2f50c56632e3664d3632484e281</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after ticket #62 (comments). Pin a 0.1.x tag when Release cuts one. -->
+        <openapi.package.tag>01ab3d50195833296b10e8ca44aa89d1e046683a</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -263,6 +263,18 @@
                                 <inlineSchemaNameMapping>getPostsIdLikes_200_response=PostLikerPage</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getPostsIdLikes_200_response_data_inner=PostLiker</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getPostsIdLikes_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postPostsIdComments_request=CreateCommentRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postPostsIdComments_201_response=Comment</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postPostsIdComments_201_response_author=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getPostsIdComments_200_response=CommentPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getPostsIdComments_200_response_data_inner=Comment</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getPostsIdComments_200_response_data_inner_author=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getPostsIdComments_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getCommentsIdReplies_200_response=CommentPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getCommentsIdReplies_200_response_data_inner=Comment</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getCommentsIdReplies_200_response_data_inner_author=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getCommentsIdReplies_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>Comment_author=PostAuthor</inlineSchemaNameMapping>
                             </inlineSchemaNameMappings>
                             <modelNameMappings>
                                 <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
@@ -312,6 +324,18 @@
                                 <modelNameMapping>getPostsIdLikes_200_response=PostLikerPage</modelNameMapping>
                                 <modelNameMapping>getPostsIdLikes_200_response_data_inner=PostLiker</modelNameMapping>
                                 <modelNameMapping>getPostsIdLikes_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>postPostsIdComments_request=CreateCommentRequest</modelNameMapping>
+                                <modelNameMapping>postPostsIdComments_201_response=Comment</modelNameMapping>
+                                <modelNameMapping>postPostsIdComments_201_response_author=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getPostsIdComments_200_response=CommentPage</modelNameMapping>
+                                <modelNameMapping>getPostsIdComments_200_response_data_inner=Comment</modelNameMapping>
+                                <modelNameMapping>getPostsIdComments_200_response_data_inner_author=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getPostsIdComments_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>getCommentsIdReplies_200_response=CommentPage</modelNameMapping>
+                                <modelNameMapping>getCommentsIdReplies_200_response_data_inner=Comment</modelNameMapping>
+                                <modelNameMapping>getCommentsIdReplies_200_response_data_inner_author=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getCommentsIdReplies_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>Comment_author=PostAuthor</modelNameMapping>
                             </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>

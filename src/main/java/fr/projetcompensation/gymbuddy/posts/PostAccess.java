@@ -4,7 +4,7 @@ import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
 import fr.projetcompensation.gymbuddy.users.User;
 import fr.projetcompensation.gymbuddy.users.UserRepository;
 
-final class PostAccess {
+public final class PostAccess {
 
     private PostAccess() {}
 
