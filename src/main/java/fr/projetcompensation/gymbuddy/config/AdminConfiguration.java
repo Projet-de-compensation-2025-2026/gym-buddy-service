@@ -5,6 +5,7 @@ import fr.projetcompensation.gymbuddy.admin.AdminService;
 import fr.projetcompensation.gymbuddy.admin.AuditEventRepository;
 import fr.projetcompensation.gymbuddy.admin.ReportRepository;
 import fr.projetcompensation.gymbuddy.comments.CommentRepository;
+import fr.projetcompensation.gymbuddy.events.EventRepository;
 import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
 import fr.projetcompensation.gymbuddy.media.MediaRepository;
 import fr.projetcompensation.gymbuddy.posts.PostRepository;
@@ -27,6 +28,7 @@ public class AdminConfiguration {
             ProfileRepository profiles,
             PostRepository posts,
             CommentRepository comments,
+            EventRepository events,
             MediaRepository media,
             FriendshipRepository friendships,
             ReportRepository reports,
@@ -39,6 +41,7 @@ public class AdminConfiguration {
                 profiles,
                 posts,
                 comments,
+                events,
                 media,
                 friendships,
                 reports,

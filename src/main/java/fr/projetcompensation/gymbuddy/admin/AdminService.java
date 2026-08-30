@@ -4,6 +4,8 @@ import fr.projetcompensation.gymbuddy.auth.AuthException;
 import fr.projetcompensation.gymbuddy.auth.FieldIssue;
 import fr.projetcompensation.gymbuddy.comments.Comment;
 import fr.projetcompensation.gymbuddy.comments.CommentRepository;
+import fr.projetcompensation.gymbuddy.events.Event;
+import fr.projetcompensation.gymbuddy.events.EventRepository;
 import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
 import fr.projetcompensation.gymbuddy.friends.InstantIdCursor;
 import fr.projetcompensation.gymbuddy.media.Media;
@@ -35,6 +37,7 @@ public final class AdminService {
     private final ProfileRepository profiles;
     private final PostRepository posts;
     private final CommentRepository comments;
+    private final EventRepository events;
     private final MediaRepository media;
     private final FriendshipRepository friendships;
     private final ReportRepository reports;
@@ -48,6 +51,7 @@ public final class AdminService {
             ProfileRepository profiles,
             PostRepository posts,
             CommentRepository comments,
+            EventRepository events,
             MediaRepository media,
             FriendshipRepository friendships,
             ReportRepository reports,
@@ -59,6 +63,7 @@ public final class AdminService {
         this.profiles = profiles;
         this.posts = posts;
         this.comments = comments;
+        this.events = events;
         this.media = media;
         this.friendships = friendships;
         this.reports = reports;
@@ -135,6 +140,10 @@ public final class AdminService {
                 Media row = media.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
                 media.update(row.hide(now, normalized));
             }
+            case "event" -> {
+                Event row = events.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
+                events.update(row.hide(now));
+            }
             default -> throw AuthException.notFound(NOT_FOUND);
         }
         writeAudit(caller, AuditEvent.HIDE_CONTENT, kind, id, normalized);
@@ -155,6 +164,10 @@ public final class AdminService {
             case "media" -> {
                 Media row = media.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
                 media.update(row.unhide());
+            }
+            case "event" -> {
+                Event row = events.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
+                events.update(row.unhide());
             }
             default -> throw AuthException.notFound(NOT_FOUND);
         }

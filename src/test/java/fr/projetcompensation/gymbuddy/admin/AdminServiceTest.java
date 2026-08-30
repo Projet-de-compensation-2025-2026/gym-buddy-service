@@ -7,6 +7,10 @@ import fr.projetcompensation.gymbuddy.auth.AuthException;
 import fr.projetcompensation.gymbuddy.auth.ErrorCode;
 import fr.projetcompensation.gymbuddy.comments.Comment;
 import fr.projetcompensation.gymbuddy.comments.CommentRepository;
+import fr.projetcompensation.gymbuddy.events.Event;
+import fr.projetcompensation.gymbuddy.events.EventApplication;
+import fr.projetcompensation.gymbuddy.events.EventOccurrence;
+import fr.projetcompensation.gymbuddy.events.EventRepository;
 import fr.projetcompensation.gymbuddy.friends.Friendship;
 import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
 import fr.projetcompensation.gymbuddy.friends.InstantIdCursor;
@@ -43,6 +47,7 @@ class AdminServiceTest {
     private InMemoryProfiles profiles;
     private InMemoryPosts posts;
     private InMemoryComments comments;
+    private InMemoryEvents events;
     private InMemoryMedia media;
     private InMemoryFriendships friendships;
     private InMemoryReports reports;
@@ -61,6 +66,7 @@ class AdminServiceTest {
         profiles = new InMemoryProfiles();
         posts = new InMemoryPosts();
         comments = new InMemoryComments();
+        events = new InMemoryEvents();
         media = new InMemoryMedia();
         friendships = new InMemoryFriendships();
         reports = new InMemoryReports();
@@ -72,6 +78,7 @@ class AdminServiceTest {
                 profiles,
                 posts,
                 comments,
+                events,
                 media,
                 friendships,
                 reports,
@@ -146,6 +153,7 @@ class AdminServiceTest {
                 profiles,
                 posts,
                 comments,
+                events,
                 media,
                 friendships,
                 reports,
@@ -440,6 +448,105 @@ class AdminServiceTest {
         @Override
         public long likeCount(UUID commentId) {
             return 0;
+        }
+    }
+
+    private static final class InMemoryEvents implements EventRepository {
+        @Override
+        public void save(Event event, List<EventOccurrence> occurrences, List<UUID> inviteeIds) {}
+
+        @Override
+        public void update(Event event) {}
+
+        @Override
+        public void replaceInvitees(UUID eventId, List<UUID> inviteeIds) {}
+
+        @Override
+        public void saveOccurrences(List<EventOccurrence> occurrences) {}
+
+        @Override
+        public void updateOccurrence(EventOccurrence occurrence) {}
+
+        @Override
+        public Optional<Event> findById(UUID id) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Event> findByCoverMediaId(UUID mediaId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public List<EventOccurrence> occurrences(UUID eventId) {
+            return List.of();
+        }
+
+        @Override
+        public Optional<EventOccurrence> findOccurrence(UUID id) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<EventOccurrence> lockOccurrence(UUID id) {
+            return Optional.empty();
+        }
+
+        @Override
+        public List<UUID> inviteeIds(UUID eventId) {
+            return List.of();
+        }
+
+        @Override
+        public boolean isInvitee(UUID eventId, UUID userId) {
+            return false;
+        }
+
+        @Override
+        public void saveApplication(EventApplication application) {}
+
+        @Override
+        public void updateApplication(EventApplication application) {}
+
+        @Override
+        public Optional<EventApplication> findApplication(UUID id) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<EventApplication> findApplication(UUID occurrenceId, UUID applicantId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public List<EventApplication> applicationsForEvent(UUID eventId) {
+            return List.of();
+        }
+
+        @Override
+        public List<EventApplication> pendingForOccurrence(UUID occurrenceId) {
+            return List.of();
+        }
+
+        @Override
+        public boolean hasAccepted(UUID eventId, UUID userId) {
+            return false;
+        }
+
+        @Override
+        public int countAccepted(UUID occurrenceId) {
+            return 0;
+        }
+
+        @Override
+        public int countAcceptedCoAttendance(UUID organizerId, UUID applicantId) {
+            return 0;
+        }
+
+        @Override
+        public List<Event> listVisible(
+                UUID viewerId, String kind, Instant from, Instant until, InstantIdCursor after, int limit) {
+            return List.of();
         }
     }
 
