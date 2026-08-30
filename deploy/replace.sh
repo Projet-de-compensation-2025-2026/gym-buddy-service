@@ -92,6 +92,13 @@ if ! docker network inspect "$NETWORK" >/dev/null 2>&1; then
   exit 1
 fi
 
+optional_env=()
+for key in GYM_BUDDY_BOOTSTRAP_STAFF DEMO_ADMIN_PASSWORD DEMO_MOD_PASSWORD; do
+  if [[ -n "${!key:-}" ]]; then
+    optional_env+=(-e "${key}=${!key}")
+  fi
+done
+
 docker stop "$NAME" 2>/dev/null || true
 docker rm "$NAME" 2>/dev/null || true
 docker run -d \
@@ -108,5 +115,6 @@ docker run -d \
   -e "S3_ACCESS_KEY=${S3_ACCESS_KEY}" \
   -e "S3_SECRET_KEY=${S3_SECRET_KEY}" \
   -e "S3_REGION=${S3_REGION}" \
+  "${optional_env[@]}" \
   "$IMAGE"
 echo "Replaced ${NAME} with ${IMAGE} on ${BIND}:${PORT} (network ${NETWORK}, profile ${SPRING_PROFILES_ACTIVE})"
