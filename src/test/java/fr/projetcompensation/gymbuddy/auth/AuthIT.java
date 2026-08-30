@@ -363,6 +363,12 @@ class AuthIT {
         client.post()
                 .uri("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("seed@example.com", "seed", PASSWORD, "Seed"))
+                .retrieve()
+                .toEntity(String.class);
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(registerBody("alex@example.com", "alex", PASSWORD, "Alex"))
                 .retrieve()
                 .toEntity(String.class);
@@ -431,6 +437,7 @@ class AuthIT {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + alexAccess)
                 .retrieve()
                 .toEntity(String.class);
+        assertThat(stub.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(stub.getBody()).contains("\"view\":\"stub\"");
 
         ResponseEntity<String> accepted = client.post()
