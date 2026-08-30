@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #63 (feed). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>82d0eadb592c023fe3934836c7ce0ca15ca56abd</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after ticket #64 (events). Pin a 0.1.x tag when Release cuts one. -->
+        <openapi.package.tag>2ebc892909eed2a79841a4aea572aef1968747b4</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -284,6 +284,66 @@
                                 <inlineSchemaNameMapping>FeedItem_actor=PostAuthor</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>FeedItem_post=Post</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>FeedItem_post_author=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEvents_request=CreateEventRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchEventsId_request=PatchEventRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdCancel_request=CancelEventRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdApplications_request=CreateEventApplicationRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEvents_200_response=EventPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEvents_200_response_data_inner=Event</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEvents_200_response_data_inner_organizer=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEvents_200_response_data_inner_occurrences_inner=EventOccurrence</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEvents_200_response_data_inner_viewerApplication=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEvents_200_response_data_inner_viewerApplication_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEvents_200_response_data_inner_pendingApplicants_inner=EventApplicant</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEvents_200_response_data_inner_pendingApplicants_inner_application=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEvents_200_response_data_inner_pendingApplicants_inner_application_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEvents_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEvents_201_response=Event</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEvents_201_response_organizer=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEvents_201_response_occurrences_inner=EventOccurrence</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEvents_201_response_viewerApplication=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEvents_201_response_viewerApplication_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEvents_201_response_pendingApplicants_inner=EventApplicant</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEvents_201_response_pendingApplicants_inner_application=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEvents_201_response_pendingApplicants_inner_application_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEventsId_200_response=Event</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEventsId_200_response_organizer=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEventsId_200_response_occurrences_inner=EventOccurrence</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEventsId_200_response_viewerApplication=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEventsId_200_response_viewerApplication_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEventsId_200_response_pendingApplicants_inner=EventApplicant</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEventsId_200_response_pendingApplicants_inner_application=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getEventsId_200_response_pendingApplicants_inner_application_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchEventsId_200_response=Event</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchEventsId_200_response_organizer=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchEventsId_200_response_occurrences_inner=EventOccurrence</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchEventsId_200_response_viewerApplication=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchEventsId_200_response_viewerApplication_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchEventsId_200_response_pendingApplicants_inner=EventApplicant</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchEventsId_200_response_pendingApplicants_inner_application=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchEventsId_200_response_pendingApplicants_inner_application_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdCancel_200_response=Event</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdCancel_200_response_organizer=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdCancel_200_response_occurrences_inner=EventOccurrence</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdCancel_200_response_viewerApplication=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdCancel_200_response_viewerApplication_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdCancel_200_response_pendingApplicants_inner=EventApplicant</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdCancel_200_response_pendingApplicants_inner_application=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdCancel_200_response_pendingApplicants_inner_application_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdApplications_201_response=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postEventsIdApplications_201_response_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postApplicationsIdAccept_200_response=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postApplicationsIdAccept_200_response_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>Event_organizer=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>Event_occurrences_inner=EventOccurrence</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>Event_viewerApplication=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>Event_viewerApplication_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>Event_pendingApplicants_inner=EventApplicant</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>Event_pendingApplicants_inner_application=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>Event_pendingApplicants_inner_application_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>EventApplicant_application=EventApplication</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>EventApplicant_application_applicant=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>EventApplication_applicant=PostAuthor</inlineSchemaNameMapping>
                             </inlineSchemaNameMappings>
                             <modelNameMappings>
                                 <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
@@ -354,6 +414,66 @@
                                 <modelNameMapping>FeedItem_actor=PostAuthor</modelNameMapping>
                                 <modelNameMapping>FeedItem_post=Post</modelNameMapping>
                                 <modelNameMapping>FeedItem_post_author=PostAuthor</modelNameMapping>
+                                <modelNameMapping>postEvents_request=CreateEventRequest</modelNameMapping>
+                                <modelNameMapping>patchEventsId_request=PatchEventRequest</modelNameMapping>
+                                <modelNameMapping>postEventsIdCancel_request=CancelEventRequest</modelNameMapping>
+                                <modelNameMapping>postEventsIdApplications_request=CreateEventApplicationRequest</modelNameMapping>
+                                <modelNameMapping>getEvents_200_response=EventPage</modelNameMapping>
+                                <modelNameMapping>getEvents_200_response_data_inner=Event</modelNameMapping>
+                                <modelNameMapping>getEvents_200_response_data_inner_organizer=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getEvents_200_response_data_inner_occurrences_inner=EventOccurrence</modelNameMapping>
+                                <modelNameMapping>getEvents_200_response_data_inner_viewerApplication=EventApplication</modelNameMapping>
+                                <modelNameMapping>getEvents_200_response_data_inner_viewerApplication_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getEvents_200_response_data_inner_pendingApplicants_inner=EventApplicant</modelNameMapping>
+                                <modelNameMapping>getEvents_200_response_data_inner_pendingApplicants_inner_application=EventApplication</modelNameMapping>
+                                <modelNameMapping>getEvents_200_response_data_inner_pendingApplicants_inner_application_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getEvents_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>postEvents_201_response=Event</modelNameMapping>
+                                <modelNameMapping>postEvents_201_response_organizer=PostAuthor</modelNameMapping>
+                                <modelNameMapping>postEvents_201_response_occurrences_inner=EventOccurrence</modelNameMapping>
+                                <modelNameMapping>postEvents_201_response_viewerApplication=EventApplication</modelNameMapping>
+                                <modelNameMapping>postEvents_201_response_viewerApplication_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>postEvents_201_response_pendingApplicants_inner=EventApplicant</modelNameMapping>
+                                <modelNameMapping>postEvents_201_response_pendingApplicants_inner_application=EventApplication</modelNameMapping>
+                                <modelNameMapping>postEvents_201_response_pendingApplicants_inner_application_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getEventsId_200_response=Event</modelNameMapping>
+                                <modelNameMapping>getEventsId_200_response_organizer=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getEventsId_200_response_occurrences_inner=EventOccurrence</modelNameMapping>
+                                <modelNameMapping>getEventsId_200_response_viewerApplication=EventApplication</modelNameMapping>
+                                <modelNameMapping>getEventsId_200_response_viewerApplication_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getEventsId_200_response_pendingApplicants_inner=EventApplicant</modelNameMapping>
+                                <modelNameMapping>getEventsId_200_response_pendingApplicants_inner_application=EventApplication</modelNameMapping>
+                                <modelNameMapping>getEventsId_200_response_pendingApplicants_inner_application_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>patchEventsId_200_response=Event</modelNameMapping>
+                                <modelNameMapping>patchEventsId_200_response_organizer=PostAuthor</modelNameMapping>
+                                <modelNameMapping>patchEventsId_200_response_occurrences_inner=EventOccurrence</modelNameMapping>
+                                <modelNameMapping>patchEventsId_200_response_viewerApplication=EventApplication</modelNameMapping>
+                                <modelNameMapping>patchEventsId_200_response_viewerApplication_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>patchEventsId_200_response_pendingApplicants_inner=EventApplicant</modelNameMapping>
+                                <modelNameMapping>patchEventsId_200_response_pendingApplicants_inner_application=EventApplication</modelNameMapping>
+                                <modelNameMapping>patchEventsId_200_response_pendingApplicants_inner_application_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>postEventsIdCancel_200_response=Event</modelNameMapping>
+                                <modelNameMapping>postEventsIdCancel_200_response_organizer=PostAuthor</modelNameMapping>
+                                <modelNameMapping>postEventsIdCancel_200_response_occurrences_inner=EventOccurrence</modelNameMapping>
+                                <modelNameMapping>postEventsIdCancel_200_response_viewerApplication=EventApplication</modelNameMapping>
+                                <modelNameMapping>postEventsIdCancel_200_response_viewerApplication_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>postEventsIdCancel_200_response_pendingApplicants_inner=EventApplicant</modelNameMapping>
+                                <modelNameMapping>postEventsIdCancel_200_response_pendingApplicants_inner_application=EventApplication</modelNameMapping>
+                                <modelNameMapping>postEventsIdCancel_200_response_pendingApplicants_inner_application_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>postEventsIdApplications_201_response=EventApplication</modelNameMapping>
+                                <modelNameMapping>postEventsIdApplications_201_response_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>postApplicationsIdAccept_200_response=EventApplication</modelNameMapping>
+                                <modelNameMapping>postApplicationsIdAccept_200_response_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>Event_organizer=PostAuthor</modelNameMapping>
+                                <modelNameMapping>Event_occurrences_inner=EventOccurrence</modelNameMapping>
+                                <modelNameMapping>Event_viewerApplication=EventApplication</modelNameMapping>
+                                <modelNameMapping>Event_viewerApplication_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>Event_pendingApplicants_inner=EventApplicant</modelNameMapping>
+                                <modelNameMapping>Event_pendingApplicants_inner_application=EventApplication</modelNameMapping>
+                                <modelNameMapping>Event_pendingApplicants_inner_application_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>EventApplicant_application=EventApplication</modelNameMapping>
+                                <modelNameMapping>EventApplicant_application_applicant=PostAuthor</modelNameMapping>
+                                <modelNameMapping>EventApplication_applicant=PostAuthor</modelNameMapping>
                             </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>

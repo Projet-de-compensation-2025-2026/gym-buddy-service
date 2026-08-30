@@ -7,6 +7,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Instant and recurring events with apply/accept and transactional capacity (FS-EVT-01..13). Ticket #64. Flyway `V9__events.sql`. `FREQ=WEEKLY;BYDAY` + optional `UNTIL`, 90-day occurrences, visibility public/friends/private, last-seat accept is `CONFLICT`, organizer pending list ranked by matching score.
 - Friends news feed `GET /api/v1/feed` (FS-FEED-01..06). Ticket #63. Flyway `V8__feed_repost_id.sql`. Viewer + accepted friends’ posts and reposts, reverse chrono on activity time, cursor `before`, default 20 max 50. Public non-friend posts stay off the feed. Hidden/deleted omitted. Size over 50 is `VALIDATION`.
 - Nested comments (FS-CMT-01..07). Ticket #62. Flyway `V7__comments.sql`. Max depth 4 (root = 0). Author delete tombstones the body; children remain. Page roots (20) + expand replies. No media. Idempotent like. Stranger on a friends-only post is `NOT_FOUND`. Not the author on delete is `FORBIDDEN`.
 - Posts, likes, and reposts (FS-POST-01..08). Ticket #61. Flyway `V6__posts.sql`. Visibility `friends` (default) or `public`. 15-minute edit window. Soft-delete. Idempotent like. Unique repost. Max 4 image `mediaIds`. Stranger on a friends-only post is `NOT_FOUND`.
@@ -36,6 +37,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Pin gym-buddy-openapi `develop` SHA `dc3488158a302de9475153f124f7f98a6e4dba9b` for ticket #59 until the next 0.1.x tag. `scripts/fetch-openapi-tree.sh` accepts a 40-character commit SHA.
 - Pin gym-buddy-openapi develop SHA `3e63187727035b5277738db90c44744406057b4c` for ticket #60.
 - Pin gym-buddy-openapi develop SHA `edca075cdf1e1eb6caf6f094e02cadaba7c480b5` for ticket #68.
+- Pin gym-buddy-openapi develop SHA `2ebc892909eed2a79841a4aea572aef1968747b4` for ticket #64.
 - Pin gym-buddy-openapi develop SHA `82d0eadb592c023fe3934836c7ce0ca15ca56abd` for ticket #63.
 - Pin gym-buddy-openapi develop SHA `01ab3d50195833296b10e8ca44aa89d1e046683a` for ticket #62.
 - Pin gym-buddy-openapi develop SHA `d58a824e0720c2f50c56632e3664d3632484e281` for ticket #61.

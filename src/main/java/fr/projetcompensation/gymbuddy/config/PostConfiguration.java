@@ -1,9 +1,7 @@
 package fr.projetcompensation.gymbuddy.config;
 
 import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
-import fr.projetcompensation.gymbuddy.media.AttachedMediaAccess;
 import fr.projetcompensation.gymbuddy.media.MediaRepository;
-import fr.projetcompensation.gymbuddy.posts.PostAttachedMediaAccess;
 import fr.projetcompensation.gymbuddy.posts.PostRepository;
 import fr.projetcompensation.gymbuddy.posts.PostService;
 import fr.projetcompensation.gymbuddy.profiles.ProfileRepository;
@@ -26,12 +24,5 @@ public class PostConfiguration {
             ProfileRepository profiles,
             Clock clock) {
         return new PostService(posts, media, friendships, users, profiles, clock);
-    }
-
-    @Bean
-    @ConditionalOnProperty(name = "DATABASE_URL")
-    AttachedMediaAccess attachedMediaAccess(
-            PostRepository posts, FriendshipRepository friendships, UserRepository users) {
-        return new PostAttachedMediaAccess(posts, friendships, users);
     }
 }
