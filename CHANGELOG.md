@@ -7,6 +7,12 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+### Changed
+
+## [1.1.0] — 2026-08-30
+
+### Added
+
 ### Fixed
 
 - `GET /api/v1/events` no longer returns HTTP 500. List SQL bound 6 viewer ids for 7 UUID placeholders (invitee `user_id` was missing). Organizer sessions appear in the page; ACL is unchanged (ticket **#96**).
@@ -84,6 +90,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 [Unreleased]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service
 
+[1.1.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.0.0
 [0.1.1]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v0.1.0
