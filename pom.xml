@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #66 (suggestions) and #65 (search). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>2550b32f95dcb881b0bfaa37e30f130595dbe9d3</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after tickets #69 (admin) + #65 (search) + #67 (messaging). -->
+        <openapi.package.tag>8f89f1a72b1ddb6996d9598e6cedbac4d4788ace</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -352,6 +352,30 @@
                                 <inlineSchemaNameMapping>getSearchEvents_200_response_data_inner_organizer=PostAuthor</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getSearchEvents_200_response_page=Page</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>EventSearchHit_organizer=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminUsers_200_response=AdminUserPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminUsers_200_response_data_inner=AdminUser</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminUsers_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAdminUsersIdLock_request=StaffReasonRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAdminUsersIdLock_200_response=AdminUser</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAdminUsersIdUnlock_request=StaffReasonRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAdminUsersIdUnlock_200_response=AdminUser</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchAdminUsersIdRole_request=PatchUserRoleRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchAdminUsersIdRole_200_response=AdminUser</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAdminContentTypeIdHide_request=HideContentRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAdminContentTypeIdUnhide_request=StaffReasonRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminReports_200_response=ReportPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminReports_200_response_data_inner=Report</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminReports_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAdminReportsIdResolve_request=StaffReasonRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAdminReportsIdResolve_200_response=Report</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postReports_request=CreateReportRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postReports_201_response=Report</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminMedia_200_response=AdminMediaPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminMedia_200_response_data_inner=AdminMedia</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminMedia_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminAudit_200_response=AuditEventPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminAudit_200_response_data_inner=AuditEvent</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminAudit_200_response_page=Page</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getSuggestions_200_response=SuggestionPage</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getSuggestions_200_response_data_inner=Suggestion</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getSuggestions_200_response_page=Page</inlineSchemaNameMapping>
@@ -496,6 +520,30 @@
                                 <modelNameMapping>getSearchEvents_200_response_data_inner_organizer=PostAuthor</modelNameMapping>
                                 <modelNameMapping>getSearchEvents_200_response_page=Page</modelNameMapping>
                                 <modelNameMapping>EventSearchHit_organizer=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getAdminUsers_200_response=AdminUserPage</modelNameMapping>
+                                <modelNameMapping>getAdminUsers_200_response_data_inner=AdminUser</modelNameMapping>
+                                <modelNameMapping>getAdminUsers_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>postAdminUsersIdLock_request=StaffReasonRequest</modelNameMapping>
+                                <modelNameMapping>postAdminUsersIdLock_200_response=AdminUser</modelNameMapping>
+                                <modelNameMapping>postAdminUsersIdUnlock_request=StaffReasonRequest</modelNameMapping>
+                                <modelNameMapping>postAdminUsersIdUnlock_200_response=AdminUser</modelNameMapping>
+                                <modelNameMapping>patchAdminUsersIdRole_request=PatchUserRoleRequest</modelNameMapping>
+                                <modelNameMapping>patchAdminUsersIdRole_200_response=AdminUser</modelNameMapping>
+                                <modelNameMapping>postAdminContentTypeIdHide_request=HideContentRequest</modelNameMapping>
+                                <modelNameMapping>postAdminContentTypeIdUnhide_request=StaffReasonRequest</modelNameMapping>
+                                <modelNameMapping>getAdminReports_200_response=ReportPage</modelNameMapping>
+                                <modelNameMapping>getAdminReports_200_response_data_inner=Report</modelNameMapping>
+                                <modelNameMapping>getAdminReports_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>postAdminReportsIdResolve_request=StaffReasonRequest</modelNameMapping>
+                                <modelNameMapping>postAdminReportsIdResolve_200_response=Report</modelNameMapping>
+                                <modelNameMapping>postReports_request=CreateReportRequest</modelNameMapping>
+                                <modelNameMapping>postReports_201_response=Report</modelNameMapping>
+                                <modelNameMapping>getAdminMedia_200_response=AdminMediaPage</modelNameMapping>
+                                <modelNameMapping>getAdminMedia_200_response_data_inner=AdminMedia</modelNameMapping>
+                                <modelNameMapping>getAdminMedia_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>getAdminAudit_200_response=AuditEventPage</modelNameMapping>
+                                <modelNameMapping>getAdminAudit_200_response_data_inner=AuditEvent</modelNameMapping>
+                                <modelNameMapping>getAdminAudit_200_response_page=Page</modelNameMapping>
                                 <modelNameMapping>getSuggestions_200_response=SuggestionPage</modelNameMapping>
                                 <modelNameMapping>getSuggestions_200_response_data_inner=Suggestion</modelNameMapping>
                                 <modelNameMapping>getSuggestions_200_response_page=Page</modelNameMapping>

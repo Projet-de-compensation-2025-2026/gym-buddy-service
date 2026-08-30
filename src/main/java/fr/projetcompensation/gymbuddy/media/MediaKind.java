@@ -12,11 +12,11 @@ public enum MediaKind {
         this.wireValue = wireValue;
     }
 
-    String wireValue() {
+    public String wireValue() {
         return wireValue;
     }
 
-    static MediaKind fromWire(String value) {
+    public static MediaKind fromWire(String value) {
         for (MediaKind kind : values()) {
             if (kind.wireValue.equals(value)) {
                 return kind;

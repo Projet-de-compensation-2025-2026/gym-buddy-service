@@ -68,6 +68,52 @@ public record Event(
                 hiddenAt);
     }
 
+    public Event hide(Instant at) {
+        return new Event(
+                id,
+                organizerId,
+                title,
+                description,
+                activity,
+                place,
+                lat,
+                lng,
+                startsAt,
+                durationMin,
+                visibility,
+                capacity,
+                recurrence,
+                tags,
+                coverMediaId,
+                cancelledAt,
+                updatedAfterAccept,
+                createdAt,
+                at);
+    }
+
+    public Event unhide() {
+        return new Event(
+                id,
+                organizerId,
+                title,
+                description,
+                activity,
+                place,
+                lat,
+                lng,
+                startsAt,
+                durationMin,
+                visibility,
+                capacity,
+                recurrence,
+                tags,
+                coverMediaId,
+                cancelledAt,
+                updatedAfterAccept,
+                createdAt,
+                null);
+    }
+
     Event withDetails(
             String title,
             String description,

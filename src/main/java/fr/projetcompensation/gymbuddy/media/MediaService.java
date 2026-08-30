@@ -142,6 +142,9 @@ public final class MediaService {
         if (row == null || !row.ready()) {
             return false;
         }
+        if (row.hidden() && (viewer == null || !viewer.isStaff())) {
+            return false;
+        }
         User owner = users.findById(row.ownerId()).orElse(null);
         if (owner == null || owner.closed()) {
             return viewer.isStaff();
