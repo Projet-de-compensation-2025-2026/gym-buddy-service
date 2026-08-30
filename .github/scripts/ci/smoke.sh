@@ -18,6 +18,24 @@ docker build -t "$image" .
 docker run -d --name "$name" -p "127.0.0.1:${port}:8080" "$image"
 
 ok=0
+if [[ -f pom.xml ]]; then
+  for _ in $(seq 1 90); do
+    body="$(curl -fsS "http://127.0.0.1:${port}/api/v1/healthz" 2>/dev/null || true)"
+    if [[ "$body" == *'"status"'* && "$body" == *'"ok"'* ]]; then
+      echo "SMOKE OK: GET /api/v1/healthz returned ${body}"
+      ok=1
+      break
+    fi
+    sleep 1
+  done
+  if [[ "$ok" -ne 1 ]]; then
+    echo "SMOKE FAIL: container never answered /api/v1/healthz on port ${port}" >&2
+    docker logs "$name" >&2 || true
+    exit 1
+  fi
+  exit 0
+fi
+
 for _ in $(seq 1 40); do
   body="$(curl -fsS "http://127.0.0.1:${port}/" 2>/dev/null || true)"
   if [[ "$body" == *"Gym Buddy"* ]]; then

@@ -5,7 +5,9 @@ root="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$root"
 
 if [[ -f pom.xml ]]; then
-  ./mvnw -B test
+  mvn -B test
+  python3 .github/scripts/ci/check_vps_deploy.py
+  python3 .github/scripts/ci/check_release_semver.py
   exit 0
 fi
 
@@ -23,6 +25,8 @@ required = [
     Path(".github/scripts/ci/smoke.sh"),
     Path(".github/scripts/ci/next_version.py"),
     Path(".github/scripts/ci/prepare_changelog.py"),
+    Path(".github/scripts/ci/sync_pom_version.py"),
+    Path(".github/scripts/ci/check_release_semver.py"),
     Path("CHANGELOG.md"),
 ]
 missing = [str(p) for p in required if not p.is_file()]

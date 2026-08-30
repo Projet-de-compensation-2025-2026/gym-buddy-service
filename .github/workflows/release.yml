@@ -41,6 +41,9 @@ jobs:
           ref: develop
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Java 25
+        run: bash .github/scripts/ci/setup_java.sh
+
       - name: Format (apply)
         run: bash .github/scripts/ci/format.sh --write
 
@@ -62,6 +65,9 @@ jobs:
 
       - name: Prepare changelog
         run: python3 .github/scripts/ci/prepare_changelog.py "${{ steps.version.outputs.version }}"
+
+      - name: Sync pom version
+        run: python3 .github/scripts/ci/sync_pom_version.py "${{ steps.version.outputs.version }}"
 
       - name: Commit release prep on develop
         run: |
