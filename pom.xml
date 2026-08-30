@@ -25,7 +25,7 @@
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
         <!-- gym-buddy-openapi develop SHA after #89/#103 cookie + handle. Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>740b05348288b0057af5e807b31768e7afa75555</openapi.package.tag>
+        <openapi.package.tag>16fd67df7691461062a797c25cbe2bb75531514d</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
