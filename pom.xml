@@ -376,6 +376,12 @@
                                 <inlineSchemaNameMapping>getAdminAudit_200_response=AuditEventPage</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getAdminAudit_200_response_data_inner=AuditEvent</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getAdminAudit_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSuggestions_200_response=SuggestionPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSuggestions_200_response_data_inner=Suggestion</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSuggestions_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getMatchingMe_200_response=MatchingMe</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getMatchingMe_200_response_pair=MatchingPeer</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getMatchingMe_200_response_event=MatchingDraftEvent</inlineSchemaNameMapping>
                             </inlineSchemaNameMappings>
                             <modelNameMappings>
                                 <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
@@ -538,6 +544,12 @@
                                 <modelNameMapping>getAdminAudit_200_response=AuditEventPage</modelNameMapping>
                                 <modelNameMapping>getAdminAudit_200_response_data_inner=AuditEvent</modelNameMapping>
                                 <modelNameMapping>getAdminAudit_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>getSuggestions_200_response=SuggestionPage</modelNameMapping>
+                                <modelNameMapping>getSuggestions_200_response_data_inner=Suggestion</modelNameMapping>
+                                <modelNameMapping>getSuggestions_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>getMatchingMe_200_response=MatchingMe</modelNameMapping>
+                                <modelNameMapping>getMatchingMe_200_response_pair=MatchingPeer</modelNameMapping>
+                                <modelNameMapping>getMatchingMe_200_response_event=MatchingDraftEvent</modelNameMapping>
                             </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>
