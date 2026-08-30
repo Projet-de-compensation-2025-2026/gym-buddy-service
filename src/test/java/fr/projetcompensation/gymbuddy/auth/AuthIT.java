@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -73,6 +74,14 @@ class AuthIT {
 
     @Autowired(required = false)
     private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void resetUsers() {
+        if (jdbcTemplate != null) {
+            jdbcTemplate.update("DELETE FROM profiles");
+            jdbcTemplate.update("DELETE FROM users");
+        }
+    }
 
     @Test
     void registerLoginRefreshLogoutAndLockedUser() {
