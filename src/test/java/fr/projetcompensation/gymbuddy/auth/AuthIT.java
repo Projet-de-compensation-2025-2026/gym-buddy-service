@@ -152,7 +152,8 @@ class AuthIT {
         assertThat(setCookie(login.getHeaders()))
                 .contains("HttpOnly")
                 .contains("Secure")
-                .contains("SameSite=Lax");
+                .contains("SameSite=None")
+                .contains("Partitioned");
 
         ResponseEntity<String> refreshResponse = client.post()
                 .uri("/api/v1/auth/refresh")
@@ -471,6 +472,56 @@ class AuthIT {
                 .retrieve()
                 .toEntity(String.class);
         assertThat(afterBlock.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void registerRejectsHandleThatIsAnEmail() {
+        ResponseEntity<String> asEmail = restClient()
+                .post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("alex@example.com", "alex@example.com", PASSWORD, "Alex"))
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(asEmail.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(asEmail.getBody()).contains("\"code\":\"VALIDATION\"").contains("\"path\":\"handle\"");
+    }
+
+    @Test
+    void unauthenticatedAdminJsonIsUtf8AndMemberIsNotFound() {
+        RestClient client = restClient();
+        ResponseEntity<String> anonymous =
+                client.get().uri("/api/v1/admin/users").retrieve().toEntity(String.class);
+        assertThat(anonymous.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(anonymous.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)).containsIgnoringCase("charset=UTF-8");
+        assertThat(anonymous.getBody()).contains("\"code\":\"UNAUTHENTICATED\"");
+
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("first@example.com", "first", PASSWORD, "First"))
+                .retrieve()
+                .toEntity(String.class);
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("member@example.com", "member", PASSWORD, "Member"))
+                .retrieve()
+                .toEntity(String.class);
+        ResponseEntity<String> login = client.post()
+                .uri("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"email\":\"member@example.com\",\"password\":\"" + PASSWORD + "\"}")
+                .retrieve()
+                .toEntity(String.class);
+        String access = jsonField(login.getBody(), "accessToken");
+        ResponseEntity<String> member = client.get()
+                .uri("/api/v1/admin/users")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + access)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(member.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(member.getBody()).contains("\"code\":\"NOT_FOUND\"");
     }
 
     @Test

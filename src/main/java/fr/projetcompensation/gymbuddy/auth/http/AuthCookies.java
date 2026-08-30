@@ -14,7 +14,8 @@ final class AuthCookies {
         return ResponseCookie.from(REFRESH, token)
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("Lax")
+                .sameSite("None")
+                .partitioned(true)
                 .path(PATH)
                 .maxAge(maxAge)
                 .build();

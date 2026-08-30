@@ -221,6 +221,20 @@ public final class AdminService {
         return row;
     }
 
+    public AdminPage<ListedAdminContent> listContent(
+            UUID callerId, String type, String q, Boolean hidden, String after, Integer size) {
+        requireStaff(callerId);
+        String kind = type == null ? "" : type.trim().toLowerCase(Locale.ROOT);
+        if (!CONTENT_TYPES.contains(kind)) {
+            throw AuthException.validation("type is not allowed", new FieldIssue("type", "enum"));
+        }
+        int pageSize = pageSize(size);
+        return AdminPage.of(
+                catalog.listContent(kind, blankToNull(q), hidden, cursor(after), pageSize + 1),
+                pageSize,
+                row -> row.cursor().encode());
+    }
+
     public AdminPage<ListedAdminMedia> listMedia(UUID callerId, String q, String after, Integer size) {
         requireStaff(callerId);
         int pageSize = pageSize(size);

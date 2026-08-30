@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #70 (fixtures). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>f849a1dcd498c12fd9507b83f9d50d375d651347</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after #89/#103 cookie + handle. Pin a 0.1.x tag when Release cuts one. -->
+        <openapi.package.tag>16fd67df7691461062a797c25cbe2bb75531514d</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -373,6 +373,9 @@
                                 <inlineSchemaNameMapping>getSearchEvents_200_response_data_inner_organizer=PostAuthor</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getSearchEvents_200_response_page=Page</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>EventSearchHit_organizer=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminContent_200_response=AdminContentPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminContent_200_response_data_inner=AdminContent</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminContent_200_response_page=Page</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getAdminUsers_200_response=AdminUserPage</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getAdminUsers_200_response_data_inner=AdminUser</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getAdminUsers_200_response_page=Page</inlineSchemaNameMapping>
@@ -558,6 +561,9 @@
                                 <modelNameMapping>getSearchEvents_200_response_data_inner_organizer=PostAuthor</modelNameMapping>
                                 <modelNameMapping>getSearchEvents_200_response_page=Page</modelNameMapping>
                                 <modelNameMapping>EventSearchHit_organizer=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getAdminContent_200_response=AdminContentPage</modelNameMapping>
+                                <modelNameMapping>getAdminContent_200_response_data_inner=AdminContent</modelNameMapping>
+                                <modelNameMapping>getAdminContent_200_response_page=Page</modelNameMapping>
                                 <modelNameMapping>getAdminUsers_200_response=AdminUserPage</modelNameMapping>
                                 <modelNameMapping>getAdminUsers_200_response_data_inner=AdminUser</modelNameMapping>
                                 <modelNameMapping>getAdminUsers_200_response_page=Page</modelNameMapping>

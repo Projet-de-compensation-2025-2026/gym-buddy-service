@@ -1,10 +1,12 @@
 package fr.projetcompensation.gymbuddy.auth.http;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,6 +28,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -148,7 +151,8 @@ class AuthControllerTest {
                 .andExpect(cookie().httpOnly("refresh", true))
                 .andExpect(cookie().secure("refresh", true))
                 .andExpect(cookie().path("refresh", "/api/v1/auth"))
-                .andExpect(cookie().sameSite("refresh", "Lax"));
+                .andExpect(cookie().sameSite("refresh", "None"))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Partitioned")));
     }
 
     @Test

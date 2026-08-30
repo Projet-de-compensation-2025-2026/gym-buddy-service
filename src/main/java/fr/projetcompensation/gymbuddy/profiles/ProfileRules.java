@@ -20,6 +20,8 @@ final class ProfileRules {
         List<FieldIssue> issues = new ArrayList<>();
         if (patch.handle() != null && patch.handle().isBlank()) {
             issues.add(new FieldIssue("handle", "required"));
+        } else if (patch.handle() != null && patch.handle().indexOf('@') >= 0) {
+            issues.add(new FieldIssue("handle", "format"));
         }
         if (patch.displayName() != null && patch.displayName().isBlank()) {
             issues.add(new FieldIssue("displayName", "required"));

@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-final class FakeUserRepository implements UserRepository {
+public final class FakeUserRepository implements UserRepository {
 
     private final Map<UUID, User> users = new LinkedHashMap<>();
 

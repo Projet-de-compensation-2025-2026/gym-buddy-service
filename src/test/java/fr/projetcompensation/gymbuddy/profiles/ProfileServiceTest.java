@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import fr.projetcompensation.gymbuddy.auth.AuthException;
 import fr.projetcompensation.gymbuddy.auth.ErrorCode;
+import fr.projetcompensation.gymbuddy.auth.FieldIssue;
 import fr.projetcompensation.gymbuddy.users.User;
 import fr.projetcompensation.gymbuddy.users.UserRole;
 import fr.projetcompensation.gymbuddy.users.UserStatus;
@@ -91,6 +92,39 @@ class ProfileServiceTest {
         assertThatThrownBy(() -> service.byHandle(stranger.id(), "blake"))
                 .isInstanceOf(AuthException.class)
                 .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+    }
+
+    @Test
+    void patchRejectsHandleThatIsAnEmail() {
+        assertThatThrownBy(() -> service.patchMe(
+                        owner.id(),
+                        new ProfilePatch(
+                                "blake@example.com",
+                                null,
+                                null,
+                                false,
+                                null,
+                                java.util.List.of(),
+                                false,
+                                null,
+                                false,
+                                null,
+                                false,
+                                null,
+                                false,
+                                null,
+                                false,
+                                java.util.List.of(),
+                                false,
+                                null,
+                                false)))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> {
+                    AuthException authEx = (AuthException) ex;
+                    assertThat(authEx.code()).isEqualTo(ErrorCode.VALIDATION);
+                    assertThat(authEx.details()).contains(new FieldIssue("handle", "format"));
+                });
+        assertThat(users.findById(owner.id()).orElseThrow().handle()).isEqualTo("blake");
     }
 
     @Test
