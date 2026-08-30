@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #62 (comments). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>01ab3d50195833296b10e8ca44aa89d1e046683a</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after ticket #63 (feed). Pin a 0.1.x tag when Release cuts one. -->
+        <openapi.package.tag>82d0eadb592c023fe3934836c7ce0ca15ca56abd</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -275,6 +275,15 @@
                                 <inlineSchemaNameMapping>getCommentsIdReplies_200_response_data_inner_author=PostAuthor</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getCommentsIdReplies_200_response_page=Page</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>Comment_author=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getFeed_200_response=FeedPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getFeed_200_response_data_inner=FeedItem</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getFeed_200_response_data_inner_actor=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getFeed_200_response_data_inner_post=Post</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getFeed_200_response_data_inner_post_author=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getFeed_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>FeedItem_actor=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>FeedItem_post=Post</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>FeedItem_post_author=PostAuthor</inlineSchemaNameMapping>
                             </inlineSchemaNameMappings>
                             <modelNameMappings>
                                 <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
@@ -336,6 +345,15 @@
                                 <modelNameMapping>getCommentsIdReplies_200_response_data_inner_author=PostAuthor</modelNameMapping>
                                 <modelNameMapping>getCommentsIdReplies_200_response_page=Page</modelNameMapping>
                                 <modelNameMapping>Comment_author=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getFeed_200_response=FeedPage</modelNameMapping>
+                                <modelNameMapping>getFeed_200_response_data_inner=FeedItem</modelNameMapping>
+                                <modelNameMapping>getFeed_200_response_data_inner_actor=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getFeed_200_response_data_inner_post=Post</modelNameMapping>
+                                <modelNameMapping>getFeed_200_response_data_inner_post_author=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getFeed_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>FeedItem_actor=PostAuthor</modelNameMapping>
+                                <modelNameMapping>FeedItem_post=Post</modelNameMapping>
+                                <modelNameMapping>FeedItem_post_author=PostAuthor</modelNameMapping>
                             </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>

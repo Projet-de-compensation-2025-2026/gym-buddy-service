@@ -1,4 +1,4 @@
-package fr.projetcompensation.gymbuddy.posts;
+package fr.projetcompensation.gymbuddy.feed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,9 +10,13 @@ import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
 import fr.projetcompensation.gymbuddy.friends.FriendshipStatus;
 import fr.projetcompensation.gymbuddy.friends.InstantIdCursor;
 import fr.projetcompensation.gymbuddy.media.Media;
-import fr.projetcompensation.gymbuddy.media.MediaKind;
 import fr.projetcompensation.gymbuddy.media.MediaRepository;
-import fr.projetcompensation.gymbuddy.media.MediaStatus;
+import fr.projetcompensation.gymbuddy.posts.LikeRow;
+import fr.projetcompensation.gymbuddy.posts.Post;
+import fr.projetcompensation.gymbuddy.posts.PostAccess;
+import fr.projetcompensation.gymbuddy.posts.PostRepository;
+import fr.projetcompensation.gymbuddy.posts.PostService;
+import fr.projetcompensation.gymbuddy.posts.VisiblePost;
 import fr.projetcompensation.gymbuddy.profiles.Profile;
 import fr.projetcompensation.gymbuddy.profiles.ProfileRepository;
 import fr.projetcompensation.gymbuddy.users.User;
@@ -35,7 +39,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class PostServiceTest {
+class FeedServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-08-30T12:00:00Z");
 
@@ -45,7 +49,8 @@ class PostServiceTest {
     private InMemoryMedia media;
     private InMemoryPosts posts;
     private MutableClock clock;
-    private PostService service;
+    private PostService postService;
+    private FeedService feed;
     private User alex;
     private User blake;
     private User casey;
@@ -58,7 +63,8 @@ class PostServiceTest {
         media = new InMemoryMedia();
         posts = new InMemoryPosts();
         clock = new MutableClock(NOW);
-        service = new PostService(posts, media, friendships, users, profiles, clock);
+        postService = new PostService(posts, media, friendships, users, profiles, clock);
+        feed = new FeedService(posts, friendships, users, profiles);
         alex = member("alex");
         blake = member("blake");
         casey = member("casey");
@@ -66,184 +72,150 @@ class PostServiceTest {
     }
 
     @Test
-    void fsPost01_createTextPost() {
-        VisiblePost created = service.create(alex.id(), "Crushed leg day.", "friends", List.of());
+    void fsFeed01_includesOwnAndFriendPostsAndReposts() {
+        VisiblePost own = postService.create(alex.id(), "own lift", "friends", List.of());
+        clock.set(NOW.plusSeconds(10));
+        VisiblePost friendPost = postService.create(blake.id(), "blake pr", "friends", List.of());
+        clock.set(NOW.plusSeconds(20));
+        VisiblePost strangerPublic = postService.create(casey.id(), "casey public", "public", List.of());
+        clock.set(NOW.plusSeconds(30));
+        postService.repost(blake.id(), strangerPublic.post().id());
 
-        assertThat(created.post().body()).isEqualTo("Crushed leg day.");
-        assertThat(created.post().visibility()).isEqualTo(PostVisibility.FRIENDS);
-        assertThat(created.mediaIds()).isEmpty();
-        assertThat(created.author().handle()).isEqualTo("alex");
+        FeedList page = feed.list(alex.id(), null, 20);
+
+        assertThat(page.data()).hasSize(3);
+        assertThat(page.data().get(0).activity().kind()).isEqualTo(FeedKind.REPOST);
+        assertThat(page.data().get(0).actor().id()).isEqualTo(blake.id());
+        assertThat(page.data().get(0).post().post().id())
+                .isEqualTo(strangerPublic.post().id());
+        assertThat(page.data().get(1).post().post().id())
+                .isEqualTo(friendPost.post().id());
+        assertThat(page.data().get(2).post().post().id()).isEqualTo(own.post().id());
     }
 
     @Test
-    void fsPost01_emptyBodyAndNoMediaIsValidation() {
-        assertThatThrownBy(() -> service.create(alex.id(), "  ", null, List.of()))
+    void fsFeed02_ordersByActivityTimeNewestFirst() {
+        clock.set(NOW);
+        VisiblePost older = postService.create(alex.id(), "older", "friends", List.of());
+        clock.set(NOW.plus(Duration.ofMinutes(5)));
+        VisiblePost newer = postService.create(blake.id(), "newer", "friends", List.of());
+
+        FeedList page = feed.list(alex.id(), null, 20);
+
+        assertThat(page.data())
+                .extracting(item -> item.post().post().id())
+                .containsExactly(newer.post().id(), older.post().id());
+        assertThat(page.data().get(0).activity().activityAt()).isEqualTo(NOW.plus(Duration.ofMinutes(5)));
+    }
+
+    @Test
+    void fsFeed03_cursorBeforeAndSizeCap() {
+        clock.set(NOW);
+        postService.create(alex.id(), "one", "friends", List.of());
+        clock.set(NOW.plusSeconds(10));
+        postService.create(alex.id(), "two", "friends", List.of());
+        clock.set(NOW.plusSeconds(20));
+        postService.create(alex.id(), "three", "friends", List.of());
+
+        FeedList first = feed.list(alex.id(), null, 2);
+        assertThat(first.data()).hasSize(2);
+        assertThat(first.data().get(0).post().post().body()).isEqualTo("three");
+        assertThat(first.data().get(1).post().post().body()).isEqualTo("two");
+        assertThat(first.next()).isNotNull();
+
+        FeedList second = feed.list(alex.id(), first.next(), 2);
+        assertThat(second.data()).hasSize(1);
+        assertThat(second.data().get(0).post().post().body()).isEqualTo("one");
+        assertThat(second.next()).isNull();
+
+        assertThatThrownBy(() -> feed.list(alex.id(), null, 51))
                 .isInstanceOf(AuthException.class)
                 .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.VALIDATION));
     }
 
     @Test
-    void fsPost01_emptyBodyWithImagesIsOk() {
-        Media image = readyPostImage(alex);
-        VisiblePost created = service.create(alex.id(), "", "public", List.of(image.id()));
+    void fsFeed04_hiddenAndDeletedAreOmitted() {
+        VisiblePost live = postService.create(blake.id(), "live", "friends", List.of());
+        clock.set(NOW.plusSeconds(10));
+        VisiblePost gone = postService.create(blake.id(), "gone", "friends", List.of());
+        postService.delete(blake.id(), gone.post().id());
+        clock.set(NOW.plusSeconds(20));
+        VisiblePost hidden = postService.create(blake.id(), "hidden", "friends", List.of());
+        hide(hidden.post(), NOW.plusSeconds(21));
 
-        assertThat(created.post().body()).isNull();
-        assertThat(created.post().visibility()).isEqualTo(PostVisibility.PUBLIC);
-        assertThat(created.mediaIds()).containsExactly(image.id());
+        FeedList page = feed.list(alex.id(), null, 20);
+
+        assertThat(page.data())
+                .extracting(item -> item.post().post().id())
+                .containsExactly(live.post().id());
+        assertThat(page.data())
+                .noneMatch(item -> "deleted".equalsIgnoreCase(item.post().post().body()));
     }
 
     @Test
-    void fsPost01_tooManyImagesIsValidation() {
-        List<UUID> ids = new ArrayList<>();
-        for (int i = 0; i < 5; i++) {
-            ids.add(readyPostImage(alex).id());
-        }
-        assertThatThrownBy(() -> service.create(alex.id(), "too many", "friends", ids))
+    void fsFeed05_publicStrangerPostsStayOffTheFriendsFeed() {
+        VisiblePost stranger = postService.create(casey.id(), "public pr", "public", List.of());
+
+        FeedList alexFeed = feed.list(alex.id(), null, 20);
+        FeedList caseyFeed = feed.list(casey.id(), null, 20);
+
+        assertThat(alexFeed.data()).isEmpty();
+        assertThat(caseyFeed.data())
+                .extracting(item -> item.post().post().id())
+                .containsExactly(stranger.post().id());
+    }
+
+    @Test
+    void fsFeed06_itemExposesAuthorTimeBodyCountsAndViewerLiked() {
+        VisiblePost created = postService.create(blake.id(), "squats", "friends", List.of());
+        postService.like(alex.id(), created.post().id());
+
+        VisibleFeedItem item = feed.list(alex.id(), null, 20).data().get(0);
+
+        assertThat(item.actor().handle()).isEqualTo("blake");
+        assertThat(item.activity().activityAt()).isEqualTo(NOW);
+        assertThat(item.post().post().body()).isEqualTo("squats");
+        assertThat(item.post().likeCount()).isEqualTo(1);
+        assertThat(item.post().commentCount()).isZero();
+        assertThat(item.post().liked()).isTrue();
+    }
+
+    @Test
+    void fsFeed_friendsOnlyVisibleToFriendNotStranger() {
+        postService.create(blake.id(), "friends only", "friends", List.of());
+
+        assertThat(feed.list(alex.id(), null, 20).data()).hasSize(1);
+        assertThat(feed.list(casey.id(), null, 20).data()).isEmpty();
+    }
+
+    @Test
+    void fsFeed_repostOfDeletedOriginalIsOmitted() {
+        VisiblePost original = postService.create(casey.id(), "public", "public", List.of());
+        clock.set(NOW.plusSeconds(5));
+        postService.repost(blake.id(), original.post().id());
+        postService.delete(casey.id(), original.post().id());
+
+        assertThat(feed.list(alex.id(), null, 20).data()).isEmpty();
+    }
+
+    @Test
+    void fsFeed_unauthenticatedWhenCallerMissing() {
+        assertThatThrownBy(() -> feed.list(UUID.randomUUID(), null, 20))
                 .isInstanceOf(AuthException.class)
-                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.VALIDATION));
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.UNAUTHENTICATED));
     }
 
-    @Test
-    void fsPost01_wrongKindOrNotReadyIsValidation() {
-        Media avatar = new Media(
-                UUID.randomUUID(),
-                alex.id(),
-                MediaKind.AVATAR,
-                "image/jpeg",
-                12,
-                0,
-                MediaStatus.READY,
-                "original/a",
-                NOW,
-                null);
-        media.save(avatar);
-        assertThatThrownBy(() -> service.create(alex.id(), null, "friends", List.of(avatar.id())))
-                .isInstanceOf(AuthException.class)
-                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.VALIDATION));
-    }
-
-    @Test
-    void fsPost02_friendsOnlyHiddenFromStranger() {
-        VisiblePost created = service.create(alex.id(), "friends only", "friends", List.of());
-
-        assertThat(service.get(blake.id(), created.post().id()).post().id())
-                .isEqualTo(created.post().id());
-        assertThatThrownBy(() -> service.get(casey.id(), created.post().id()))
-                .isInstanceOf(AuthException.class)
-                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
-    }
-
-    @Test
-    void fsPost02_publicReadableByStranger() {
-        VisiblePost created = service.create(alex.id(), "public pr", "public", List.of());
-        assertThat(service.get(casey.id(), created.post().id()).post().body()).isEqualTo("public pr");
-    }
-
-    @Test
-    void fsPost03_editWithin15MinutesSetsEditedAt() {
-        VisiblePost created = service.create(alex.id(), "first", "friends", List.of());
-        clock.set(NOW.plus(Duration.ofMinutes(14)));
-        VisiblePost edited = service.edit(alex.id(), created.post().id(), "second");
-
-        assertThat(edited.post().body()).isEqualTo("second");
-        assertThat(edited.post().editedAt()).isEqualTo(NOW.plus(Duration.ofMinutes(14)));
-    }
-
-    @Test
-    void fsPost03_editAfterWindowIsForbidden() {
-        VisiblePost created = service.create(alex.id(), "first", "friends", List.of());
-        clock.set(NOW.plus(Duration.ofMinutes(15)).plusSeconds(1));
-        assertThatThrownBy(() -> service.edit(alex.id(), created.post().id(), "late"))
-                .isInstanceOf(AuthException.class)
-                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.FORBIDDEN));
-    }
-
-    @Test
-    void fsPost04_softDeleteReturnsNotFound() {
-        VisiblePost created = service.create(alex.id(), "gone", "public", List.of());
-        service.delete(alex.id(), created.post().id());
-        assertThatThrownBy(() -> service.get(alex.id(), created.post().id()))
-                .isInstanceOf(AuthException.class)
-                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
-        assertThatThrownBy(() -> service.delete(blake.id(), created.post().id()))
-                .isInstanceOf(AuthException.class)
-                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
-    }
-
-    @Test
-    void fsPost05And06_viewerCanRepostOnceAndUndo() {
-        VisiblePost created = service.create(alex.id(), "pr", "public", List.of());
-        VisiblePost reposted = service.repost(blake.id(), created.post().id());
-        assertThat(reposted.reposted()).isTrue();
-        assertThat(reposted.repostCount()).isEqualTo(1);
-
-        assertThatThrownBy(() -> service.repost(blake.id(), created.post().id()))
-                .isInstanceOf(AuthException.class)
-                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.CONFLICT));
-
-        service.unrepost(blake.id(), created.post().id());
-        assertThat(service.get(blake.id(), created.post().id()).reposted()).isFalse();
-        assertThat(service.get(blake.id(), created.post().id()).repostCount()).isZero();
-    }
-
-    @Test
-    void fsPost07_likeUnlikeToggleDoesNotDoubleCount() {
-        VisiblePost created = service.create(alex.id(), "likes", "public", List.of());
-        service.like(blake.id(), created.post().id());
-        service.like(blake.id(), created.post().id());
-        assertThat(service.get(blake.id(), created.post().id()).likeCount()).isEqualTo(1);
-        assertThat(service.get(blake.id(), created.post().id()).liked()).isTrue();
-
-        service.unlike(blake.id(), created.post().id());
-        assertThat(service.get(blake.id(), created.post().id()).likeCount()).isZero();
-        assertThat(service.get(blake.id(), created.post().id()).liked()).isFalse();
-    }
-
-    @Test
-    void fsPost07_strangerLikeFriendsOnlyIsNotFound() {
-        VisiblePost created = service.create(alex.id(), "secret", "friends", List.of());
-        assertThatThrownBy(() -> service.like(casey.id(), created.post().id()))
-                .isInstanceOf(AuthException.class)
-                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
-        assertThat(service.get(alex.id(), created.post().id()).likeCount()).isZero();
-    }
-
-    @Test
-    void fsPost08_nominativeListIsAuthorOnly() {
-        VisiblePost created = service.create(alex.id(), "list", "public", List.of());
-        service.like(blake.id(), created.post().id());
-        service.like(casey.id(), created.post().id());
-
-        PostLikerList authorView = service.likes(alex.id(), created.post().id(), null, 20);
-        assertThat(authorView.data()).hasSize(2);
-        assertThatThrownBy(() -> service.likes(blake.id(), created.post().id(), null, 20))
-                .isInstanceOf(AuthException.class)
-                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
-    }
-
-    @Test
-    void fsPost_attachedImageReadableByFriendNotStranger() {
-        Media image = readyPostImage(alex);
-        service.create(alex.id(), "with photo", "friends", List.of(image.id()));
-        PostAttachedMediaAccess access = new PostAttachedMediaAccess(posts, friendships, users);
-        assertThat(access.canRead(blake.id(), image)).isTrue();
-        assertThat(access.canRead(casey.id(), image)).isFalse();
-    }
-
-    private Media readyPostImage(User owner) {
-        Media row = new Media(
-                UUID.randomUUID(),
-                owner.id(),
-                MediaKind.POST,
-                "image/jpeg",
-                24,
-                0,
-                MediaStatus.READY,
-                "original/" + owner.id() + "/" + UUID.randomUUID(),
-                NOW,
-                null);
-        media.save(row);
-        return row;
+    private void hide(Post row, Instant at) {
+        posts.update(new Post(
+                row.id(),
+                row.authorId(),
+                row.body(),
+                row.visibility(),
+                row.createdAt(),
+                row.editedAt(),
+                row.deletedAt(),
+                at,
+                "hidden"));
     }
 
     private User member(String handle) {
@@ -344,6 +316,12 @@ class PostServiceTest {
         void accept(UUID left, UUID right) {
             Friendship row = new Friendship(UUID.randomUUID(), left, right, FriendshipStatus.ACCEPTED, NOW, NOW);
             store.put(row.id(), row);
+        }
+
+        List<Friendship> acceptedInvolving(UUID userId) {
+            return store.values().stream()
+                    .filter(row -> row.status() == FriendshipStatus.ACCEPTED && row.involves(userId))
+                    .toList();
         }
 
         @Override
@@ -454,11 +432,11 @@ class PostServiceTest {
         }
     }
 
-    private static final class InMemoryPosts implements PostRepository {
+    private final class InMemoryPosts implements PostRepository {
         private final Map<UUID, Post> store = new LinkedHashMap<>();
         private final Map<UUID, List<UUID>> mediaByPost = new HashMap<>();
         private final Map<UUID, Map<UUID, Instant>> likes = new HashMap<>();
-        private final Map<UUID, Map<UUID, Instant>> reposts = new HashMap<>();
+        private final Map<String, StoredRepost> reposts = new LinkedHashMap<>();
 
         @Override
         public void save(Post post, List<UUID> mediaIds) {
@@ -521,43 +499,34 @@ class PostServiceTest {
 
         @Override
         public List<LikeRow> listLikes(UUID postId, InstantIdCursor after, int limit) {
-            return likes.getOrDefault(postId, Map.of()).entrySet().stream()
-                    .map(entry -> new LikeRow(entry.getKey(), entry.getValue()))
-                    .sorted(Comparator.comparing(LikeRow::likedAt)
-                            .thenComparing(LikeRow::userId)
-                            .reversed())
-                    .limit(limit)
-                    .toList();
+            return List.of();
         }
 
         @Override
         public boolean insertRepost(UUID userId, UUID postId, Instant at) {
-            Map<UUID, Instant> byUser = reposts.computeIfAbsent(postId, id -> new LinkedHashMap<>());
-            if (byUser.containsKey(userId)) {
+            String key = userId + ":" + postId;
+            if (reposts.containsKey(key)) {
                 return false;
             }
-            byUser.put(userId, at);
+            reposts.put(key, new StoredRepost(UUID.randomUUID(), userId, postId, at));
             return true;
         }
 
         @Override
         public boolean deleteRepost(UUID userId, UUID postId) {
-            Map<UUID, Instant> byUser = reposts.get(postId);
-            if (byUser == null || !byUser.containsKey(userId)) {
-                return false;
-            }
-            byUser.remove(userId);
-            return true;
+            return reposts.remove(userId + ":" + postId) != null;
         }
 
         @Override
         public boolean reposted(UUID userId, UUID postId) {
-            return reposts.getOrDefault(postId, Map.of()).containsKey(userId);
+            return reposts.containsKey(userId + ":" + postId);
         }
 
         @Override
         public long repostCount(UUID postId) {
-            return reposts.getOrDefault(postId, Map.of()).size();
+            return reposts.values().stream()
+                    .filter(row -> row.postId().equals(postId))
+                    .count();
         }
 
         @Override
@@ -566,9 +535,53 @@ class PostServiceTest {
         }
 
         @Override
-        public List<fr.projetcompensation.gymbuddy.feed.FeedActivity> listFeed(
-                UUID viewerId, InstantIdCursor before, int limit) {
-            return List.of();
+        public List<FeedActivity> listFeed(UUID viewerId, InstantIdCursor before, int limit) {
+            User viewer = users.findById(viewerId).orElse(null);
+            if (viewer == null || !viewer.active()) {
+                return List.of();
+            }
+            java.util.Set<UUID> actors = new java.util.HashSet<>();
+            actors.add(viewerId);
+            for (Friendship row : friendships.acceptedInvolving(viewerId)) {
+                actors.add(row.other(viewerId));
+            }
+            List<FeedActivity> out = new ArrayList<>();
+            for (Post post : store.values()) {
+                if (!actors.contains(post.authorId())) {
+                    continue;
+                }
+                if (!PostAccess.canView(post, viewer, friendships, users)) {
+                    continue;
+                }
+                out.add(new FeedActivity(post.id(), FeedKind.POST, post.authorId(), post.id(), post.createdAt()));
+            }
+            for (StoredRepost repost : reposts.values()) {
+                if (!actors.contains(repost.userId())) {
+                    continue;
+                }
+                User actor = users.findById(repost.userId()).orElse(null);
+                if (actor == null || !actor.active()) {
+                    continue;
+                }
+                Post original = store.get(repost.postId());
+                if (original == null || !PostAccess.canView(original, viewer, friendships, users)) {
+                    continue;
+                }
+                out.add(new FeedActivity(repost.id(), FeedKind.REPOST, repost.userId(), repost.postId(), repost.at()));
+            }
+            out.sort(Comparator.comparing(FeedActivity::activityAt)
+                    .thenComparing(FeedActivity::id)
+                    .reversed());
+            if (before != null) {
+                out = out.stream()
+                        .filter(activity -> activity.activityAt().isBefore(before.at())
+                                || (activity.activityAt().equals(before.at())
+                                        && activity.id().compareTo(before.id()) < 0))
+                        .toList();
+            }
+            return out.stream().limit(limit).toList();
         }
     }
+
+    private record StoredRepost(UUID id, UUID userId, UUID postId, Instant at) {}
 }

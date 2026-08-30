@@ -10,11 +10,11 @@ import fr.projetcompensation.gymbuddy.posts.VisiblePost;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-final class PostResponses {
+public final class PostResponses {
 
     private PostResponses() {}
 
-    static Post toApi(VisiblePost row) {
+    public static Post toApi(VisiblePost row) {
         PostAuthor author = new PostAuthor(
                 row.author().id(), row.author().handle(), row.authorProfile().displayName());
         author.setAvatarMediaId(row.authorProfile().avatarMediaId());

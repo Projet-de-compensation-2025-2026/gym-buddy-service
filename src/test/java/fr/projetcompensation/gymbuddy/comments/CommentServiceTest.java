@@ -499,6 +499,12 @@ class CommentServiceTest {
         public long commentCount(UUID postId) {
             return 0;
         }
+
+        @Override
+        public List<fr.projetcompensation.gymbuddy.feed.FeedActivity> listFeed(
+                UUID viewerId, InstantIdCursor before, int limit) {
+            return List.of();
+        }
     }
 
     private static final class InMemoryComments implements CommentRepository {
