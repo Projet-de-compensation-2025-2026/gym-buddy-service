@@ -81,6 +81,21 @@ class AuthServiceTest {
     }
 
     @Test
+    void registerRejectsHandleThatIsAnEmail() {
+        assertThatThrownBy(() -> auth.register(register("alex@example.com", "alex@example.com", "Alex")))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> {
+                    AuthException authEx = (AuthException) ex;
+                    assertThat(authEx.code()).isEqualTo(ErrorCode.VALIDATION);
+                    assertThat(authEx.details()).contains(new FieldIssue("handle", "format"));
+                });
+        assertThatThrownBy(() -> auth.register(register("alex@example.com", "not-an-email@x", "Alex")))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.VALIDATION));
+        assertThat(users.findByEmail("alex@example.com")).isEmpty();
+    }
+
+    @Test
     void fsAcct03_registerRejectsPasswordShorterThan10() {
         assertThatThrownBy(() -> auth.register(register("alex@example.com", "alex", "Alex", "short")))
                 .isInstanceOf(AuthException.class)

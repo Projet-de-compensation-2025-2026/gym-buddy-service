@@ -2,6 +2,7 @@ package fr.projetcompensation.gymbuddy.profiles;
 
 import fr.projetcompensation.gymbuddy.auth.AuthException;
 import fr.projetcompensation.gymbuddy.auth.FieldIssue;
+import fr.projetcompensation.gymbuddy.auth.HandleRules;
 import fr.projetcompensation.gymbuddy.users.DuplicateUserException;
 import fr.projetcompensation.gymbuddy.users.User;
 import fr.projetcompensation.gymbuddy.users.UserRepository;
@@ -52,7 +53,7 @@ public final class ProfileService {
         if (patch.handle() != null
                 && !patch.handle().isBlank()
                 && !patch.handle().equalsIgnoreCase(owner.handle())) {
-            String handle = patch.handle().trim();
+            String handle = HandleRules.requireHandle(patch.handle(), owner.email());
             users.findByHandle(handle)
                     .filter(other -> !other.id().equals(owner.id()))
                     .ifPresent(other -> {

@@ -46,7 +46,7 @@ public final class AuthService {
 
     public RegisteredUser register(RegisterCommand command) {
         String email = required("email", command.email());
-        String handle = required("handle", command.handle());
+        String handle = HandleRules.requireHandle(command.handle(), email);
         String displayName = required("displayName", command.displayName());
         String password = command.password();
         passwordPolicy.validate(password, email, handle).ifPresent(issue -> {
