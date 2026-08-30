@@ -35,4 +35,6 @@ public interface PostRepository {
     boolean reposted(UUID userId, UUID postId);
 
     long repostCount(UUID postId);
+
+    long commentCount(UUID postId);
 }

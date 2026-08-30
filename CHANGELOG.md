@@ -7,6 +7,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Nested comments (FS-CMT-01..07). Ticket #62. Flyway `V7__comments.sql`. Max depth 4 (root = 0). Author delete tombstones the body; children remain. Page roots (20) + expand replies. No media. Idempotent like. Stranger on a friends-only post is `NOT_FOUND`. Not the author on delete is `FORBIDDEN`.
 - Posts, likes, and reposts (FS-POST-01..08). Ticket #61. Flyway `V6__posts.sql`. Visibility `friends` (default) or `public`. 15-minute edit window. Soft-delete. Idempotent like. Unique repost. Max 4 image `mediaIds`. Stranger on a friends-only post is `NOT_FOUND`.
 - Disk-safe media: `POST /api/v1/media`, `GET /api/v1/media/{id}/url`, `DELETE /api/v1/media/{id}` (FS-MED-01..09). Ticket #68. Bytes go to MinIO via signed PUT. Signed GET is 60 s after `canRead`. Quota 1 GiB (`QUOTA_EXCEEDED`). Images jpeg/png/webp max 8 MiB with EXIF-stripped sm/md WebP variants. Flyway `V5__media.sql`.
 - Profiles: `GET`/`PATCH /api/v1/profiles/me`, `GET /api/v1/profiles/{handle}` with private stubs (FS-PROF-01..06). Ticket #59.
@@ -34,6 +35,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Pin gym-buddy-openapi `develop` SHA `dc3488158a302de9475153f124f7f98a6e4dba9b` for ticket #59 until the next 0.1.x tag. `scripts/fetch-openapi-tree.sh` accepts a 40-character commit SHA.
 - Pin gym-buddy-openapi develop SHA `3e63187727035b5277738db90c44744406057b4c` for ticket #60.
 - Pin gym-buddy-openapi develop SHA `edca075cdf1e1eb6caf6f094e02cadaba7c480b5` for ticket #68.
+- Pin gym-buddy-openapi develop SHA `01ab3d50195833296b10e8ca44aa89d1e046683a` for ticket #62.
 - Pin gym-buddy-openapi develop SHA `d58a824e0720c2f50c56632e3664d3632484e281` for ticket #61.
 - Auth JSON follows the spec: `AccessTokenResponse` is `accessToken` only; register returns generated `RegisteredUser`; handle `minLength` is 1.
 - CI uses `actions/setup-java@v5` (Temurin 25) and `mvn` (no Maven wrapper binaries).

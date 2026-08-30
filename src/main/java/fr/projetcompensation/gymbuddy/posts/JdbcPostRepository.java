@@ -175,6 +175,12 @@ public class JdbcPostRepository implements PostRepository {
         return count == null ? 0L : count;
     }
 
+    @Override
+    public long commentCount(UUID postId) {
+        Long count = jdbc.queryForObject("SELECT COUNT(*) FROM comments WHERE post_id = ?", Long.class, postId);
+        return count == null ? 0L : count;
+    }
+
     private Post map(ResultSet rs, int rowNum) throws SQLException {
         Timestamp created = rs.getTimestamp("created_at");
         Timestamp edited = rs.getTimestamp("edited_at");

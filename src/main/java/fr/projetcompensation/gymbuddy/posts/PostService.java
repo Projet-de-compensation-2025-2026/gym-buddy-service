@@ -184,7 +184,7 @@ public final class PostService {
                 List.copyOf(mediaIds),
                 posts.likeCount(row.id()),
                 posts.repostCount(row.id()),
-                0,
+                posts.commentCount(row.id()),
                 posts.liked(caller.id(), row.id()),
                 posts.reposted(caller.id(), row.id()));
     }
