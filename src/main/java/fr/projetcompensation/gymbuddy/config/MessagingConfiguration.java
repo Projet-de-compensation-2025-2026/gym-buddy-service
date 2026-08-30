@@ -28,7 +28,9 @@ public class MessagingConfiguration {
 
     @Bean(destroyMethod = "close")
     MessagingGateway messagingGateway(
-            MessagingSessionRegistry sessions, ObjectProvider<ObjectMapper> mappers, ObjectProvider<RedisClient> redis) {
+            MessagingSessionRegistry sessions,
+            ObjectProvider<ObjectMapper> mappers,
+            ObjectProvider<RedisClient> redis) {
         ObjectMapper mapper = mappers.getIfAvailable(ObjectMapper::new);
         return new WebSocketMessagingGateway(sessions, mapper, redis.getIfAvailable());
     }
