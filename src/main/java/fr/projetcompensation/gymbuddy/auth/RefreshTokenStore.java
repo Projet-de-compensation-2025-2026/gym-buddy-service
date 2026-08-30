@@ -11,4 +11,6 @@ public interface RefreshTokenStore {
     Optional<UUID> findAllowedUserId(String jti);
 
     void revoke(String jti, Instant expiresAt);
+
+    void revokeAll(UUID userId);
 }

@@ -9,11 +9,17 @@ tag="${1:-v0.1.0}"
 dest="${2:-target/openapi/gym-buddy-openapi}"
 owner="Projet-de-compensation-2025-2026"
 repo="gym-buddy-openapi"
-archive_url="https://codeload.github.com/${owner}/${repo}/tar.gz/refs/tags/${tag}"
 
 if [[ "${tag}" == develop ]] || [[ "${tag}" == *bundled.yaml* ]]; then
-  echo "fetch-openapi-tree: refuse develop / bundled.yaml; pin a package tag (v0.1.0)" >&2
+  echo "fetch-openapi-tree: refuse develop / bundled.yaml; pin a package tag or commit SHA" >&2
   exit 1
+fi
+
+# Tags stay on refs/tags. A 40-char commit SHA is allowed until the next 0.1.x tag.
+if [[ "${tag}" =~ ^[0-9a-fA-F]{40}$ ]]; then
+  archive_url="https://codeload.github.com/${owner}/${repo}/tar.gz/${tag}"
+else
+  archive_url="https://codeload.github.com/${owner}/${repo}/tar.gz/refs/tags/${tag}"
 fi
 
 rm -rf "${dest}"

@@ -82,7 +82,7 @@ public class AccessTokenFilter extends OncePerRequestFilter {
         }
         Optional<User> user = userRepository.findById(claims.get().userId());
         if (user.isEmpty() || !user.get().active()) {
-            if (user.isPresent() && user.get().locked()) {
+            if (user.isPresent() && user.get().blockedFromAuth()) {
                 writeError(response, HttpServletResponse.SC_FORBIDDEN, ErrorCode.FORBIDDEN, "account is locked");
                 return;
             }

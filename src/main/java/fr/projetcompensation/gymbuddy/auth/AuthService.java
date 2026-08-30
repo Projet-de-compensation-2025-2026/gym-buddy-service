@@ -67,7 +67,7 @@ public final class AuthService {
                 UUID.randomUUID(), email, handle, passwords.hash(password), role, UserStatus.ACTIVE, clock.instant());
         try {
             users.save(user);
-            profiles.save(new Profile(user.id(), displayName));
+            profiles.save(Profile.created(user.id(), displayName));
         } catch (DuplicateUserException ex) {
             throw AuthException.conflict("email or handle already registered", new FieldIssue("email", "duplicate"));
         }
@@ -85,7 +85,7 @@ public final class AuthService {
             throw AuthException.forbidden(INVALID_CREDENTIALS);
         }
         User user = found.get();
-        if (user.locked()) {
+        if (user.blockedFromAuth()) {
             passwords.matches(password, user.passwordHash());
             throw AuthException.forbidden(ACCOUNT_LOCKED);
         }
@@ -97,13 +97,13 @@ public final class AuthService {
 
     public AuthSession refresh(String refreshToken) {
         RefreshClaims claims = requireRefresh(refreshToken);
-        if (refreshTokens.findAllowedUserId(claims.jti()).isEmpty()) {
-            throw AuthException.unauthenticated("refresh credential is not valid");
-        }
         User user =
                 users.findById(claims.userId()).orElseThrow(() -> AuthException.unauthenticated(INVALID_CREDENTIALS));
-        if (user.locked()) {
+        if (user.blockedFromAuth()) {
             throw AuthException.forbidden(ACCOUNT_LOCKED);
+        }
+        if (refreshTokens.findAllowedUserId(claims.jti()).isEmpty()) {
+            throw AuthException.unauthenticated("refresh credential is not valid");
         }
         if (!user.active()) {
             throw AuthException.unauthenticated(INVALID_CREDENTIALS);
@@ -115,6 +115,42 @@ public final class AuthService {
     public void logout(String refreshToken) {
         RefreshClaims claims = requireRefresh(refreshToken);
         refreshTokens.revoke(claims.jti(), claims.expiresAt());
+    }
+
+    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        User user = requireActive(userId);
+        if (currentPassword == null
+                || currentPassword.isBlank()
+                || !passwords.matches(currentPassword, user.passwordHash())) {
+            throw AuthException.forbidden(INVALID_CREDENTIALS);
+        }
+        passwordPolicy
+                .validate(newPassword, user.email(), user.handle(), "newPassword")
+                .ifPresent(issue -> {
+                    throw AuthException.validation("password does not meet requirements", issue);
+                });
+        users.update(user.withPasswordHash(passwords.hash(newPassword)));
+        refreshTokens.revokeAll(user.id());
+    }
+
+    public void closeAccount(UUID userId, String password) {
+        User user = requireActive(userId);
+        if (password == null || password.isBlank()) {
+            throw AuthException.validation("password is required", new FieldIssue("password", "required"));
+        }
+        if (!passwords.matches(password, user.passwordHash())) {
+            throw AuthException.forbidden(INVALID_CREDENTIALS);
+        }
+        users.update(user.withStatus(UserStatus.CLOSED));
+        refreshTokens.revokeAll(user.id());
+    }
+
+    private User requireActive(UUID userId) {
+        User user = users.findById(userId).orElseThrow(() -> AuthException.unauthenticated(INVALID_CREDENTIALS));
+        if (user.blockedFromAuth() || !user.active()) {
+            throw AuthException.unauthenticated(INVALID_CREDENTIALS);
+        }
+        return user;
     }
 
     private AuthSession sessionFor(User user) {

@@ -79,6 +79,29 @@ public class JdbcUserRepository implements UserRepository {
         }
     }
 
+    @Override
+    public void update(User user) {
+        try {
+            int updated = jdbc.update(
+                    """
+                    UPDATE users
+                    SET email = ?, handle = ?, password_hash = ?, role = ?, status = ?
+                    WHERE id = ?
+                    """,
+                    user.email(),
+                    user.handle(),
+                    user.passwordHash(),
+                    user.role().wireValue(),
+                    user.status().wireValue(),
+                    user.id());
+            if (updated == 0) {
+                throw new IllegalStateException("user not found");
+            }
+        } catch (DuplicateKeyException ex) {
+            throw new DuplicateUserException();
+        }
+    }
+
     private User mapUser(ResultSet rs, int rowNum) throws SQLException {
         return new User(
                 rs.getObject("id", UUID.class),

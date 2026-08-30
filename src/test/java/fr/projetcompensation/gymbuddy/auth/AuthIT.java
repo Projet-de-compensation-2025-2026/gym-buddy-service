@@ -195,6 +195,159 @@ class AuthIT {
     }
 
     @Test
+    void fsAcct05And07_passwordChangeAndCloseAccount() {
+        RestClient client = restClient();
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("casey@example.com", "casey", PASSWORD, "Casey"))
+                .retrieve()
+                .toEntity(String.class);
+        ResponseEntity<String> login = client.post()
+                .uri("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"email\":\"casey@example.com\",\"password\":\"correct-horse\"}")
+                .retrieve()
+                .toEntity(String.class);
+        String access = jsonField(login.getBody(), "accessToken");
+        String refresh = refreshCookie(login.getHeaders());
+
+        ResponseEntity<String> wrong = client.post()
+                .uri("/api/v1/auth/password")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + access)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"currentPassword\":\"nope-nope-nope\",\"newPassword\":\"new-correct-horse\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(wrong.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        ResponseEntity<String> changed = client.post()
+                .uri("/api/v1/auth/password")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + access)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"currentPassword\":\"correct-horse\",\"newPassword\":\"new-correct-horse\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(changed.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        ResponseEntity<String> oldRefresh = client.post()
+                .uri("/api/v1/auth/refresh")
+                .header(HttpHeaders.COOKIE, "refresh=" + refresh)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(oldRefresh.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        ResponseEntity<String> oldLogin = client.post()
+                .uri("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"email\":\"casey@example.com\",\"password\":\"correct-horse\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(oldLogin.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        ResponseEntity<String> newLogin = client.post()
+                .uri("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"email\":\"casey@example.com\",\"password\":\"new-correct-horse\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(newLogin.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String newAccess = jsonField(newLogin.getBody(), "accessToken");
+
+        ResponseEntity<String> closed = client.post()
+                .uri("/api/v1/me/close")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + newAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"password\":\"new-correct-horse\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(closed.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        ResponseEntity<String> closedLogin = client.post()
+                .uri("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"email\":\"casey@example.com\",\"password\":\"new-correct-horse\"}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(closedLogin.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(jsonField(closedLogin.getBody(), "message")).isEqualTo("account is locked");
+    }
+
+    @Test
+    void fsProf04_privateProfileIsStubForStrangerAndFullForOwner() {
+        RestClient client = restClient();
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("blake@example.com", "blake", PASSWORD, "Blake"))
+                .retrieve()
+                .toEntity(String.class);
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("viewer@example.com", "viewer", PASSWORD, "Viewer"))
+                .retrieve()
+                .toEntity(String.class);
+        String ownerAccess = jsonField(
+                client.post()
+                        .uri("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"email\":\"blake@example.com\",\"password\":\"correct-horse\"}")
+                        .retrieve()
+                        .toEntity(String.class)
+                        .getBody(),
+                "accessToken");
+        String strangerAccess = jsonField(
+                client.post()
+                        .uri("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"email\":\"viewer@example.com\",\"password\":\"correct-horse\"}")
+                        .retrieve()
+                        .toEntity(String.class)
+                        .getBody(),
+                "accessToken");
+
+        ResponseEntity<String> patched = client.patch()
+                .uri("/api/v1/profiles/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + ownerAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"visibility":"private","bio":"secret-bio","sports":["running"],"city":"Austin, TX"}
+                        """)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(patched.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(patched.getBody()).contains("\"view\":\"full\"").contains("secret-bio");
+
+        ResponseEntity<String> unauthenticated =
+                client.get().uri("/api/v1/profiles/blake").retrieve().toEntity(String.class);
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        ResponseEntity<String> stub = client.get()
+                .uri("/api/v1/profiles/blake")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + strangerAccess)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(stub.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(stub.getBody())
+                .contains("\"view\":\"stub\"")
+                .contains("\"visibility\":\"private\"")
+                .doesNotContain("secret-bio")
+                .doesNotContain("Austin, TX")
+                .doesNotContain("running");
+
+        ResponseEntity<String> ownerView = client.get()
+                .uri("/api/v1/profiles/blake")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + ownerAccess)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(ownerView.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(ownerView.getBody())
+                .contains("\"view\":\"full\"")
+                .contains("secret-bio")
+                .contains("Austin, TX");
+    }
+
+    @Test
     void healthzStillWorksWhenAuthIsConfigured() {
         ResponseEntity<String> healthz =
                 restClient().get().uri("/api/v1/healthz").retrieve().toEntity(String.class);

@@ -4,5 +4,6 @@ public enum ErrorCode {
     VALIDATION,
     CONFLICT,
     FORBIDDEN,
-    UNAUTHENTICATED
+    UNAUTHENTICATED,
+    NOT_FOUND
 }
