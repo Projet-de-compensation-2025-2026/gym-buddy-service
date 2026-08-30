@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #68 (media). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>edca075cdf1e1eb6caf6f094e02cadaba7c480b5</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after ticket #61 (posts). Pin a 0.1.x tag when Release cuts one. -->
+        <openapi.package.tag>d58a824e0720c2f50c56632e3664d3632484e281</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -250,6 +250,19 @@
                                 <inlineSchemaNameMapping>postMedia_request=CreateMediaRequest</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>postMedia_201_response=CreateMediaResponse</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getMediaIdUrl_200_response=MediaUrlResponse</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postPosts_request=CreatePostRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchPostsId_request=PatchPostRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postPosts_201_response=Post</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postPosts_201_response_author=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getPostsId_200_response=Post</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getPostsId_200_response_author=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchPostsId_200_response=Post</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>patchPostsId_200_response_author=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postPostsIdReposts_201_response=Post</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postPostsIdReposts_201_response_author=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getPostsIdLikes_200_response=PostLikerPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getPostsIdLikes_200_response_data_inner=PostLiker</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getPostsIdLikes_200_response_page=Page</inlineSchemaNameMapping>
                             </inlineSchemaNameMappings>
                             <modelNameMappings>
                                 <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
@@ -286,6 +299,19 @@
                                 <modelNameMapping>postMedia_request=CreateMediaRequest</modelNameMapping>
                                 <modelNameMapping>postMedia_201_response=CreateMediaResponse</modelNameMapping>
                                 <modelNameMapping>getMediaIdUrl_200_response=MediaUrlResponse</modelNameMapping>
+                                <modelNameMapping>postPosts_request=CreatePostRequest</modelNameMapping>
+                                <modelNameMapping>patchPostsId_request=PatchPostRequest</modelNameMapping>
+                                <modelNameMapping>postPosts_201_response=Post</modelNameMapping>
+                                <modelNameMapping>postPosts_201_response_author=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getPostsId_200_response=Post</modelNameMapping>
+                                <modelNameMapping>getPostsId_200_response_author=PostAuthor</modelNameMapping>
+                                <modelNameMapping>patchPostsId_200_response=Post</modelNameMapping>
+                                <modelNameMapping>patchPostsId_200_response_author=PostAuthor</modelNameMapping>
+                                <modelNameMapping>postPostsIdReposts_201_response=Post</modelNameMapping>
+                                <modelNameMapping>postPostsIdReposts_201_response_author=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getPostsIdLikes_200_response=PostLikerPage</modelNameMapping>
+                                <modelNameMapping>getPostsIdLikes_200_response_data_inner=PostLiker</modelNameMapping>
+                                <modelNameMapping>getPostsIdLikes_200_response_page=Page</modelNameMapping>
                             </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>
