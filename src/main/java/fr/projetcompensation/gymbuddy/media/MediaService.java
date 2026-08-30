@@ -155,7 +155,7 @@ public final class MediaService {
         if (viewer.id().equals(row.ownerId())) {
             return true;
         }
-        if (row.kind() == MediaKind.POST) {
+        if (row.kind() == MediaKind.POST || row.kind() == MediaKind.EVENT || row.kind() == MediaKind.MESSAGE) {
             return attachedMedia.canRead(viewer.id(), row);
         }
         if (row.kind() != MediaKind.AVATAR) {

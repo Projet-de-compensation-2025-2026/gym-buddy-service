@@ -6,7 +6,11 @@ import fr.projetcompensation.gymbuddy.events.EventRepository;
 import fr.projetcompensation.gymbuddy.events.EventService;
 import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
 import fr.projetcompensation.gymbuddy.media.AttachedMediaAccess;
+import fr.projetcompensation.gymbuddy.media.CompositeAttachedMediaAccess;
 import fr.projetcompensation.gymbuddy.media.MediaRepository;
+import fr.projetcompensation.gymbuddy.messaging.ConversationRepository;
+import fr.projetcompensation.gymbuddy.messaging.MessageAttachedMediaAccess;
+import fr.projetcompensation.gymbuddy.messaging.MessageRepository;
 import fr.projetcompensation.gymbuddy.posts.PostAttachedMediaAccess;
 import fr.projetcompensation.gymbuddy.posts.PostRepository;
 import fr.projetcompensation.gymbuddy.profiles.ProfileRepository;
@@ -37,9 +41,15 @@ public class EventConfiguration {
     @Primary
     @ConditionalOnProperty(name = "DATABASE_URL")
     AttachedMediaAccess attachedMediaAccess(
-            PostRepository posts, EventRepository events, FriendshipRepository friendships, UserRepository users) {
-        PostAttachedMediaAccess postsAccess = new PostAttachedMediaAccess(posts, friendships, users);
-        EventAttachedMediaAccess eventsAccess = new EventAttachedMediaAccess(events, friendships, users);
-        return (viewerId, media) -> postsAccess.canRead(viewerId, media) || eventsAccess.canRead(viewerId, media);
+            PostRepository posts,
+            EventRepository events,
+            MessageRepository messages,
+            ConversationRepository conversations,
+            FriendshipRepository friendships,
+            UserRepository users) {
+        return new CompositeAttachedMediaAccess(
+                new PostAttachedMediaAccess(posts, friendships, users),
+                new EventAttachedMediaAccess(events, friendships, users),
+                new MessageAttachedMediaAccess(messages, conversations));
     }
 }

@@ -7,6 +7,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Private messaging (FS-MSG-01..10). Ticket #67. Flyway `V10__messaging.sql`. `GET`/`POST /api/v1/conversations`, `GET`/`POST /api/v1/conversations/{id}/messages`, `DELETE /api/v1/messages/{id}`, `GET /api/v1/ws`. Friends-only direct pair. Text 1–4000. Image/audio via existing `/media` (`kind=message`). Sender tombstone within 10 minutes. Inbox unread counts. Persistence first; WebSocket fan-out. Non-friends `FORBIDDEN`; stranger conversation `NOT_FOUND`. HTTP write succeeds when the socket is down.
 - Admin and moderation (FS-ADM-01..09, FS-ACCT-08/09). Ticket #69. Flyway `V12__admin.sql` (`reports`, `audit_events`, media/comment hide columns). Staff `/api/v1/admin/*` (members `NOT_FOUND`). Moderator role PATCH is `FORBIDDEN`. Hide post → member `NOT_FOUND` plus `audit_events`. Last admin demote/lock is `CONFLICT`. Fixture trigger is a prod-guarded stub (ticket #70 generates rows). Member `POST /api/v1/reports`. Pin gym-buddy-openapi develop SHA `8f89f1a72b1ddb6996d9598e6cedbac4d4788ace`.
 - Personalized friend suggestions and weekly matching (FS-SUGG-01..07, FS-MATCH-01..03). Ticket #66. Flyway `V11__suggestions.sql`. `GET /api/v1/suggestions` default 20 max 50 with a plain-language `reason`; `POST /api/v1/suggestions/{userId}/dismiss` for 30 days. Two-stage generate-and-score (FoF ∪ city∩sport ∪ co-participants last 90 days). Forbidden set: self, friends, pending, blocked, dismissed-30d, locked/closed. `POST`/`DELETE /api/v1/matching/opt-in` and `GET /api/v1/matching/me`. Nightly greedy matching, no double assignment, no edge across a block, draft instant event capacity 1.
 - Parameterized search `GET /api/v1/search/people` and `GET /api/v1/search/events` (FS-SRCH-01..08). Ticket #65. Filters AND across fields; sports ANY. Rank α ts_rank + β recency + γ geo + δ social. Cursor `before`. `radiusKm` 1–50. Private strangers, blocked users, and (when `remaining=true`) full events never appear. Unauthenticated is `401`.
@@ -40,6 +41,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Pin gym-buddy-openapi `develop` SHA `dc3488158a302de9475153f124f7f98a6e4dba9b` for ticket #59 until the next 0.1.x tag. `scripts/fetch-openapi-tree.sh` accepts a 40-character commit SHA.
 - Pin gym-buddy-openapi develop SHA `3e63187727035b5277738db90c44744406057b4c` for ticket #60.
 - Pin gym-buddy-openapi develop SHA `edca075cdf1e1eb6caf6f094e02cadaba7c480b5` for ticket #68.
+- Pin gym-buddy-openapi develop SHA `8f89f1a72b1ddb6996d9598e6cedbac4d4788ace` for ticket #67.
 - Pin gym-buddy-openapi develop SHA `8f89f1a72b1ddb6996d9598e6cedbac4d4788ace` for ticket #69 (includes search #65 and messaging #67).
 - Pin gym-buddy-openapi develop SHA `2550b32f95dcb881b0bfaa37e30f130595dbe9d3` for ticket #65.
 - Pin gym-buddy-openapi develop SHA `276b60d003b1e98a8d396b5c7f44cfe14b804d70` for ticket #66.

@@ -53,6 +53,9 @@ public class AccessTokenFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         Optional<String> bearer = bearer(request.getHeader(HttpHeaders.AUTHORIZATION));
+        if (bearer.isEmpty() && isMessagingSocket(request)) {
+            bearer = queryToken(request);
+        }
         if (bearer.isEmpty()) {
             writeError(
                     response,
@@ -114,6 +117,18 @@ public class AccessTokenFilter extends OncePerRequestFilter {
             uri = uri.substring(0, uri.length() - 1);
         }
         return uri;
+    }
+
+    private static boolean isMessagingSocket(HttpServletRequest request) {
+        return "/api/v1/ws".equals(publicPath(request));
+    }
+
+    private static Optional<String> queryToken(HttpServletRequest request) {
+        String token = request.getParameter("access_token");
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.of(token.trim());
     }
 
     private static Optional<String> bearer(String header) {
