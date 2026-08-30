@@ -10,6 +10,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Profiles: `GET`/`PATCH /api/v1/profiles/me`, `GET /api/v1/profiles/{handle}` with private stubs (FS-PROF-01..06). Ticket #59.
 - `POST /api/v1/auth/password` (FS-ACCT-05) and `POST /api/v1/me/close` (FS-ACCT-07). Closed login is generic `FORBIDDEN`.
 - Flyway `V3__profiles_and_closed.sql`: remaining profile columns and `users.status=closed`.
+- Friend requests, accept/decline, unfriend, and blocks (FS-FRND-01..08). Ticket #60. Flyway `V4__friendships.sql`.
 - Build-time OpenAPI Generator: fetch `gym-buddy-openapi` `bundled.yaml` and generate models + API interfaces. `AuthController` / `HealthController` implement those interfaces (ticket #41).
 - `POST /api/v1/auth/register`, `/login`, `/refresh`, `/logout`: Argon2id passwords, HS256 access JWT, refresh cookie, Redis `jti` denylist (ticket #12).
 - Flyway `V2__users_and_profiles.sql` (`users` + `profiles`). First registered user is `admin`.
@@ -29,6 +30,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Release writes the computed SemVer into `pom.xml` before the tag (documentation ticket #53). Humans do not hand-edit that number. Auto bump still never chooses `1.0.0`.
 - OpenAPI Generator now consumes the versioned `gym-buddy-openapi` package tag `v0.1.0` (`openapi/openapi.yaml` `$ref` tree) instead of a raw `develop` GET of `bundled.yaml` (ticket #47).
 - Pin gym-buddy-openapi `develop` SHA `dc3488158a302de9475153f124f7f98a6e4dba9b` for ticket #59 until the next 0.1.x tag. `scripts/fetch-openapi-tree.sh` accepts a 40-character commit SHA.
+- Pin gym-buddy-openapi develop SHA `3e63187727035b5277738db90c44744406057b4c` for ticket #60.
 - Auth JSON follows the spec: `AccessTokenResponse` is `accessToken` only; register returns generated `RegisteredUser`; handle `minLength` is 1.
 - CI uses `actions/setup-java@v5` (Temurin 25) and `mvn` (no Maven wrapper binaries).
 - Document Java 25 LTS as the approved stack (README, CHANGELOG, Dockerfile comments).
