@@ -24,7 +24,7 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #65 (search). Pin a 0.1.x tag when Release cuts one. -->
+        <!-- gym-buddy-openapi develop SHA after ticket #66 (suggestions) and #65 (search). Pin a 0.1.x tag when Release cuts one. -->
         <openapi.package.tag>2550b32f95dcb881b0bfaa37e30f130595dbe9d3</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
@@ -352,6 +352,12 @@
                                 <inlineSchemaNameMapping>getSearchEvents_200_response_data_inner_organizer=PostAuthor</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getSearchEvents_200_response_page=Page</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>EventSearchHit_organizer=PostAuthor</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSuggestions_200_response=SuggestionPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSuggestions_200_response_data_inner=Suggestion</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getSuggestions_200_response_page=Page</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getMatchingMe_200_response=MatchingMe</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getMatchingMe_200_response_pair=MatchingPeer</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getMatchingMe_200_response_event=MatchingDraftEvent</inlineSchemaNameMapping>
                             </inlineSchemaNameMappings>
                             <modelNameMappings>
                                 <modelNameMapping>getHealthz_200_response=HealthStatus</modelNameMapping>
@@ -490,6 +496,12 @@
                                 <modelNameMapping>getSearchEvents_200_response_data_inner_organizer=PostAuthor</modelNameMapping>
                                 <modelNameMapping>getSearchEvents_200_response_page=Page</modelNameMapping>
                                 <modelNameMapping>EventSearchHit_organizer=PostAuthor</modelNameMapping>
+                                <modelNameMapping>getSuggestions_200_response=SuggestionPage</modelNameMapping>
+                                <modelNameMapping>getSuggestions_200_response_data_inner=Suggestion</modelNameMapping>
+                                <modelNameMapping>getSuggestions_200_response_page=Page</modelNameMapping>
+                                <modelNameMapping>getMatchingMe_200_response=MatchingMe</modelNameMapping>
+                                <modelNameMapping>getMatchingMe_200_response_pair=MatchingPeer</modelNameMapping>
+                                <modelNameMapping>getMatchingMe_200_response_event=MatchingDraftEvent</modelNameMapping>
                             </modelNameMappings>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>

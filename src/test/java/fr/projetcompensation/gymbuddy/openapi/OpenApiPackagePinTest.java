@@ -34,6 +34,8 @@ class OpenApiPackagePinTest {
         assertThat(pom).contains("getSearchPeople_200_response=PeopleSearchPage");
         assertThat(pom).contains("getSearchEvents_200_response=EventSearchPage");
         assertThat(pom).contains("getSearchEvents_200_response_data_inner_organizer=PostAuthor");
+        assertThat(pom).contains("getSuggestions_200_response=SuggestionPage");
+        assertThat(pom).contains("getMatchingMe_200_response=MatchingMe");
         assertThat(pom).doesNotContain("bundled.yaml");
         assertThat(pom)
                 .doesNotContain("raw.githubusercontent.com/Projet-de-compensation-2025-2026/gym-buddy-openapi/develop");
