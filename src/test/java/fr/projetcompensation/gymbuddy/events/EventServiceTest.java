@@ -60,6 +60,8 @@ class EventServiceTest {
         friendships = new InMemoryFriendships();
         media = new InMemoryMedia();
         events = new InMemoryEvents();
+        events.users = users;
+        events.friendships = friendships;
         TransactionRunner transactions = new TransactionRunner() {
             @Override
             public <T> T inTransaction(java.util.function.Supplier<T> work) {
@@ -122,6 +124,28 @@ class EventServiceTest {
         Instant windowEnd = WeeklyRrule.defaultWindowEnd(START);
         assertThat(created.occurrences().getLast().occurrence().startsAt()).isBeforeOrEqualTo(windowEnd);
         assertThat(created.occurrences().size()).isGreaterThan(8);
+    }
+
+    @Test
+    void listIncludesOrganizerOwnSessionAndHidesStrangerFriendsOnly() {
+        VisibleEvent friendsOnly = service.create(alex.id(), draft(null, EventVisibility.FRIENDS.wireValue(), 3));
+        VisibleEvent publicEvent = service.create(alex.id(), draft(null, EventVisibility.PUBLIC.wireValue(), 3));
+
+        EventList own = service.list(alex.id(), null, null, null, null, 50);
+        assertThat(own.data())
+                .extracting(row -> row.event().id())
+                .contains(friendsOnly.event().id(), publicEvent.event().id());
+
+        EventList friend = service.list(blake.id(), null, null, null, null, 50);
+        assertThat(friend.data())
+                .extracting(row -> row.event().id())
+                .contains(friendsOnly.event().id(), publicEvent.event().id());
+
+        EventList stranger = service.list(casey.id(), null, null, null, null, 50);
+        assertThat(stranger.data())
+                .extracting(row -> row.event().id())
+                .contains(publicEvent.event().id())
+                .doesNotContain(friendsOnly.event().id());
     }
 
     @Test
@@ -562,6 +586,8 @@ class EventServiceTest {
         private final Map<UUID, EventOccurrence> occurrences = new LinkedHashMap<>();
         private final Map<UUID, EventApplication> applications = new LinkedHashMap<>();
         private final Map<UUID, List<UUID>> invitees = new HashMap<>();
+        private InMemoryUsers users;
+        private InMemoryFriendships friendships;
 
         synchronized void forceStart(UUID occurrenceId, Instant startsAt) {
             EventOccurrence occurrence = occurrences.get(occurrenceId);
@@ -727,6 +753,16 @@ class EventServiceTest {
                                 && occurrence.startsAt().isBefore(until));
                 if (!inWindow) {
                     continue;
+                }
+                User viewer = users.findById(viewerId).orElse(null);
+                if (viewer == null || !EventAccess.canView(event, viewer, friendships, users, this)) {
+                    continue;
+                }
+                if (after != null) {
+                    int cmp = event.startsAt().compareTo(after.at());
+                    if (cmp < 0 || (cmp == 0 && event.id().compareTo(after.id()) <= 0)) {
+                        continue;
+                    }
                 }
                 rows.add(event);
             }
