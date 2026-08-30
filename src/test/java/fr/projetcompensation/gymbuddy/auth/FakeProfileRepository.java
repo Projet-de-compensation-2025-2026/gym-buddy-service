@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-final class FakeProfileRepository implements ProfileRepository {
+public final class FakeProfileRepository implements ProfileRepository {
 
     final List<Profile> saved = new ArrayList<>();
     private final Map<UUID, Profile> byUser = new LinkedHashMap<>();
