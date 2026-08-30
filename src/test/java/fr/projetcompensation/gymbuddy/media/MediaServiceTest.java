@@ -117,6 +117,37 @@ class MediaServiceTest {
     }
 
     @Test
+    void fsMsg06_strangerCannotGetConversationMediaUrl() {
+        Media row = new Media(
+                UUID.randomUUID(),
+                alex.id(),
+                MediaKind.MESSAGE,
+                "image/jpeg",
+                12,
+                0,
+                MediaStatus.READY,
+                "original/" + alex.id() + "/chat",
+                NOW,
+                null);
+        media.save(row);
+        MediaService withChat = new MediaService(
+                media,
+                storage,
+                users,
+                profiles,
+                friends,
+                clock,
+                (viewerId, attached) ->
+                        attached.id().equals(row.id()) && (viewerId.equals(alex.id()) || viewerId.equals(blake.id())));
+
+        assertThatThrownBy(() -> withChat.url(casey.id(), row.id()))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+        assertThat(withChat.url(blake.id(), row.id()).url().toString()).contains(row.objectKey());
+        assertThat(withChat.url(alex.id(), row.id()).url().toString()).contains(row.objectKey());
+    }
+
+    @Test
     void fsMed06_strangerCannotGetFriendsOnlyPostUrl() {
         CreateUpload upload = service.create(alex.id(), "post", "image/jpeg", jpeg().length);
         storage.put(media.findById(upload.mediaId()).orElseThrow().objectKey(), "image/jpeg", jpeg());
