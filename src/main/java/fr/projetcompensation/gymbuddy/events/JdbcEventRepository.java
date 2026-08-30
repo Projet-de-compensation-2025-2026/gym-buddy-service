@@ -116,15 +116,11 @@ public class JdbcEventRepository implements EventRepository {
 
     @Override
     public void updateOccurrence(EventOccurrence occurrence) {
-        jdbc.update(
-                """
+        jdbc.update("""
                 UPDATE event_occurrences
                 SET starts_at = ?, cancelled_at = ?
                 WHERE id = ?
-                """,
-                Timestamp.from(occurrence.startsAt()),
-                timestamp(occurrence.cancelledAt()),
-                occurrence.id());
+                """, Timestamp.from(occurrence.startsAt()), timestamp(occurrence.cancelledAt()), occurrence.id());
     }
 
     @Override
@@ -193,15 +189,11 @@ public class JdbcEventRepository implements EventRepository {
 
     @Override
     public void updateApplication(EventApplication application) {
-        jdbc.update(
-                """
+        jdbc.update("""
                 UPDATE event_applications
                 SET status = ?, responded_at = ?
                 WHERE id = ?
-                """,
-                application.status().wireValue(),
-                timestamp(application.respondedAt()),
-                application.id());
+                """, application.status().wireValue(), timestamp(application.respondedAt()), application.id());
     }
 
     @Override
@@ -212,7 +204,8 @@ public class JdbcEventRepository implements EventRepository {
 
     @Override
     public Optional<EventApplication> findApplication(UUID occurrenceId, UUID applicantId) {
-        return jdbc.query(
+        return jdbc
+                .query(
                         SELECT_APPLICATION + " WHERE occurrence_id = ? AND user_id = ?",
                         this::mapApplication,
                         occurrenceId,
@@ -236,14 +229,10 @@ public class JdbcEventRepository implements EventRepository {
 
     @Override
     public boolean hasAccepted(UUID eventId, UUID userId) {
-        Integer count = jdbc.queryForObject(
-                """
+        Integer count = jdbc.queryForObject("""
                 SELECT COUNT(*) FROM event_applications
                 WHERE event_id = ? AND user_id = ? AND status = 'accepted'
-                """,
-                Integer.class,
-                eventId,
-                userId);
+                """, Integer.class, eventId, userId);
         return count != null && count > 0;
     }
 
@@ -258,15 +247,11 @@ public class JdbcEventRepository implements EventRepository {
 
     @Override
     public int countAcceptedCoAttendance(UUID organizerId, UUID applicantId) {
-        Integer count = jdbc.queryForObject(
-                """
+        Integer count = jdbc.queryForObject("""
                 SELECT COUNT(*) FROM event_applications a
                 JOIN events e ON e.id = a.event_id
                 WHERE e.organizer_id = ? AND a.user_id = ? AND a.status = 'accepted'
-                """,
-                Integer.class,
-                organizerId,
-                applicantId);
+                """, Integer.class, organizerId, applicantId);
         return count == null ? 0 : count;
     }
 
@@ -355,10 +340,7 @@ public class JdbcEventRepository implements EventRepository {
                       )
                     )
                   )
-                """
-                + kindClause
-                + cursorClause
-                + " ORDER BY e.starts_at ASC, e.id ASC LIMIT ?";
+                """ + kindClause + cursorClause + " ORDER BY e.starts_at ASC, e.id ASC LIMIT ?";
         return jdbc.query(sql, this::mapEvent, args);
     }
 

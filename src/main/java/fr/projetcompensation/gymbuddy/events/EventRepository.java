@@ -50,6 +50,5 @@ public interface EventRepository {
 
     int countAcceptedCoAttendance(UUID organizerId, UUID applicantId);
 
-    List<Event> listVisible(
-            UUID viewerId, String kind, Instant from, Instant until, InstantIdCursor after, int limit);
+    List<Event> listVisible(UUID viewerId, String kind, Instant from, Instant until, InstantIdCursor after, int limit);
 }

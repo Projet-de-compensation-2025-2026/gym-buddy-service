@@ -40,8 +40,7 @@ class WeeklyRruleTest {
 
     @Test
     void fsEvt03_rejectsNonWeekly() {
-        assertThatThrownBy(() -> WeeklyRrule.parse("FREQ=DAILY;BYDAY=MO"))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> WeeklyRrule.parse("FREQ=DAILY;BYDAY=MO")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> WeeklyRrule.parse("FREQ=WEEKLY")).isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -49,7 +48,8 @@ class WeeklyRruleTest {
     void fsEvt03_skipsDtStartWhenWeekdayNotInByDay() {
         WeeklyRrule rule = WeeklyRrule.parse("RRULE:FREQ=WEEKLY;BYDAY=WE");
         Instant monday = Instant.parse("2026-08-31T18:00:00Z");
-        assertThat(LocalDate.ofInstant(monday, java.time.ZoneOffset.UTC).getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
+        assertThat(LocalDate.ofInstant(monday, java.time.ZoneOffset.UTC).getDayOfWeek())
+                .isEqualTo(DayOfWeek.MONDAY);
         assertThat(rule.occurrences(monday, Instant.parse("2026-09-10T00:00:00Z")))
                 .containsExactly(Instant.parse("2026-09-02T18:00:00Z"), Instant.parse("2026-09-09T18:00:00Z"));
     }

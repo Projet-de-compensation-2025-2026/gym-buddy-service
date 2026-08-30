@@ -110,7 +110,8 @@ public class EventsController implements EventsApi {
     }
 
     private static EventDraft toDraft(CreateEventRequest request) {
-        String visibility = request.getVisibility() == null ? null : request.getVisibility().getValue();
+        String visibility =
+                request.getVisibility() == null ? null : request.getVisibility().getValue();
         List<UUID> invitees = request.getInviteeIds() == null ? List.of() : List.copyOf(request.getInviteeIds());
         List<String> tags = request.getTags() == null ? List.of() : List.copyOf(request.getTags());
         return new EventDraft(

@@ -164,11 +164,13 @@ public final class EventService {
             throw AuthException.validation("event already started", new FieldIssue("startsAt", "past"));
         }
         String title = draft.title() == null ? row.title() : requireText(draft.title(), "title", 1, MAX_TITLE);
-        String activity =
-                draft.activity() == null ? row.activity() : requireText(draft.activity(), "activity", MIN_ACTIVITY, MAX_ACTIVITY);
+        String activity = draft.activity() == null
+                ? row.activity()
+                : requireText(draft.activity(), "activity", MIN_ACTIVITY, MAX_ACTIVITY);
         String place = draft.place() == null ? row.place() : requireText(draft.place(), "place", 1, MAX_PLACE);
-        String description =
-                draft.description() == null ? row.description() : optionalText(draft.description(), "description", MAX_DESCRIPTION);
+        String description = draft.description() == null
+                ? row.description()
+                : optionalText(draft.description(), "description", MAX_DESCRIPTION);
         Instant startsAt = draft.startsAt() == null ? row.startsAt() : draft.startsAt();
         if (!startsAt.isAfter(now)) {
             throw AuthException.validation("start must be in the future", new FieldIssue("startsAt", "past"));
@@ -177,7 +179,8 @@ public final class EventService {
                 ? row.durationMin()
                 : requireRange(draft.durationMin(), "durationMin", 1, MAX_DURATION);
         List<String> tags = draft.tags() == null ? row.tags() : normalizeTags(draft.tags());
-        UUID cover = draft.coverMediaId() == null ? row.coverMediaId() : requireCover(caller.id(), draft.coverMediaId());
+        UUID cover =
+                draft.coverMediaId() == null ? row.coverMediaId() : requireCover(caller.id(), draft.coverMediaId());
         Double lat = draft.lat() == null ? row.lat() : optionalCoord(draft.lat(), "lat", -90, 90);
         Double lng = draft.lng() == null ? row.lng() : optionalCoord(draft.lng(), "lng", -180, 180);
         boolean acceptedAnyone = events.applicationsForEvent(row.id()).stream()
@@ -241,13 +244,7 @@ public final class EventService {
             throw AuthException.conflict("already applied", new FieldIssue("id", "duplicate"));
         }
         EventApplication application = new EventApplication(
-                UUID.randomUUID(),
-                row.id(),
-                occurrence.id(),
-                caller.id(),
-                EventApplicationStatus.PENDING,
-                now,
-                null);
+                UUID.randomUUID(), row.id(), occurrence.id(), caller.id(), EventApplicationStatus.PENDING, now, null);
         events.saveApplication(application);
         return toVisibleApplication(application);
     }
@@ -263,8 +260,8 @@ public final class EventService {
                 && application.status() != EventApplicationStatus.ACCEPTED) {
             throw AuthException.notFound(NOT_FOUND);
         }
-        EventOccurrence occurrence = events.findOccurrence(application.occurrenceId())
-                .orElseThrow(() -> AuthException.notFound(NOT_FOUND));
+        EventOccurrence occurrence =
+                events.findOccurrence(application.occurrenceId()).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
         Instant now = clock.instant();
         if (!occurrence.startsAt().isAfter(now)) {
             throw AuthException.validation("occurrence already started", new FieldIssue("id", "past"));
@@ -336,7 +333,8 @@ public final class EventService {
         EventOccurrence first = occurrences.stream()
                 .min(Comparator.comparing(EventOccurrence::startsAt))
                 .orElseThrow();
-        events.updateOccurrence(new EventOccurrence(first.id(), first.eventId(), event.startsAt(), first.cancelledAt()));
+        events.updateOccurrence(
+                new EventOccurrence(first.id(), first.eventId(), event.startsAt(), first.cancelledAt()));
     }
 
     private void extendOccurrences(Event event) {
@@ -399,7 +397,8 @@ public final class EventService {
             WeeklyRrule rule = WeeklyRrule.parse(recurrence);
             List<Instant> starts = rule.occurrences(startsAt, windowEnd);
             if (starts.isEmpty()) {
-                throw AuthException.validation("recurrence produces no occurrences", new FieldIssue("recurrence", "empty"));
+                throw AuthException.validation(
+                        "recurrence produces no occurrences", new FieldIssue("recurrence", "empty"));
             }
             return starts;
         } catch (IllegalArgumentException ex) {
@@ -417,7 +416,8 @@ public final class EventService {
         List<VisibleOccurrence> occurrences = new ArrayList<>();
         VisibleOccurrence nextOpen = null;
         for (EventOccurrence occurrence : events.occurrences(row.id())) {
-            if (occurrence.startsAt().isBefore(windowStart) || occurrence.startsAt().isAfter(windowEnd)) {
+            if (occurrence.startsAt().isBefore(windowStart)
+                    || occurrence.startsAt().isAfter(windowEnd)) {
                 continue;
             }
             int accepted = events.countAccepted(occurrence.id());
@@ -451,20 +451,14 @@ public final class EventService {
             occurrences = nextOpen == null ? List.of() : List.of(nextOpen);
         }
         return new VisibleEvent(
-                row,
-                organizer,
-                organizerProfile,
-                occurrences,
-                remainingSeats,
-                viewerApplication,
-                pending,
-                invitees);
+                row, organizer, organizerProfile, occurrences, remainingSeats, viewerApplication, pending, invitees);
     }
 
     private List<VisibleApplicant> rankPending(Event event, List<VisibleOccurrence> occurrences) {
         Instant now = clock.instant();
         UUID occurrenceId = occurrences.stream()
-                .filter(item -> !item.occurrence().cancelled() && item.occurrence().startsAt().isAfter(now))
+                .filter(item -> !item.occurrence().cancelled()
+                        && item.occurrence().startsAt().isAfter(now))
                 .map(item -> item.occurrence().id())
                 .findFirst()
                 .orElse(null);
@@ -509,7 +503,8 @@ public final class EventService {
             return null;
         }
         Media row = media.findById(mediaId)
-                .orElseThrow(() -> AuthException.validation("media is not allowed", new FieldIssue("coverMediaId", "invalid")));
+                .orElseThrow(() ->
+                        AuthException.validation("media is not allowed", new FieldIssue("coverMediaId", "invalid")));
         if (!row.ownerId().equals(ownerId)
                 || row.kind() != MediaKind.EVENT
                 || row.status() != MediaStatus.READY

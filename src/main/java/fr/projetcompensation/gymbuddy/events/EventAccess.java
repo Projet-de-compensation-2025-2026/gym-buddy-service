@@ -3,18 +3,13 @@ package fr.projetcompensation.gymbuddy.events;
 import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
 import fr.projetcompensation.gymbuddy.users.User;
 import fr.projetcompensation.gymbuddy.users.UserRepository;
-import java.util.UUID;
 
 public final class EventAccess {
 
     private EventAccess() {}
 
     public static boolean canView(
-            Event event,
-            User viewer,
-            FriendshipRepository friendships,
-            UserRepository users,
-            EventRepository events) {
+            Event event, User viewer, FriendshipRepository friendships, UserRepository users, EventRepository events) {
         if (event == null || event.hidden()) {
             return false;
         }
@@ -42,11 +37,7 @@ public final class EventAccess {
     }
 
     public static boolean canApply(
-            Event event,
-            User viewer,
-            FriendshipRepository friendships,
-            UserRepository users,
-            EventRepository events) {
+            Event event, User viewer, FriendshipRepository friendships, UserRepository users, EventRepository events) {
         if (!canView(event, viewer, friendships, users, events)) {
             return false;
         }

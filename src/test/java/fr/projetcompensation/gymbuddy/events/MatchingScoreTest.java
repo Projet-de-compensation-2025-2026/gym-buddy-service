@@ -38,8 +38,7 @@ class MatchingScoreTest {
     void fsEvt13_windowAndHistoryIncreaseScore() {
         Instant start = Instant.parse("2026-09-01T18:00:00Z");
         Event event = event("Running", start, null, null);
-        Profile withWindow = profile(
-                List.of("Running"), null, null, List.of(new PreferredWindow(2, "17:00", "19:00")));
+        Profile withWindow = profile(List.of("Running"), null, null, List.of(new PreferredWindow(2, "17:00", "19:00")));
         Profile noWindow = profile(List.of("Running"), null, null, List.of());
 
         assertThat(MatchingScore.window(withWindow, start)).isEqualTo(1.0);

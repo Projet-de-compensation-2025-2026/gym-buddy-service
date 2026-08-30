@@ -11,9 +11,7 @@ import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
 import fr.projetcompensation.gymbuddy.friends.FriendshipStatus;
 import fr.projetcompensation.gymbuddy.friends.InstantIdCursor;
 import fr.projetcompensation.gymbuddy.media.Media;
-import fr.projetcompensation.gymbuddy.media.MediaKind;
 import fr.projetcompensation.gymbuddy.media.MediaRepository;
-import fr.projetcompensation.gymbuddy.media.MediaStatus;
 import fr.projetcompensation.gymbuddy.profiles.Profile;
 import fr.projetcompensation.gymbuddy.profiles.ProfileRepository;
 import fr.projetcompensation.gymbuddy.users.User;
@@ -115,8 +113,8 @@ class EventServiceTest {
 
     @Test
     void fsEvt03_recurringListsMaterialisedOccurrences() {
-        VisibleEvent created = service.create(
-                alex.id(), draft("FREQ=WEEKLY;BYDAY=TU", EventVisibility.FRIENDS.wireValue(), 5));
+        VisibleEvent created =
+                service.create(alex.id(), draft("FREQ=WEEKLY;BYDAY=TU", EventVisibility.FRIENDS.wireValue(), 5));
 
         assertThat(created.event().instant()).isFalse();
         assertThat(created.occurrences()).isNotEmpty();
@@ -191,11 +189,13 @@ class EventServiceTest {
         VisibleApplication blakeApp = service.apply(blake.id(), eventId, occurrenceId);
         VisibleApplication caseyApp = service.apply(casey.id(), eventId, occurrenceId);
 
-        VisibleApplication accepted = service.accept(alex.id(), blakeApp.application().id());
+        VisibleApplication accepted =
+                service.accept(alex.id(), blakeApp.application().id());
         assertThat(accepted.application().status()).isEqualTo(EventApplicationStatus.ACCEPTED);
         assertThat(service.get(alex.id(), eventId).remainingSeats()).isZero();
 
-        assertThatThrownBy(() -> service.accept(alex.id(), caseyApp.application().id()))
+        assertThatThrownBy(
+                        () -> service.accept(alex.id(), caseyApp.application().id()))
                 .isInstanceOf(AuthException.class)
                 .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.CONFLICT));
 
@@ -209,8 +209,10 @@ class EventServiceTest {
         VisibleEvent created = service.create(alex.id(), draft(null, EventVisibility.PUBLIC.wireValue(), 1));
         UUID eventId = created.event().id();
         UUID occurrenceId = created.occurrences().getFirst().occurrence().id();
-        UUID blakeApp = service.apply(blake.id(), eventId, occurrenceId).application().id();
-        UUID caseyApp = service.apply(casey.id(), eventId, occurrenceId).application().id();
+        UUID blakeApp =
+                service.apply(blake.id(), eventId, occurrenceId).application().id();
+        UUID caseyApp =
+                service.apply(casey.id(), eventId, occurrenceId).application().id();
 
         ExecutorService pool = Executors.newFixedThreadPool(2);
         CountDownLatch ready = new CountDownLatch(2);
@@ -237,7 +239,8 @@ class EventServiceTest {
     void fsEvt08_cancelOccurrenceMarksApplicationsCancelled() {
         VisibleEvent created = service.create(alex.id(), draft(null, EventVisibility.PUBLIC.wireValue(), 2));
         UUID occurrenceId = created.occurrences().getFirst().occurrence().id();
-        VisibleApplication application = service.apply(blake.id(), created.event().id(), occurrenceId);
+        VisibleApplication application =
+                service.apply(blake.id(), created.event().id(), occurrenceId);
 
         service.cancel(alex.id(), created.event().id(), occurrenceId);
 
@@ -250,27 +253,15 @@ class EventServiceTest {
     void fsEvt09_updateAfterAcceptSetsFlag() {
         VisibleEvent created = service.create(alex.id(), draft(null, EventVisibility.PUBLIC.wireValue(), 2));
         UUID occurrenceId = created.occurrences().getFirst().occurrence().id();
-        VisibleApplication application = service.apply(blake.id(), created.event().id(), occurrenceId);
+        VisibleApplication application =
+                service.apply(blake.id(), created.event().id(), occurrenceId);
         service.accept(alex.id(), application.application().id());
 
         VisibleEvent updated = service.patch(
                 alex.id(),
                 created.event().id(),
                 new EventDraft(
-                        null,
-                        null,
-                        null,
-                        "New gym",
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null));
+                        null, null, null, "New gym", null, null, null, null, null, null, null, null, null, null));
 
         assertThat(updated.event().place()).isEqualTo("New gym");
         assertThat(updated.event().updatedAfterAccept()).isTrue();
@@ -340,7 +331,8 @@ class EventServiceTest {
         List<VisibleApplicant> pending = service.get(alex.id(), eventId).pendingApplicants();
         assertThat(pending).hasSize(2);
         assertThat(pending.getFirst().applicant().handle()).isEqualTo("blake");
-        assertThat(pending.getFirst().matchingScore()).isGreaterThan(pending.getLast().matchingScore());
+        assertThat(pending.getFirst().matchingScore())
+                .isGreaterThan(pending.getLast().matchingScore());
         assertThat(service.get(blake.id(), eventId).pendingApplicants()).isEmpty();
     }
 
@@ -573,7 +565,9 @@ class EventServiceTest {
 
         synchronized void forceStart(UUID occurrenceId, Instant startsAt) {
             EventOccurrence occurrence = occurrences.get(occurrenceId);
-            occurrences.put(occurrenceId, new EventOccurrence(occurrence.id(), occurrence.eventId(), startsAt, occurrence.cancelledAt()));
+            occurrences.put(
+                    occurrenceId,
+                    new EventOccurrence(occurrence.id(), occurrence.eventId(), startsAt, occurrence.cancelledAt()));
         }
 
         @Override
@@ -665,7 +659,8 @@ class EventServiceTest {
         @Override
         public synchronized Optional<EventApplication> findApplication(UUID occurrenceId, UUID applicantId) {
             return applications.values().stream()
-                    .filter(row -> row.occurrenceId().equals(occurrenceId) && row.applicantId().equals(applicantId))
+                    .filter(row -> row.occurrenceId().equals(occurrenceId)
+                            && row.applicantId().equals(applicantId))
                     .findFirst();
         }
 
@@ -679,8 +674,8 @@ class EventServiceTest {
         @Override
         public synchronized List<EventApplication> pendingForOccurrence(UUID occurrenceId) {
             return applications.values().stream()
-                    .filter(row -> row.occurrenceId().equals(occurrenceId)
-                            && row.status() == EventApplicationStatus.PENDING)
+                    .filter(row ->
+                            row.occurrenceId().equals(occurrenceId) && row.status() == EventApplicationStatus.PENDING)
                     .toList();
         }
 
@@ -695,16 +690,16 @@ class EventServiceTest {
         @Override
         public synchronized int countAccepted(UUID occurrenceId) {
             return (int) applications.values().stream()
-                    .filter(row -> row.occurrenceId().equals(occurrenceId)
-                            && row.status() == EventApplicationStatus.ACCEPTED)
+                    .filter(row ->
+                            row.occurrenceId().equals(occurrenceId) && row.status() == EventApplicationStatus.ACCEPTED)
                     .count();
         }
 
         @Override
         public synchronized int countAcceptedCoAttendance(UUID organizerId, UUID applicantId) {
             return (int) applications.values().stream()
-                    .filter(row -> row.applicantId().equals(applicantId)
-                            && row.status() == EventApplicationStatus.ACCEPTED)
+                    .filter(row ->
+                            row.applicantId().equals(applicantId) && row.status() == EventApplicationStatus.ACCEPTED)
                     .filter(row -> {
                         Event event = store.get(row.eventId());
                         return event != null && event.organizerId().equals(organizerId);
