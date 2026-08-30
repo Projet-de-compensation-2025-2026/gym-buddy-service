@@ -86,6 +86,90 @@ public class JdbcAdminCatalog implements AdminCatalog {
     }
 
     @Override
+    public List<ListedAdminContent> listContent(
+            String type, String q, Boolean hidden, InstantIdCursor after, int limit) {
+        String like = q == null ? null : "%" + q + "%";
+        String cursor = after == null ? "" : " AND (row.created_at, row.id) < (?, ?) ";
+        String sql =
+                switch (type) {
+                    case "post" -> """
+                            SELECT row.type, row.id, row.author_handle, row.summary, row.created_at,
+                                   row.hidden, row.hidden_reason
+                            FROM (
+                              SELECT 'post' AS type, p.id, u.handle AS author_handle,
+                                     COALESCE(LEFT(p.body, 280), '') AS summary,
+                                     p.created_at, (p.hidden_at IS NOT NULL) AS hidden, p.hidden_reason
+                              FROM posts p
+                              JOIN users u ON u.id = p.author_id
+                              WHERE p.deleted_at IS NULL
+                                AND (? IS NULL OR u.handle ILIKE ? OR p.body ILIKE ? OR p.id::text ILIKE ?)
+                                AND (? IS NULL OR (p.hidden_at IS NOT NULL) = ?)
+                            ) row
+                            WHERE TRUE
+                            """ + cursor + " ORDER BY row.created_at DESC, row.id DESC LIMIT ?";
+                    case "comment" -> """
+                            SELECT row.type, row.id, row.author_handle, row.summary, row.created_at,
+                                   row.hidden, row.hidden_reason
+                            FROM (
+                              SELECT 'comment' AS type, c.id, u.handle AS author_handle,
+                                     COALESCE(LEFT(c.body, 280), '') AS summary,
+                                     c.created_at, (c.hidden_at IS NOT NULL) AS hidden, c.hidden_reason
+                              FROM comments c
+                              JOIN users u ON u.id = c.author_id
+                              WHERE (? IS NULL OR u.handle ILIKE ? OR c.body ILIKE ? OR c.id::text ILIKE ?)
+                                AND (? IS NULL OR (c.hidden_at IS NOT NULL) = ?)
+                            ) row
+                            WHERE TRUE
+                            """ + cursor + " ORDER BY row.created_at DESC, row.id DESC LIMIT ?";
+                    case "event" -> """
+                            SELECT row.type, row.id, row.author_handle, row.summary, row.created_at,
+                                   row.hidden, row.hidden_reason
+                            FROM (
+                              SELECT 'event' AS type, e.id, u.handle AS author_handle,
+                                     COALESCE(LEFT(e.title, 280), '') AS summary,
+                                     e.created_at, (e.hidden_at IS NOT NULL) AS hidden, NULL::text AS hidden_reason
+                              FROM events e
+                              JOIN users u ON u.id = e.organizer_id
+                              WHERE (? IS NULL OR u.handle ILIKE ? OR e.title ILIKE ? OR e.id::text ILIKE ?)
+                                AND (? IS NULL OR (e.hidden_at IS NOT NULL) = ?)
+                            ) row
+                            WHERE TRUE
+                            """ + cursor + " ORDER BY row.created_at DESC, row.id DESC LIMIT ?";
+                    case "media" -> """
+                            SELECT row.type, row.id, row.author_handle, row.summary, row.created_at,
+                                   row.hidden, row.hidden_reason
+                            FROM (
+                              SELECT 'media' AS type, m.id, u.handle AS author_handle,
+                                     COALESCE(LEFT(m.object_key, 280), '') AS summary,
+                                     m.created_at, (m.hidden_at IS NOT NULL) AS hidden, m.hidden_reason
+                              FROM media m
+                              JOIN users u ON u.id = m.owner_id
+                              WHERE m.deleted_at IS NULL
+                                AND (? IS NULL OR u.handle ILIKE ? OR m.object_key ILIKE ? OR m.id::text ILIKE ?)
+                                AND (? IS NULL OR (m.hidden_at IS NOT NULL) = ?)
+                            ) row
+                            WHERE TRUE
+                            """ + cursor + " ORDER BY row.created_at DESC, row.id DESC LIMIT ?";
+                    default -> throw new IllegalArgumentException("type");
+                };
+        if (after == null) {
+            return jdbc.query(sql, this::mapContent, like, like, like, like, hidden, hidden, limit);
+        }
+        return jdbc.query(
+                sql,
+                this::mapContent,
+                like,
+                like,
+                like,
+                like,
+                hidden,
+                hidden,
+                Timestamp.from(after.at()),
+                after.id(),
+                limit);
+    }
+
+    @Override
     public List<ListedAdminMedia> listMedia(String q, InstantIdCursor after, int limit) {
         String like = q == null ? null : "%" + q + "%";
         if (after == null) {
@@ -122,6 +206,17 @@ public class JdbcAdminCatalog implements AdminCatalog {
                 rs.getTimestamp("created_at").toInstant());
         boolean lastAdmin = user.role() == UserRole.ADMIN && admins <= 1;
         return new ListedAdminUser(user, rs.getString("display_name"), lastAdmin);
+    }
+
+    private ListedAdminContent mapContent(ResultSet rs, int rowNum) throws SQLException {
+        return new ListedAdminContent(
+                rs.getString("type"),
+                rs.getObject("id", UUID.class),
+                rs.getString("author_handle"),
+                rs.getString("summary"),
+                rs.getTimestamp("created_at").toInstant(),
+                rs.getBoolean("hidden"),
+                rs.getString("hidden_reason"));
     }
 
     private ListedAdminMedia mapMedia(ResultSet rs, int rowNum) throws SQLException {

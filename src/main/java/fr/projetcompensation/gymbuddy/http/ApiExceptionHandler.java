@@ -88,7 +88,7 @@ public class ApiExceptionHandler {
         }
         return switch (code) {
             case "NotBlank", "NotNull" -> "required";
-            case "Email" -> "format";
+            case "Email", "Pattern" -> "format";
             case "Size" -> "size";
             default -> code;
         };

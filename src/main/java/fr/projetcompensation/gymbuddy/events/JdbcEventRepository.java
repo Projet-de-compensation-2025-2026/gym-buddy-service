@@ -265,35 +265,8 @@ public class JdbcEventRepository implements EventRepository {
             kindClause = " AND e.recurrence IS NOT NULL ";
         }
         String cursorClause = "";
-        Object[] args;
-        if (after == null) {
-            args = new Object[] {
-                Timestamp.from(from),
-                Timestamp.from(until),
-                viewerId,
-                viewerId,
-                viewerId,
-                viewerId,
-                viewerId,
-                viewerId,
-                limit
-            };
-        } else {
+        if (after != null) {
             cursorClause = " AND (e.starts_at > ? OR (e.starts_at = ? AND e.id > ?)) ";
-            args = new Object[] {
-                Timestamp.from(from),
-                Timestamp.from(until),
-                viewerId,
-                viewerId,
-                viewerId,
-                viewerId,
-                viewerId,
-                viewerId,
-                Timestamp.from(after.at()),
-                Timestamp.from(after.at()),
-                after.id(),
-                limit
-            };
         }
         String sql = """
                 SELECT DISTINCT e.id, e.organizer_id, e.title, e.description, e.activity, e.place, e.lat, e.lng,
@@ -307,17 +280,17 @@ public class JdbcEventRepository implements EventRepository {
                   AND o.starts_at >= ?
                   AND o.starts_at < ?
                   AND (
-                    e.organizer_id = ?
+                    e.organizer_id = CAST(? AS uuid)
                     OR EXISTS (
                       SELECT 1 FROM event_applications a
-                      WHERE a.event_id = e.id AND a.user_id = ? AND a.status = 'accepted'
+                      WHERE a.event_id = e.id AND a.user_id = CAST(? AS uuid) AND a.status = 'accepted'
                     )
                     OR (
                       NOT EXISTS (
                         SELECT 1 FROM friendships f
                         WHERE f.status = 'blocked'
-                          AND LEAST(f.requester_id, f.addressee_id) = LEAST(?, e.organizer_id)
-                          AND GREATEST(f.requester_id, f.addressee_id) = GREATEST(?, e.organizer_id)
+                          AND LEAST(f.requester_id, f.addressee_id) = LEAST(CAST(? AS uuid), e.organizer_id)
+                          AND GREATEST(f.requester_id, f.addressee_id) = GREATEST(CAST(? AS uuid), e.organizer_id)
                       )
                       AND (
                         e.visibility = 'public'
@@ -326,22 +299,42 @@ public class JdbcEventRepository implements EventRepository {
                           AND EXISTS (
                             SELECT 1 FROM friendships f
                             WHERE f.status = 'accepted'
-                              AND LEAST(f.requester_id, f.addressee_id) = LEAST(?, e.organizer_id)
-                              AND GREATEST(f.requester_id, f.addressee_id) = GREATEST(?, e.organizer_id)
+                              AND LEAST(f.requester_id, f.addressee_id) = LEAST(CAST(? AS uuid), e.organizer_id)
+                              AND GREATEST(f.requester_id, f.addressee_id) = GREATEST(CAST(? AS uuid), e.organizer_id)
                           )
                         )
                         OR (
                           e.visibility = 'private'
                           AND EXISTS (
                             SELECT 1 FROM event_invites i
-                            WHERE i.event_id = e.id AND i.user_id = ?
+                            WHERE i.event_id = e.id AND i.user_id = CAST(? AS uuid)
                           )
                         )
                       )
                     )
                   )
                 """ + kindClause + cursorClause + " ORDER BY e.starts_at ASC, e.id ASC LIMIT ?";
-        return jdbc.query(sql, this::mapEvent, args);
+        return jdbc.query(sql, this::mapEvent, listVisibleArgs(viewerId, from, until, after, limit));
+    }
+
+    private static Object[] listVisibleArgs(
+            UUID viewerId, Instant from, Instant until, InstantIdCursor after, int limit) {
+        // Window (2) + organizer/applicant/block pair/friends pair/invitee (7) + optional cursor (3) + limit.
+        int extra = after == null ? 0 : 3;
+        Object[] args = new Object[2 + 7 + extra + 1];
+        int i = 0;
+        args[i++] = Timestamp.from(from);
+        args[i++] = Timestamp.from(until);
+        for (int n = 0; n < 7; n++) {
+            args[i++] = viewerId;
+        }
+        if (after != null) {
+            args[i++] = Timestamp.from(after.at());
+            args[i++] = Timestamp.from(after.at());
+            args[i++] = after.id();
+        }
+        args[i] = limit;
+        return args;
     }
 
     private void bindEvent(PreparedStatement ps, Event event) throws SQLException {

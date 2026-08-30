@@ -2,10 +2,13 @@ package fr.projetcompensation.gymbuddy.admin.http;
 
 import fr.projetcompensation.gymbuddy.admin.AdminPage;
 import fr.projetcompensation.gymbuddy.admin.AuditEvent;
+import fr.projetcompensation.gymbuddy.admin.ListedAdminContent;
 import fr.projetcompensation.gymbuddy.admin.ListedAdminMedia;
 import fr.projetcompensation.gymbuddy.admin.ListedAdminUser;
 import fr.projetcompensation.gymbuddy.admin.Report;
 import fr.projetcompensation.gymbuddy.media.Media;
+import fr.projetcompensation.gymbuddy.openapi.model.AdminContent;
+import fr.projetcompensation.gymbuddy.openapi.model.AdminContentPage;
 import fr.projetcompensation.gymbuddy.openapi.model.AdminMedia;
 import fr.projetcompensation.gymbuddy.openapi.model.AdminMediaPage;
 import fr.projetcompensation.gymbuddy.openapi.model.AdminUser;
@@ -31,6 +34,25 @@ public final class AdminResponses {
                 AdminUser.StatusEnum.fromValue(user.status().wireValue()),
                 OffsetDateTime.ofInstant(user.createdAt(), ZoneOffset.UTC),
                 row.lastAdmin());
+    }
+
+    public static AdminContent toContent(ListedAdminContent row) {
+        AdminContent body = new AdminContent(
+                AdminContent.TypeEnum.fromValue(row.type()),
+                row.id(),
+                row.authorHandle(),
+                row.summary(),
+                OffsetDateTime.ofInstant(row.createdAt(), ZoneOffset.UTC),
+                row.hidden());
+        body.setHiddenReason(row.hiddenReason());
+        return body;
+    }
+
+    public static AdminContentPage toContentPage(AdminPage<ListedAdminContent> page) {
+        Page meta = new Page(page.size());
+        meta.setNext(page.next());
+        return new AdminContentPage(
+                page.data().stream().map(AdminResponses::toContent).toList(), meta);
     }
 
     public static AdminUserPage toUserPage(AdminPage<ListedAdminUser> page) {

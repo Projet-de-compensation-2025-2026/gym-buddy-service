@@ -11,6 +11,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.beans.factory.ObjectProvider;
@@ -145,7 +146,8 @@ public class AccessTokenFilter extends OncePerRequestFilter {
     private void writeError(HttpServletResponse response, int status, ErrorCode code, String message)
             throws IOException {
         response.setStatus(status);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setContentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8).toString());
         response.getWriter()
                 .write("{\"error\":{\"code\":\"" + code.name() + "\",\"message\":\"" + escape(message) + "\"}}");
     }

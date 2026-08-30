@@ -47,7 +47,7 @@ MailHog is opt-in:
 docker compose --profile mail up -d
 ```
 
-Auth (`POST /api/v1/auth/register`, `/login`, `/refresh`, `/logout`): Argon2id passwords, HS256 access JWT (15 min, claims `sub` / `handle` / `role` / `typ=access`), refresh cookie (`HttpOnly; Secure; SameSite=Lax`; path `/api/v1/auth`; 14 days). `JWT_ACCESS_SECRET` signs both tokens. Logout denylists the refresh `jti` in Redis.
+Auth (`POST /api/v1/auth/register`, `/login`, `/refresh`, `/logout`): Argon2id passwords, HS256 access JWT (15 min, claims `sub` / `handle` / `role` / `typ=access`), refresh cookie (`HttpOnly; Secure; SameSite=None; Partitioned`; path `/api/v1/auth`; 14 days). `JWT_ACCESS_SECRET` signs both tokens. Logout denylists the refresh `jti` in Redis. Handle must not contain `@`.
 
 Unauthenticated probes (OpenAPI `healthz` / `readyz`):
 
@@ -61,6 +61,8 @@ Unauthenticated probes (OpenAPI `healthz` / `readyz`):
 ## Fixtures (non-production)
 
 Datafaker factories with `FIXTURE_SEED=20260813`. Disabled when `SPRING_PROFILES_ACTIVE=prod`. `--reset` is required to truncate. Demo passwords come from `.env` (`DEMO_ALEX_PASSWORD` and friends).
+
+Live staff without enabling fixtures on `prod`: `GYM_BUDDY_BOOTSTRAP_STAFF=true` plus `DEMO_ADMIN_PASSWORD` / `DEMO_MOD_PASSWORD` inserts missing `demo.admin` / `demo.mod` only. Unset the flag after one boot. CLI: `StaffBootstrapCli`.
 
 ```bash
 mvn -q compile exec:java -Dexec.mainClass=fr.projetcompensation.gymbuddy.fixtures.FixturesCli -Dexec.args="--users 3000 --posts-per-user 5 --events 800 --reset"

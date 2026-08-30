@@ -37,6 +37,9 @@ Do not put JWT material, database passwords, or object-store secrets in git or i
 | `S3_SECRET_KEY` | API + MinIO | Object-store secret key. |
 | `S3_REGION` | API via `replace.sh` | Region string the client library expects. |
 | `SPRING_PROFILES_ACTIVE` | API via `replace.sh` | Must be `prod`. Production refuses to start without S3-compatible storage. |
+| `GYM_BUDDY_BOOTSTRAP_STAFF` | API via `replace.sh`, optional | `true` inserts missing `demo.admin` / `demo.mod` on start. Unset after one boot. Does not enable `POST /admin/fixtures`. |
+| `DEMO_ADMIN_PASSWORD` | API via `replace.sh`, optional | Password for `demo.admin` when bootstrapping staff. Placeholder only. |
+| `DEMO_MOD_PASSWORD` | API via `replace.sh`, optional | Password for `demo.mod` when bootstrapping staff. Placeholder only. |
 
 `replace.sh` also honors (optional):
 

@@ -58,8 +58,10 @@ def main() -> None:
 
     sync = load_module("sync_pom_version", ".github/scripts/ci/sync_pom_version.py")
     pom = (ROOT / "pom.xml").read_text()
-    if "<version>1.0.0</version>" in pom:
-        fail("do not invent 1.0.0 in pom.xml; that is the academic ship")
+    if "<version>1.0.0</version>" not in pom:
+        fail("working pom.xml must stay on the tagged 1.0.0 line until the next Release")
+    if "<version>2.0.0</version>" in pom:
+        fail("do not invent 2.0.0 in pom.xml")
 
     updated = sync.write_project_version(pom, "0.1.2")
     if "<artifactId>gym-buddy-service</artifactId>\n    <version>0.1.2</version>" not in updated:
@@ -86,7 +88,7 @@ def main() -> None:
         if "<version>4.1.0</version>" not in written:
             fail("sync_pom_version.py CLI rewrote the parent version")
 
-    print("TEST OK: Release writes SemVer into pom.xml; auto bump never picks 1.0.0")
+    print("TEST OK: Release writes SemVer into pom.xml; auto bump never picks 1.x unattended")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 package fr.projetcompensation.gymbuddy.auth;
 
-final class FakePasswordHasher implements PasswordHasher {
+public final class FakePasswordHasher implements PasswordHasher {
 
     @Override
     public String hash(String password) {
