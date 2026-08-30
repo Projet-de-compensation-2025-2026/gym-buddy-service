@@ -39,7 +39,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Pin gym-buddy-openapi `develop` SHA `dc3488158a302de9475153f124f7f98a6e4dba9b` for ticket #59 until the next 0.1.x tag. `scripts/fetch-openapi-tree.sh` accepts a 40-character commit SHA.
 - Pin gym-buddy-openapi develop SHA `3e63187727035b5277738db90c44744406057b4c` for ticket #60.
 - Pin gym-buddy-openapi develop SHA `edca075cdf1e1eb6caf6f094e02cadaba7c480b5` for ticket #68.
-- Pin gym-buddy-openapi develop SHA `964c4135332c8c01986cda70b657a9872108dd74` for ticket #69.
+- Pin gym-buddy-openapi develop SHA `8f89f1a72b1ddb6996d9598e6cedbac4d4788ace` for ticket #69 (includes search #65 and messaging #67).
 - Pin gym-buddy-openapi develop SHA `2550b32f95dcb881b0bfaa37e30f130595dbe9d3` for ticket #65.
 - Pin gym-buddy-openapi develop SHA `2ebc892909eed2a79841a4aea572aef1968747b4` for ticket #64.
 - Pin gym-buddy-openapi develop SHA `82d0eadb592c023fe3934836c7ce0ca15ca56abd` for ticket #63.

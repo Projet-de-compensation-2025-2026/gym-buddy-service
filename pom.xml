@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #69 (admin). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>964c4135332c8c01986cda70b657a9872108dd74</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after tickets #69 (admin) + #65 (search) + #67 (messaging). -->
+        <openapi.package.tag>8f89f1a72b1ddb6996d9598e6cedbac4d4788ace</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
