@@ -179,6 +179,29 @@ class AdminServiceTest {
     }
 
     @Test
+    void fsAdm03_staffListsHideableContentAndMembersSeeNotFound() {
+        ListedAdminContent hiddenPost = new ListedAdminContent(
+                "post",
+                UUID.randomUUID(),
+                "owner",
+                "spam shake",
+                NOW.minusSeconds(30),
+                true,
+                "spam / solicitation");
+        catalog.contents.add(hiddenPost);
+
+        AdminPage<ListedAdminContent> page = admin.listContent(moderator.id(), "post", null, true, null, 20);
+        assertThat(page.data()).containsExactly(hiddenPost);
+
+        assertThatThrownBy(() -> admin.listContent(member.id(), "post", null, null, null, 20))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> admin.listContent(moderator.id(), "widget", null, null, null, 20))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.VALIDATION));
+    }
+
+    @Test
     void fsAdm03_missingHideReasonIsValidation() {
         Post post = new Post(UUID.randomUUID(), owner.id(), "body", PostVisibility.PUBLIC, NOW, null, null, null, null);
         posts.save(post, List.of());
@@ -253,6 +276,7 @@ class AdminServiceTest {
 
     private final class InMemoryCatalog implements AdminCatalog {
         private final List<User> users = new ArrayList<>();
+        private final List<ListedAdminContent> contents = new ArrayList<>();
 
         @Override
         public List<ListedAdminUser> listUsers(String q, String role, String status, InstantIdCursor after, int limit) {
@@ -272,6 +296,16 @@ class AdminServiceTest {
         @Override
         public List<ListedAdminMedia> listMedia(String q, InstantIdCursor after, int limit) {
             return List.of();
+        }
+
+        @Override
+        public List<ListedAdminContent> listContent(
+                String type, String q, Boolean hidden, InstantIdCursor after, int limit) {
+            return contents.stream()
+                    .filter(row -> row.type().equals(type))
+                    .filter(row -> hidden == null || row.hidden() == hidden)
+                    .limit(limit)
+                    .toList();
         }
     }
 

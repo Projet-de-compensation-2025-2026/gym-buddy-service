@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #70 (fixtures). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>f849a1dcd498c12fd9507b83f9d50d375d651347</openapi.package.tag>
+        <!-- gym-buddy-openapi feature/80-admin-content-list SHA. Pin a 0.1.x/1.x tag when Release cuts one. -->
+        <openapi.package.tag>f92465f0361fadb152018b31b3bf7f9426ba9867</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -382,6 +382,9 @@
                                 <inlineSchemaNameMapping>postAdminUsersIdUnlock_200_response=AdminUser</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>patchAdminUsersIdRole_request=PatchUserRoleRequest</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>patchAdminUsersIdRole_200_response=AdminUser</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminContent_200_response=AdminContentPage</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminContent_200_response_data_inner=AdminContent</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>getAdminContent_200_response_page=Page</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>postAdminContentTypeIdHide_request=HideContentRequest</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>postAdminContentTypeIdUnhide_request=StaffReasonRequest</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getAdminReports_200_response=ReportPage</inlineSchemaNameMapping>
@@ -567,6 +570,9 @@
                                 <modelNameMapping>postAdminUsersIdUnlock_200_response=AdminUser</modelNameMapping>
                                 <modelNameMapping>patchAdminUsersIdRole_request=PatchUserRoleRequest</modelNameMapping>
                                 <modelNameMapping>patchAdminUsersIdRole_200_response=AdminUser</modelNameMapping>
+                                <modelNameMapping>getAdminContent_200_response=AdminContentPage</modelNameMapping>
+                                <modelNameMapping>getAdminContent_200_response_data_inner=AdminContent</modelNameMapping>
+                                <modelNameMapping>getAdminContent_200_response_page=Page</modelNameMapping>
                                 <modelNameMapping>postAdminContentTypeIdHide_request=HideContentRequest</modelNameMapping>
                                 <modelNameMapping>postAdminContentTypeIdUnhide_request=StaffReasonRequest</modelNameMapping>
                                 <modelNameMapping>getAdminReports_200_response=ReportPage</modelNameMapping>

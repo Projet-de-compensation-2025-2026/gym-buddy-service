@@ -5,6 +5,7 @@ import fr.projetcompensation.gymbuddy.auth.AuthException;
 import fr.projetcompensation.gymbuddy.auth.AuthPrincipal;
 import fr.projetcompensation.gymbuddy.fixtures.FixtureMagnitude;
 import fr.projetcompensation.gymbuddy.openapi.api.AdminApi;
+import fr.projetcompensation.gymbuddy.openapi.model.AdminContentPage;
 import fr.projetcompensation.gymbuddy.openapi.model.AdminMediaPage;
 import fr.projetcompensation.gymbuddy.openapi.model.AdminUser;
 import fr.projetcompensation.gymbuddy.openapi.model.AdminUserPage;
@@ -57,6 +58,13 @@ public class AdminController implements AdminApi {
         String role = request.getRole() == null ? null : request.getRole().getValue();
         return ResponseEntity.ok(
                 AdminResponses.toUser(service().changeRole(principal().userId(), id, role, request.getReason())));
+    }
+
+    @Override
+    public ResponseEntity<AdminContentPage> getAdminContent(
+            String type, @Nullable String q, @Nullable Boolean hidden, @Nullable String after, Integer size) {
+        return ResponseEntity.ok(
+                AdminResponses.toContentPage(service().listContent(principal().userId(), type, q, hidden, after, size)));
     }
 
     @Override

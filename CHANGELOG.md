@@ -7,6 +7,8 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Staff `GET /api/v1/admin/content` lists hideable posts, comments, events, and media (including hidden rows) for FS-ADM-03. Ticket #80. Members still get `NOT_FOUND`. Pin gym-buddy-openapi SHA `f92465f0361fadb152018b31b3bf7f9426ba9867`.
+
 ### Changed
 
 - CI allows working `pom.xml` **1.0.0** now that tag **v1.0.0** exists. Auto bump still refuses an unattended 1.x; 2.0.0 stays rejected.

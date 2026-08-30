@@ -11,7 +11,7 @@ class OpenApiPackagePinTest {
     @Test
     void generateSourcesPinsVersionedPackageRefTree() throws Exception {
         String pom = Files.readString(Path.of("pom.xml"));
-        assertThat(pom).contains("<openapi.package.tag>f849a1dcd498c12fd9507b83f9d50d375d651347</openapi.package.tag>");
+        assertThat(pom).contains("<openapi.package.tag>f92465f0361fadb152018b31b3bf7f9426ba9867</openapi.package.tag>");
         assertThat(pom).contains("<openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>");
         assertThat(pom).contains("<inputSpec>${openapi.spec.file}</inputSpec>");
         assertThat(pom).contains("getHealthz_200_response=HealthStatus");
@@ -36,6 +36,7 @@ class OpenApiPackagePinTest {
         assertThat(pom).contains("getSearchEvents_200_response_data_inner_organizer=PostAuthor");
         assertThat(pom).contains("getAdminUsers_200_response=AdminUserPage");
         assertThat(pom).contains("patchAdminUsersIdRole_request=PatchUserRoleRequest");
+        assertThat(pom).contains("getAdminContent_200_response=AdminContentPage");
         assertThat(pom).contains("postAdminContentTypeIdHide_request=HideContentRequest");
         assertThat(pom).contains("postReports_request=CreateReportRequest");
         assertThat(pom).contains("postAdminFixtures_request=GenerateFixturesRequest");

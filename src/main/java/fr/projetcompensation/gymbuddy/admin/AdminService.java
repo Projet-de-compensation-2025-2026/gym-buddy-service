@@ -229,6 +229,17 @@ public final class AdminService {
                         .encode());
     }
 
+    public AdminPage<ListedAdminContent> listContent(
+            UUID callerId, String type, String q, Boolean hidden, String after, Integer size) {
+        requireStaff(callerId);
+        String kind = requireListContentType(type);
+        int pageSize = pageSize(size);
+        return AdminPage.of(
+                catalog.listContent(kind, blankToNull(q), hidden, cursor(after), pageSize + 1),
+                pageSize,
+                row -> row.cursor().encode());
+    }
+
     public void generateFixtures(UUID callerId, FixtureMagnitude magnitude) {
         User caller = requireAdmin(callerId);
         FixtureGuard.requireNonProduction(production);
@@ -346,6 +357,14 @@ public final class AdminService {
         String kind = type == null ? "" : type.trim().toLowerCase(Locale.ROOT);
         if (!CONTENT_TYPES.contains(kind)) {
             throw AuthException.notFound(NOT_FOUND);
+        }
+        return kind;
+    }
+
+    private static String requireListContentType(String type) {
+        String kind = type == null ? "" : type.trim().toLowerCase(Locale.ROOT);
+        if (!CONTENT_TYPES.contains(kind)) {
+            throw AuthException.validation("type is not allowed", new FieldIssue("type", "enum"));
         }
         return kind;
     }
