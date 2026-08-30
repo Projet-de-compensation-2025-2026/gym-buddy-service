@@ -35,11 +35,11 @@ public final class MessageFactory {
         List<Conversation> conversations = new ArrayList<>(conversationCount);
         for (int i = 0; i < conversationCount; i++) {
             Friendship pair = friendships.get(i);
-            UUID left = pair.requesterId();
-            UUID right = pair.addresseeId();
-            UUID lo = left.compareTo(right) < 0 ? left : right;
-            UUID hi = left.compareTo(right) < 0 ? right : left;
-            conversations.add(new Conversation(FixtureIds.of(seed, "conversation", i), lo, hi, origin.plusSeconds(i)));
+            conversations.add(new Conversation(
+                    FixtureIds.of(seed, "conversation", i),
+                    lo(pair.requesterId(), pair.addresseeId()),
+                    hi(pair.requesterId(), pair.addresseeId()),
+                    origin.plusSeconds(i)));
         }
         List<Message> messages = new ArrayList<>(messageCount);
         for (int i = 0; i < messageCount; i++) {
@@ -60,5 +60,22 @@ public final class MessageFactory {
                     null));
         }
         return new Bundle(List.copyOf(conversations), List.copyOf(messages));
+    }
+
+    /** PostgreSQL uuid `<` is unsigned; Java {@code UUID.compareTo} is signed. */
+    static UUID lo(UUID left, UUID right) {
+        return unsignedLess(left, right) ? left : right;
+    }
+
+    static UUID hi(UUID left, UUID right) {
+        return unsignedLess(left, right) ? right : left;
+    }
+
+    private static boolean unsignedLess(UUID left, UUID right) {
+        int cmp = Long.compareUnsigned(left.getMostSignificantBits(), right.getMostSignificantBits());
+        if (cmp == 0) {
+            cmp = Long.compareUnsigned(left.getLeastSignificantBits(), right.getLeastSignificantBits());
+        }
+        return cmp < 0;
     }
 }
