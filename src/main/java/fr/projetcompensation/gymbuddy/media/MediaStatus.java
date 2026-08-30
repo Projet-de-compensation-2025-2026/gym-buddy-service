@@ -12,11 +12,11 @@ public enum MediaStatus {
         this.wireValue = wireValue;
     }
 
-    String wireValue() {
+    public String wireValue() {
         return wireValue;
     }
 
-    static MediaStatus fromWire(String value) {
+    public static MediaStatus fromWire(String value) {
         for (MediaStatus status : values()) {
             if (status.wireValue.equals(value)) {
                 return status;

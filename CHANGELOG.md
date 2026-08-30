@@ -7,6 +7,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Admin and moderation (FS-ADM-01..09, FS-ACCT-08/09). Ticket #69. Flyway `V12__admin.sql` (`reports`, `audit_events`, media/comment hide columns). Staff `/api/v1/admin/*` (members `NOT_FOUND`). Moderator role PATCH is `FORBIDDEN`. Hide post → member `NOT_FOUND` plus `audit_events`. Last admin demote/lock is `CONFLICT`. Fixture trigger is a prod-guarded stub (ticket #70 generates rows). Member `POST /api/v1/reports`. Pin gym-buddy-openapi develop SHA `964c4135332c8c01986cda70b657a9872108dd74`.
 - Parameterized search `GET /api/v1/search/people` and `GET /api/v1/search/events` (FS-SRCH-01..08). Ticket #65. Filters AND across fields; sports ANY. Rank α ts_rank + β recency + γ geo + δ social. Cursor `before`. `radiusKm` 1–50. Private strangers, blocked users, and (when `remaining=true`) full events never appear. Unauthenticated is `401`.
 - Instant and recurring events with apply/accept and transactional capacity (FS-EVT-01..13). Ticket #64. Flyway `V9__events.sql`. `FREQ=WEEKLY;BYDAY` + optional `UNTIL`, 90-day occurrences, visibility public/friends/private, last-seat accept is `CONFLICT`, organizer pending list ranked by matching score.
 - Friends news feed `GET /api/v1/feed` (FS-FEED-01..06). Ticket #63. Flyway `V8__feed_repost_id.sql`. Viewer + accepted friends’ posts and reposts, reverse chrono on activity time, cursor `before`, default 20 max 50. Public non-friend posts stay off the feed. Hidden/deleted omitted. Size over 50 is `VALIDATION`.
@@ -38,6 +39,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Pin gym-buddy-openapi `develop` SHA `dc3488158a302de9475153f124f7f98a6e4dba9b` for ticket #59 until the next 0.1.x tag. `scripts/fetch-openapi-tree.sh` accepts a 40-character commit SHA.
 - Pin gym-buddy-openapi develop SHA `3e63187727035b5277738db90c44744406057b4c` for ticket #60.
 - Pin gym-buddy-openapi develop SHA `edca075cdf1e1eb6caf6f094e02cadaba7c480b5` for ticket #68.
+- Pin gym-buddy-openapi develop SHA `964c4135332c8c01986cda70b657a9872108dd74` for ticket #69.
 - Pin gym-buddy-openapi develop SHA `2550b32f95dcb881b0bfaa37e30f130595dbe9d3` for ticket #65.
 - Pin gym-buddy-openapi develop SHA `2ebc892909eed2a79841a4aea572aef1968747b4` for ticket #64.
 - Pin gym-buddy-openapi develop SHA `82d0eadb592c023fe3934836c7ce0ca15ca56abd` for ticket #63.

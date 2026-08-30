@@ -11,7 +11,7 @@ class OpenApiPackagePinTest {
     @Test
     void generateSourcesPinsVersionedPackageRefTree() throws Exception {
         String pom = Files.readString(Path.of("pom.xml"));
-        assertThat(pom).contains("<openapi.package.tag>2550b32f95dcb881b0bfaa37e30f130595dbe9d3</openapi.package.tag>");
+        assertThat(pom).contains("<openapi.package.tag>964c4135332c8c01986cda70b657a9872108dd74</openapi.package.tag>");
         assertThat(pom).contains("<openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>");
         assertThat(pom).contains("<inputSpec>${openapi.spec.file}</inputSpec>");
         assertThat(pom).contains("getHealthz_200_response=HealthStatus");
@@ -34,6 +34,11 @@ class OpenApiPackagePinTest {
         assertThat(pom).contains("getSearchPeople_200_response=PeopleSearchPage");
         assertThat(pom).contains("getSearchEvents_200_response=EventSearchPage");
         assertThat(pom).contains("getSearchEvents_200_response_data_inner_organizer=PostAuthor");
+        assertThat(pom).contains("getAdminUsers_200_response=AdminUserPage");
+        assertThat(pom).contains("patchAdminUsersIdRole_request=PatchUserRoleRequest");
+        assertThat(pom).contains("postAdminContentTypeIdHide_request=HideContentRequest");
+        assertThat(pom).contains("postReports_request=CreateReportRequest");
+        assertThat(pom).contains("getAdminAudit_200_response=AuditEventPage");
         assertThat(pom).doesNotContain("bundled.yaml");
         assertThat(pom)
                 .doesNotContain("raw.githubusercontent.com/Projet-de-compensation-2025-2026/gym-buddy-openapi/develop");

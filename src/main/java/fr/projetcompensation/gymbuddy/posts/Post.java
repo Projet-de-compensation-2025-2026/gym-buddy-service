@@ -14,12 +14,20 @@ public record Post(
         Instant hiddenAt,
         String hiddenReason) {
 
-    boolean deleted() {
+    public boolean deleted() {
         return deletedAt != null;
     }
 
-    boolean hidden() {
+    public boolean hidden() {
         return hiddenAt != null;
+    }
+
+    public Post hide(Instant at, String reason) {
+        return new Post(id, authorId, body, visibility, createdAt, editedAt, deletedAt, at, reason);
+    }
+
+    public Post unhide() {
+        return new Post(id, authorId, body, visibility, createdAt, editedAt, deletedAt, null, null);
     }
 
     Post withBody(String body, Instant editedAt) {

@@ -40,6 +40,10 @@ public record User(
         return new User(id, email, handle, passwordHash, role, status, createdAt);
     }
 
+    public User withRole(UserRole role) {
+        return new User(id, email, handle, passwordHash, role, status, createdAt);
+    }
+
     public boolean isStaff() {
         return role == UserRole.ADMIN || role == UserRole.MODERATOR;
     }

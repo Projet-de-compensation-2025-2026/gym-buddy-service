@@ -16,7 +16,8 @@ import org.springframework.stereotype.Repository;
 public class JdbcMediaRepository implements MediaRepository {
 
     private static final String SELECT = """
-            SELECT id, owner_id, kind, mime, bytes, variant_bytes, status, object_key, created_at, deleted_at
+            SELECT id, owner_id, kind, mime, bytes, variant_bytes, status, object_key, created_at, deleted_at,
+                   hidden_at, hidden_reason
             FROM media
             """;
 
@@ -30,8 +31,8 @@ public class JdbcMediaRepository implements MediaRepository {
     public void save(Media media) {
         jdbc.update(
                 """
-                INSERT INTO media (id, owner_id, kind, mime, bytes, variant_bytes, status, object_key, created_at, deleted_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO media (id, owner_id, kind, mime, bytes, variant_bytes, status, object_key, created_at, deleted_at, hidden_at, hidden_reason)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 media.id(),
                 media.ownerId(),
@@ -42,7 +43,9 @@ public class JdbcMediaRepository implements MediaRepository {
                 media.status().wireValue(),
                 media.objectKey(),
                 Timestamp.from(media.createdAt()),
-                media.deletedAt() == null ? null : Timestamp.from(media.deletedAt()));
+                media.deletedAt() == null ? null : Timestamp.from(media.deletedAt()),
+                media.hiddenAt() == null ? null : Timestamp.from(media.hiddenAt()),
+                media.hiddenReason());
     }
 
     @Override
@@ -50,7 +53,8 @@ public class JdbcMediaRepository implements MediaRepository {
         jdbc.update(
                 """
                 UPDATE media
-                SET kind = ?, mime = ?, bytes = ?, variant_bytes = ?, status = ?, object_key = ?, deleted_at = ?
+                SET kind = ?, mime = ?, bytes = ?, variant_bytes = ?, status = ?, object_key = ?, deleted_at = ?,
+                    hidden_at = ?, hidden_reason = ?
                 WHERE id = ?
                 """,
                 media.kind().wireValue(),
@@ -60,6 +64,8 @@ public class JdbcMediaRepository implements MediaRepository {
                 media.status().wireValue(),
                 media.objectKey(),
                 media.deletedAt() == null ? null : Timestamp.from(media.deletedAt()),
+                media.hiddenAt() == null ? null : Timestamp.from(media.hiddenAt()),
+                media.hiddenReason(),
                 media.id());
     }
 
@@ -107,6 +113,7 @@ public class JdbcMediaRepository implements MediaRepository {
     private Media map(ResultSet rs, int rowNum) throws SQLException {
         Timestamp created = rs.getTimestamp("created_at");
         Timestamp deleted = rs.getTimestamp("deleted_at");
+        Timestamp hidden = rs.getTimestamp("hidden_at");
         return new Media(
                 rs.getObject("id", UUID.class),
                 rs.getObject("owner_id", UUID.class),
@@ -117,6 +124,8 @@ public class JdbcMediaRepository implements MediaRepository {
                 MediaStatus.fromWire(rs.getString("status")),
                 rs.getString("object_key"),
                 created.toInstant(),
-                deleted == null ? null : deleted.toInstant());
+                deleted == null ? null : deleted.toInstant(),
+                hidden == null ? null : hidden.toInstant(),
+                rs.getString("hidden_reason"));
     }
 }

@@ -37,4 +37,12 @@ public record Comment(
     public Comment tombstone(Instant at) {
         return new Comment(id, postId, authorId, parentId, TOMBSTONE, depth, createdAt, at, hiddenAt);
     }
+
+    public Comment hide(Instant at) {
+        return new Comment(id, postId, authorId, parentId, body, depth, createdAt, deletedAt, at);
+    }
+
+    public Comment unhide() {
+        return new Comment(id, postId, authorId, parentId, body, depth, createdAt, deletedAt, null);
+    }
 }
