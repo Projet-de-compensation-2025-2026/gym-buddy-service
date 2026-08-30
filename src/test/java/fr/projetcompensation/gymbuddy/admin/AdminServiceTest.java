@@ -11,6 +11,9 @@ import fr.projetcompensation.gymbuddy.events.Event;
 import fr.projetcompensation.gymbuddy.events.EventApplication;
 import fr.projetcompensation.gymbuddy.events.EventOccurrence;
 import fr.projetcompensation.gymbuddy.events.EventRepository;
+import fr.projetcompensation.gymbuddy.fixtures.FixtureGenerator;
+import fr.projetcompensation.gymbuddy.fixtures.FixtureMagnitude;
+import fr.projetcompensation.gymbuddy.fixtures.FixtureReport;
 import fr.projetcompensation.gymbuddy.friends.Friendship;
 import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
 import fr.projetcompensation.gymbuddy.friends.InstantIdCursor;
@@ -53,6 +56,7 @@ class AdminServiceTest {
     private InMemoryReports reports;
     private InMemoryAudit audit;
     private InMemoryCatalog catalog;
+    private RecordingFixtures fixtures;
     private AdminService admin;
     private PostService postService;
     private User owner;
@@ -72,9 +76,22 @@ class AdminServiceTest {
         reports = new InMemoryReports();
         audit = new InMemoryAudit();
         catalog = new InMemoryCatalog();
+        fixtures = new RecordingFixtures();
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
         admin = new AdminService(
-                users, profiles, posts, comments, events, media, friendships, reports, audit, catalog, clock, false);
+                users,
+                profiles,
+                posts,
+                comments,
+                events,
+                media,
+                friendships,
+                reports,
+                audit,
+                catalog,
+                clock,
+                false,
+                fixtures);
         postService = new PostService(posts, media, friendships, users, profiles, clock);
         owner = user("owner", UserRole.MEMBER);
         member = user("member", UserRole.MEMBER);
@@ -148,14 +165,17 @@ class AdminServiceTest {
                 audit,
                 catalog,
                 Clock.fixed(NOW, ZoneOffset.UTC),
-                true);
-        assertThatThrownBy(() -> prod.generateFixtures(administrator.id()))
+                true,
+                fixtures);
+        assertThatThrownBy(() -> prod.generateFixtures(administrator.id(), FixtureMagnitude.tiny()))
                 .isInstanceOf(AuthException.class)
                 .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.FORBIDDEN));
         assertThatThrownBy(() -> prod.resetFixtures(administrator.id()))
                 .isInstanceOf(AuthException.class)
                 .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.FORBIDDEN));
         assertThat(audit.events).isEmpty();
+        assertThat(fixtures.generated).isEmpty();
+        assertThat(fixtures.resets).isEmpty();
     }
 
     @Test
@@ -193,10 +213,27 @@ class AdminServiceTest {
     }
 
     @Test
-    void fsAdm05_nonProdFixturesWriteAuditStub() {
-        admin.generateFixtures(administrator.id());
+    void fsAdm05_nonProdFixturesWriteAuditAndGenerate() {
+        admin.generateFixtures(administrator.id(), FixtureMagnitude.tiny());
+        assertThat(fixtures.generated).containsExactly(FixtureMagnitude.tiny());
         assertThat(audit.events)
                 .anySatisfy(event -> assertThat(event.action()).isEqualTo(AuditEvent.GENERATE_FIXTURES));
+    }
+
+    private static final class RecordingFixtures implements FixtureGenerator {
+        private final List<FixtureMagnitude> generated = new ArrayList<>();
+        private final List<UUID> resets = new ArrayList<>();
+
+        @Override
+        public FixtureReport generate(FixtureMagnitude magnitude) {
+            generated.add(magnitude);
+            return new FixtureReport(magnitude.users(), 0, 0, 0, 0, 0, 0, 0, 0);
+        }
+
+        @Override
+        public void reset(UUID preserveUserId) {
+            resets.add(preserveUserId);
+        }
     }
 
     private User user(String handle, UserRole role) {

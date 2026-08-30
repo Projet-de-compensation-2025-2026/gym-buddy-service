@@ -3,11 +3,13 @@ package fr.projetcompensation.gymbuddy.admin.http;
 import fr.projetcompensation.gymbuddy.admin.AdminService;
 import fr.projetcompensation.gymbuddy.auth.AuthException;
 import fr.projetcompensation.gymbuddy.auth.AuthPrincipal;
+import fr.projetcompensation.gymbuddy.fixtures.FixtureMagnitude;
 import fr.projetcompensation.gymbuddy.openapi.api.AdminApi;
 import fr.projetcompensation.gymbuddy.openapi.model.AdminMediaPage;
 import fr.projetcompensation.gymbuddy.openapi.model.AdminUser;
 import fr.projetcompensation.gymbuddy.openapi.model.AdminUserPage;
 import fr.projetcompensation.gymbuddy.openapi.model.AuditEventPage;
+import fr.projetcompensation.gymbuddy.openapi.model.GenerateFixturesRequest;
 import fr.projetcompensation.gymbuddy.openapi.model.HideContentRequest;
 import fr.projetcompensation.gymbuddy.openapi.model.PatchUserRoleRequest;
 import fr.projetcompensation.gymbuddy.openapi.model.Report;
@@ -90,8 +92,8 @@ public class AdminController implements AdminApi {
     }
 
     @Override
-    public ResponseEntity<Void> postAdminFixtures() {
-        service().generateFixtures(principal().userId());
+    public ResponseEntity<Void> postAdminFixtures(@Nullable GenerateFixturesRequest request) {
+        service().generateFixtures(principal().userId(), magnitude(request));
         return ResponseEntity.noContent().build();
     }
 
@@ -122,5 +124,20 @@ public class AdminController implements AdminApi {
 
     private static String reason(@Nullable StaffReasonRequest request) {
         return request == null ? null : request.getReason();
+    }
+
+    private static FixtureMagnitude magnitude(@Nullable GenerateFixturesRequest request) {
+        if (request == null) {
+            return FixtureMagnitude.demo();
+        }
+        return FixtureMagnitude.of(
+                request.getUsers(),
+                request.getFriendships(),
+                request.getPosts(),
+                request.getComments(),
+                request.getEvents(),
+                request.getApplications(),
+                request.getMessages(),
+                request.getMedia());
     }
 }
