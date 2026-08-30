@@ -6,6 +6,9 @@ import fr.projetcompensation.gymbuddy.comments.Comment;
 import fr.projetcompensation.gymbuddy.comments.CommentRepository;
 import fr.projetcompensation.gymbuddy.events.Event;
 import fr.projetcompensation.gymbuddy.events.EventRepository;
+import fr.projetcompensation.gymbuddy.fixtures.FixtureGenerator;
+import fr.projetcompensation.gymbuddy.fixtures.FixtureGuard;
+import fr.projetcompensation.gymbuddy.fixtures.FixtureMagnitude;
 import fr.projetcompensation.gymbuddy.friends.FriendshipRepository;
 import fr.projetcompensation.gymbuddy.friends.InstantIdCursor;
 import fr.projetcompensation.gymbuddy.media.Media;
@@ -45,6 +48,7 @@ public final class AdminService {
     private final AdminCatalog catalog;
     private final Clock clock;
     private final boolean production;
+    private final FixtureGenerator fixtures;
 
     public AdminService(
             UserRepository users,
@@ -58,7 +62,8 @@ public final class AdminService {
             AuditEventRepository audit,
             AdminCatalog catalog,
             Clock clock,
-            boolean production) {
+            boolean production,
+            FixtureGenerator fixtures) {
         this.users = users;
         this.profiles = profiles;
         this.posts = posts;
@@ -71,6 +76,7 @@ public final class AdminService {
         this.catalog = catalog;
         this.clock = clock;
         this.production = production;
+        this.fixtures = fixtures;
     }
 
     public AdminPage<ListedAdminUser> listUsers(
@@ -223,20 +229,25 @@ public final class AdminService {
                         .encode());
     }
 
-    public void generateFixtures(UUID callerId) {
+    public void generateFixtures(UUID callerId, FixtureMagnitude magnitude) {
         User caller = requireAdmin(callerId);
-        if (production) {
-            throw AuthException.forbidden("fixtures are disabled");
-        }
-        writeAudit(caller, AuditEvent.GENERATE_FIXTURES, "fixtures", FIXTURES_TARGET, "stub");
+        FixtureGuard.requireNonProduction(production);
+        requireFixtures().generate(magnitude == null ? FixtureMagnitude.demo() : magnitude);
+        writeAudit(caller, AuditEvent.GENERATE_FIXTURES, "fixtures", FIXTURES_TARGET, "generate");
     }
 
     public void resetFixtures(UUID callerId) {
         User caller = requireAdmin(callerId);
-        if (production) {
+        FixtureGuard.requireNonProduction(production);
+        requireFixtures().reset(caller.id());
+        writeAudit(caller, AuditEvent.RESET_FIXTURES, "fixtures", FIXTURES_TARGET, "reset");
+    }
+
+    private FixtureGenerator requireFixtures() {
+        if (fixtures == null) {
             throw AuthException.forbidden("fixtures are disabled");
         }
-        writeAudit(caller, AuditEvent.RESET_FIXTURES, "fixtures", FIXTURES_TARGET, "stub");
+        return fixtures;
     }
 
     public AdminPage<AuditEvent> listAudit(UUID callerId, String q, String action, String after, Integer size) {

@@ -24,8 +24,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <bouncycastle.version>1.81</bouncycastle.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after ticket #67 (messaging). Pin a 0.1.x tag when Release cuts one. -->
-        <openapi.package.tag>8f89f1a72b1ddb6996d9598e6cedbac4d4788ace</openapi.package.tag>
+        <!-- gym-buddy-openapi develop SHA after ticket #70 (fixtures). Pin a 0.1.x tag when Release cuts one. -->
+        <openapi.package.tag>f849a1dcd498c12fd9507b83f9d50d375d651347</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>
@@ -132,6 +132,11 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
+        <dependency>
+            <groupId>net.datafaker</groupId>
+            <artifactId>datafaker</artifactId>
+            <version>2.4.4</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -166,6 +171,14 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <mainClass>fr.projetcompensation.gymbuddy.fixtures.FixturesCli</mainClass>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -377,6 +390,7 @@
                                 <inlineSchemaNameMapping>postAdminReportsIdResolve_request=StaffReasonRequest</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>postAdminReportsIdResolve_200_response=Report</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>postReports_request=CreateReportRequest</inlineSchemaNameMapping>
+                                <inlineSchemaNameMapping>postAdminFixtures_request=GenerateFixturesRequest</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>postReports_201_response=Report</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getAdminMedia_200_response=AdminMediaPage</inlineSchemaNameMapping>
                                 <inlineSchemaNameMapping>getAdminMedia_200_response_data_inner=AdminMedia</inlineSchemaNameMapping>
@@ -561,6 +575,7 @@
                                 <modelNameMapping>postAdminReportsIdResolve_request=StaffReasonRequest</modelNameMapping>
                                 <modelNameMapping>postAdminReportsIdResolve_200_response=Report</modelNameMapping>
                                 <modelNameMapping>postReports_request=CreateReportRequest</modelNameMapping>
+                                <modelNameMapping>postAdminFixtures_request=GenerateFixturesRequest</modelNameMapping>
                                 <modelNameMapping>postReports_201_response=Report</modelNameMapping>
                                 <modelNameMapping>getAdminMedia_200_response=AdminMediaPage</modelNameMapping>
                                 <modelNameMapping>getAdminMedia_200_response_data_inner=AdminMedia</modelNameMapping>

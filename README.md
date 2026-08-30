@@ -58,6 +58,16 @@ Unauthenticated probes (OpenAPI `healthz` / `readyz`):
 
 `SPRING_PROFILES_ACTIVE=prod` refuses to start unless `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, and `S3_SECRET_KEY` are set. There is no local `uploads/` fallback.
 
+## Fixtures (non-production)
+
+Datafaker factories with `FIXTURE_SEED=20260813`. Disabled when `SPRING_PROFILES_ACTIVE=prod`. `--reset` is required to truncate. Demo passwords come from `.env` (`DEMO_ALEX_PASSWORD` and friends).
+
+```bash
+mvn -q compile exec:java -Dexec.mainClass=fr.projetcompensation.gymbuddy.fixtures.FixturesCli -Dexec.args="--users 3000 --posts-per-user 5 --events 800 --reset"
+```
+
+Defaults: 3 000 users, 12 000 accepted friendships, 15 000 posts, 20 000 comments, 800 events, 4 000 applications, 10 000 messages, 5 000 media metadata rows (10 stock MinIO objects). CI uses a tiny set (tens of rows). Admin `POST /api/v1/admin/fixtures` and `/reset` call the same generator.
+
 ## VPS data plane
 
 PostgreSQL 18, Redis, and MinIO on the OVH VPS use **`deploy/compose.yaml`**, not this laptop file. Ports `5432` / `6379` / `9000` / `9001` are not published. `deploy/replace.sh` joins `gym-buddy-data` and injects VPS env from `/etc/gym-buddy/vps.env` (not committed). `DEPLOY_BIND` stays `127.0.0.1`. Operator steps: [`docs/vps-data-plane.md`](docs/vps-data-plane.md).
