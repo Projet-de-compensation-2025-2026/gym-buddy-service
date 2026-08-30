@@ -221,7 +221,7 @@ public final class SearchService {
         if (organizer == null || !organizer.active()) {
             return Optional.empty();
         }
-        if (friendships.isBlockedEitherWay(caller.id(), organizer.id())) {
+        if (!organizer.id().equals(caller.id()) && friendships.isBlockedEitherWay(caller.id(), organizer.id())) {
             return Optional.empty();
         }
         if (!canViewEvent(event, caller, friendIds)) {

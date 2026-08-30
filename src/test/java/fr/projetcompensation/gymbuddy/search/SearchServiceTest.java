@@ -448,6 +448,9 @@ class SearchServiceTest {
 
         @Override
         public Optional<Friendship> findPair(UUID left, UUID right) {
+            if (left.equals(right)) {
+                return Optional.empty();
+            }
             return store.values().stream()
                     .filter(row -> row.involves(left) && row.involves(right))
                     .findFirst();
