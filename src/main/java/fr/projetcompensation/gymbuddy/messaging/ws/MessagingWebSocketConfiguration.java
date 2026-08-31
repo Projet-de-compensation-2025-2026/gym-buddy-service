@@ -15,9 +15,7 @@ public class MessagingWebSocketConfiguration implements WebSocketConfigurer {
     private final ApiCorsConfiguration cors;
 
     public MessagingWebSocketConfiguration(
-            MessagingWebSocketHandler handler,
-            MessagingHandshakeInterceptor interceptor,
-            ApiCorsConfiguration cors) {
+            MessagingWebSocketHandler handler, MessagingHandshakeInterceptor interceptor, ApiCorsConfiguration cors) {
         this.handler = handler;
         this.interceptor = interceptor;
         this.cors = cors;
