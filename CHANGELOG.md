@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+### Fixed
+
+- Member JWTs receive contract `NOT_FOUND` for every `/api/v1/admin/*` call, including `GET /admin/content` without `type` and empty-body `PATCH /admin/users/{id}/role` / `POST /admin/content/{type}/{id}/hide` (ticket **#116**, FS-ADM-09). Staff authorization runs before query/body validation. Unauthenticated `/admin/*` stays `401` UTF-8 JSON (ticket **#85**).
+
 ## [1.1.0] — 2026-08-30
 
 ### Added

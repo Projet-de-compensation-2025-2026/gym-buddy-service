@@ -57,6 +57,19 @@ class AccessTokenFilterTest {
     }
 
     @Test
+    void unauthenticatedAdminContentAndMutationsAreUtf8() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/content"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"))
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("charset=UTF-8")));
+        mockMvc.perform(post("/api/v1/admin/content/post/33333333-3333-4333-8333-333333333333/hide")
+                        .contentType("application/json")
+                        .content(""))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+    }
+
+    @Test
     void optionsPreflightIsNotBlockedByAccessToken() throws Exception {
         mockMvc.perform(options("/api/v1/not-a-public-route")).andExpect(status().isNotFound());
     }
