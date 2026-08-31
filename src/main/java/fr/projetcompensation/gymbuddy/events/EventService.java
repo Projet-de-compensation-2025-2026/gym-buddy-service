@@ -421,7 +421,7 @@ public final class EventService {
                 continue;
             }
             int accepted = events.countAccepted(occurrence.id());
-            int remaining = Math.max(0, row.capacity() - accepted);
+            int remaining = occurrence.cancelled() ? 0 : Math.max(0, row.capacity() - accepted);
             VisibleOccurrence visible = new VisibleOccurrence(occurrence, accepted, remaining);
             occurrences.add(visible);
             if (nextOpen == null
@@ -432,13 +432,7 @@ public final class EventService {
         }
         occurrences.sort(Comparator.comparing(item -> item.occurrence().startsAt()));
         int remainingSeats = nextOpen == null ? 0 : nextOpen.remainingSeats();
-        VisibleApplication viewerApplication = null;
-        UUID targetOccurrence = nextOpen == null ? null : nextOpen.occurrence().id();
-        if (targetOccurrence != null) {
-            viewerApplication = events.findApplication(targetOccurrence, caller.id())
-                    .map(this::toVisibleApplication)
-                    .orElse(null);
-        }
+        VisibleApplication viewerApplication = viewerApplication(row, caller.id(), nextOpen);
         List<VisibleApplicant> pending = List.of();
         List<UUID> invitees = List.of();
         if (detail && row.organizerId().equals(caller.id())) {
@@ -481,6 +475,19 @@ public final class EventService {
                 .reversed()
                 .thenComparing(item -> item.application().createdAt()));
         return ranked;
+    }
+
+    private VisibleApplication viewerApplication(Event row, UUID callerId, VisibleOccurrence nextOpen) {
+        if (nextOpen != null) {
+            return events.findApplication(nextOpen.occurrence().id(), callerId)
+                    .map(this::toVisibleApplication)
+                    .orElse(null);
+        }
+        return events.applicationsForEvent(row.id()).stream()
+                .filter(application -> application.applicantId().equals(callerId))
+                .max(Comparator.comparing(EventApplication::createdAt).thenComparing(EventApplication::id))
+                .map(this::toVisibleApplication)
+                .orElse(null);
     }
 
     private VisibleApplication toVisibleApplication(EventApplication application) {

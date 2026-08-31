@@ -262,15 +262,52 @@ class EventServiceTest {
     @Test
     void fsEvt08_cancelOccurrenceMarksApplicationsCancelled() {
         VisibleEvent created = service.create(alex.id(), draft(null, EventVisibility.PUBLIC.wireValue(), 2));
+        UUID eventId = created.event().id();
         UUID occurrenceId = created.occurrences().getFirst().occurrence().id();
-        VisibleApplication application =
-                service.apply(blake.id(), created.event().id(), occurrenceId);
+        VisibleApplication application = service.apply(blake.id(), eventId, occurrenceId);
 
-        service.cancel(alex.id(), created.event().id(), occurrenceId);
+        service.cancel(alex.id(), eventId, occurrenceId);
 
         assertThat(events.findApplication(application.application().id()))
                 .hasValueSatisfying(row -> assertThat(row.status()).isEqualTo(EventApplicationStatus.CANCELLED));
         assertThat(events.findOccurrence(occurrenceId)).hasValueSatisfying(EventOccurrence::cancelled);
+        VisibleEvent applicantView = service.get(blake.id(), eventId);
+        assertThat(applicantView.remainingSeats()).isZero();
+        assertThat(applicantView.viewerApplication()).isNotNull();
+        assertThat(applicantView.viewerApplication().application().status())
+                .isEqualTo(EventApplicationStatus.CANCELLED);
+        assertThat(applicantView.occurrences()).allSatisfy(row -> {
+            assertThat(row.occurrence().cancelled()).isTrue();
+            assertThat(row.remainingSeats()).isZero();
+        });
+    }
+
+    @Test
+    void fsEvt08_cancelSeriesReturnsCancelledViewerApplicationOnApplicantGet() {
+        VisibleEvent created = service.create(alex.id(), draft(null, EventVisibility.PUBLIC.wireValue(), 2));
+        UUID eventId = created.event().id();
+        UUID occurrenceId = created.occurrences().getFirst().occurrence().id();
+        service.apply(blake.id(), eventId, occurrenceId);
+
+        VisibleEvent cancelled = service.cancel(alex.id(), eventId, null);
+
+        assertThat(cancelled.event().cancelled()).isTrue();
+        assertThat(cancelled.remainingSeats()).isZero();
+        VisibleEvent applicantView = service.get(blake.id(), eventId);
+        assertThat(applicantView.event().cancelledAt()).isNotNull();
+        assertThat(applicantView.remainingSeats()).isZero();
+        assertThat(applicantView.viewerApplication()).isNotNull();
+        assertThat(applicantView.viewerApplication().application().status())
+                .isEqualTo(EventApplicationStatus.CANCELLED);
+        assertThat(applicantView.occurrences()).allSatisfy(row -> {
+            assertThat(row.occurrence().cancelled()).isTrue();
+            assertThat(row.remainingSeats()).isZero();
+        });
+        VisibleEvent organizerView = service.get(alex.id(), eventId);
+        assertThat(organizerView.event().cancelled()).isTrue();
+        assertThat(organizerView.remainingSeats()).isZero();
+        assertThat(organizerView.occurrences())
+                .allSatisfy(row -> assertThat(row.remainingSeats()).isZero());
     }
 
     @Test
