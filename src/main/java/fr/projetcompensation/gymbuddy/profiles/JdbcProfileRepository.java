@@ -1,9 +1,12 @@
 package fr.projetcompensation.gymbuddy.profiles;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +24,8 @@ public class JdbcProfileRepository implements ProfileRepository {
             FROM profiles
             WHERE user_id = ?
             """;
+
+    private static final ObjectMapper WINDOWS_JSON = new ObjectMapper();
 
     private final JdbcTemplate jdbc;
 
@@ -114,13 +119,21 @@ public class JdbcProfileRepository implements ProfileRepository {
         if (raw == null || raw.isBlank() || raw.equals("[]")) {
             return List.of();
         }
-        java.util.ArrayList<PreferredWindow> windows = new java.util.ArrayList<>();
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(
-                        "\"weekday\"\\s*:\\s*(\\d+)\\s*,\\s*\"start\"\\s*:\\s*\"([^\"]+)\"\\s*,\\s*\"end\"\\s*:\\s*\"([^\"]+)\"")
-                .matcher(raw);
-        while (matcher.find()) {
-            windows.add(new PreferredWindow(Integer.parseInt(matcher.group(1)), matcher.group(2), matcher.group(3)));
+        try {
+            JsonNode arr = WINDOWS_JSON.readTree(raw);
+            if (!arr.isArray()) {
+                return List.of();
+            }
+            List<PreferredWindow> windows = new ArrayList<>();
+            for (JsonNode node : arr) {
+                windows.add(new PreferredWindow(
+                        node.path("weekday").asInt(),
+                        node.path("start").asText(),
+                        node.path("end").asText()));
+            }
+            return List.copyOf(windows);
+        } catch (Exception ex) {
+            throw new IllegalStateException("preferred_windows is not valid JSON", ex);
         }
-        return List.copyOf(windows);
     }
 }

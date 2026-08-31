@@ -9,6 +9,24 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+## [1.1.1] — 2026-08-31
+
+### Added
+
+### Changed
+
+### Fixed
+
+- `PATCH /profiles/me` JSON-merges: omitted fields stay unchanged (visibility-only no longer wipes sports, windows, bio, city, or coords). Unknown `experienceLevel` is `422 VALIDATION`. Stored `preferredWindows` survive PostgreSQL jsonb key order on GET. Pin gym-buddy-openapi `41f6613e5653fac0e4fd6398eade24d1a84b2631` (ticket **#119**, FS-PROF-02, FS-PROF-06).
+- A valid member JWT no longer receives `401 UNAUTHENTICATED` `media is not configured`. `POST /media` mints a signed PUT when object storage is wired (S3 beans are not skipped by a same-class `@ConditionalOnBean`). Missing `GET /media/{id}/url` is `404 NOT_FOUND`. If media cannot be used, the body is `503` readyz-style and `GET /readyz` is not 200 (ticket **#121**, FS-MED-02, FS-MED-06).
+- Search `page.next` encodes rank with `Double.toString` so `before` round-trips. `%.12f` rounded some scores (live events `0.199405646798`) and served the last hit again (ticket **#123**, FS-SRCH-05). Cursor stays opaque `{data, page.next, page.size}`.
+- Applicant `GET /events/{id}` after series or occurrence cancel keeps
+  `viewerApplication.status=cancelled`. Cancelled occurrences report
+  `remainingSeats` 0 so clients do not treat them as open (ticket **#124**,
+  FS-EVT-08).
+- Member JWTs receive contract `NOT_FOUND` for every `/api/v1/admin/*` call, including `GET /admin/content` without `type` and empty-body `PATCH /admin/users/{id}/role` / `POST /admin/content/{type}/{id}/hide` (ticket **#116**, FS-ADM-09). Staff authorization runs before query/body validation. Unauthenticated `/admin/*` stays `401` UTF-8 JSON (ticket **#85**).
+- `POST /api/v1/conversations` no longer returns Spring HTTP 500 when the two friends’ UUIDs disagree between Java `UUID.compareTo` (signed) and PostgreSQL `uuid <` (unsigned). Pair order now matches the `conversations_pair_order` check. Second POST for the same pair stays idempotent (ticket **#120**, FS-MSG-01).
+
 ## [1.1.0] — 2026-08-30
 
 ### Added
@@ -90,6 +108,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 [Unreleased]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service
 
+[1.1.1]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.0.0
 [0.1.1]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v0.1.1

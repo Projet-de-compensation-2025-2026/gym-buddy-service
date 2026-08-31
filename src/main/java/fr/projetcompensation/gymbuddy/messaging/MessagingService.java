@@ -77,7 +77,8 @@ public final class MessagingService {
                 Conversation.hi(caller.id(), peer.id()),
                 now);
         conversations.save(created);
-        return listed(created, caller.id());
+        Conversation persisted = conversations.findPair(caller.id(), peer.id()).orElse(created);
+        return listed(persisted, caller.id());
     }
 
     public ConversationList listInbox(UUID callerId, String before, Integer size) {

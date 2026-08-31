@@ -1,9 +1,9 @@
 package fr.projetcompensation.gymbuddy.media.http;
 
-import fr.projetcompensation.gymbuddy.auth.AuthException;
 import fr.projetcompensation.gymbuddy.auth.AuthPrincipal;
 import fr.projetcompensation.gymbuddy.media.CreateUpload;
 import fr.projetcompensation.gymbuddy.media.MediaService;
+import fr.projetcompensation.gymbuddy.media.MediaUnavailableException;
 import fr.projetcompensation.gymbuddy.media.SignedGet;
 import fr.projetcompensation.gymbuddy.openapi.api.MediaApi;
 import fr.projetcompensation.gymbuddy.openapi.model.CreateMediaRequest;
@@ -64,7 +64,7 @@ public class MediaController implements MediaApi {
     private MediaService service() {
         MediaService service = media.getIfAvailable();
         if (service == null) {
-            throw AuthException.unauthenticated("media is not configured");
+            throw new MediaUnavailableException();
         }
         return service;
     }

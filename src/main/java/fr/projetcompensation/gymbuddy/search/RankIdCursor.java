@@ -1,6 +1,5 @@
 package fr.projetcompensation.gymbuddy.search;
 
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,7 +22,8 @@ record RankIdCursor(double rank, UUID id) {
     }
 
     String encode() {
-        return String.format(Locale.ROOT, "%.12f:%s", rank, id);
+        // %.12f rounds some scores so parse() yields a different double and after() re-includes the last hit.
+        return Double.toString(rank) + ":" + id;
     }
 
     boolean after(double otherRank, UUID otherId) {

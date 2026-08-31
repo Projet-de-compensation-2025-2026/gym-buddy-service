@@ -76,6 +76,20 @@ class MessagingServiceTest {
     }
 
     @Test
+    void fsMsg01_unsignedPostgresUuidOrderOpensAConversation() {
+        UUID pgLo = UUID.fromString("760a6a67-3de6-4b09-8437-9d292869512d");
+        UUID javaLo = UUID.fromString("afcada6c-62a6-4059-853e-5f256b5d86f1");
+        User left = member(pgLo, "pairlo");
+        User right = member(javaLo, "pairhi");
+        friendships.accept(left.id(), right.id());
+        ListedConversation opened = service.open(left.id(), right.id());
+        assertThat(opened.conversation().userLo()).isEqualTo(pgLo);
+        assertThat(opened.conversation().userHi()).isEqualTo(javaLo);
+        assertThat(service.open(right.id(), left.id()).conversation().id())
+                .isEqualTo(opened.conversation().id());
+    }
+
+    @Test
     void fsMsg02_nonFriendsCannotOpenOrSend() {
         assertThatThrownBy(() -> service.open(alex.id(), casey.id()))
                 .isInstanceOf(AuthException.class)
@@ -209,8 +223,11 @@ class MessagingServiceTest {
     }
 
     private User member(String handle) {
-        User user = new User(
-                UUID.randomUUID(), handle + "@example.com", handle, "hash", UserRole.MEMBER, UserStatus.ACTIVE, NOW);
+        return member(UUID.randomUUID(), handle);
+    }
+
+    private User member(UUID id, String handle) {
+        User user = new User(id, handle + "@example.com", handle, "hash", UserRole.MEMBER, UserStatus.ACTIVE, NOW);
         users.save(user);
         profiles.save(Profile.created(user.id(), handle));
         return user;

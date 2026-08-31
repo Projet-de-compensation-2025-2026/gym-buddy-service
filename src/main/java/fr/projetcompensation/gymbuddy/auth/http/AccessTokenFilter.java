@@ -97,10 +97,14 @@ public class AccessTokenFilter extends OncePerRequestFilter {
                     "missing or invalid access token");
             return;
         }
+        User found = user.get();
         request.setAttribute(
-                AuthPrincipal.REQUEST_ATTRIBUTE,
-                new AuthPrincipal(
-                        user.get().id(), user.get().handle(), user.get().role()));
+                AuthPrincipal.REQUEST_ATTRIBUTE, new AuthPrincipal(found.id(), found.handle(), found.role()));
+        // FS-ADM-09: members must not learn /admin exists via 400/422 on missing params or bodies.
+        if (isStaffHttpSurface(request) && !found.isStaff()) {
+            writeError(response, HttpServletResponse.SC_NOT_FOUND, ErrorCode.NOT_FOUND, "not found");
+            return;
+        }
         filterChain.doFilter(request, response);
     }
 
@@ -122,6 +126,11 @@ public class AccessTokenFilter extends OncePerRequestFilter {
 
     private static boolean isMessagingSocket(HttpServletRequest request) {
         return "/api/v1/ws".equals(publicPath(request));
+    }
+
+    private static boolean isStaffHttpSurface(HttpServletRequest request) {
+        String path = publicPath(request);
+        return path.equals("/api/v1/admin") || path.startsWith("/api/v1/admin/");
     }
 
     private static Optional<String> queryToken(HttpServletRequest request) {
