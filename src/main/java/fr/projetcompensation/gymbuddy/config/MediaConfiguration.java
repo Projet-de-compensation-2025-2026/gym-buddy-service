@@ -11,7 +11,7 @@ import fr.projetcompensation.gymbuddy.users.UserRepository;
 import java.time.Clock;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -24,13 +24,13 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 public class MediaConfiguration {
 
     @Bean
-    @ConditionalOnBean({S3Client.class, S3Presigner.class})
+    @ConditionalOnProperty(name = {"S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY"})
     ObjectStorage objectStorage(S3Client s3Client, S3Presigner s3Presigner, @Value("${S3_BUCKET}") String bucket) {
         return new S3ObjectStorage(s3Client, s3Presigner, bucket);
     }
 
     @Bean
-    @ConditionalOnBean({MediaRepository.class, ObjectStorage.class})
+    @ConditionalOnProperty(name = {"S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "DATABASE_URL"})
     MediaService mediaService(
             MediaRepository media,
             ObjectStorage storage,
@@ -50,7 +50,7 @@ public class MediaConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean(MediaService.class)
+    @ConditionalOnProperty(name = {"S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "DATABASE_URL"})
     MediaSweepJob mediaSweepJob(MediaService mediaService) {
         return new MediaSweepJob(mediaService);
     }
