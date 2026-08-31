@@ -1,7 +1,9 @@
 # VPS data plane only. Do not use this file on a laptop.
 # Laptop stack stays the repo-root compose.yaml (127.0.0.1 published ports).
 #
-# Private Docker network. Do not publish 5432 / 6379 / 9000 / 9001 on the host.
+# Private Docker network. Redis and MinIO stay unpublished.
+# Postgres binds 127.0.0.1:5432 only (operator SSH tunnel / pgAdmin).
+# Do not publish 0.0.0.0:5432 and do not open UFW 5432.
 # The API is not in this file: Release → Deploy still runs deploy/replace.sh,
 # which docker-runs the GHCR image on 127.0.0.1:8080 and joins gym-buddy-data.
 #
@@ -16,6 +18,8 @@ services:
       POSTGRES_DB: gymbuddy
       POSTGRES_USER: gymbuddy
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:

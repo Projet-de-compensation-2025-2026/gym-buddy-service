@@ -7,6 +7,9 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- VPS Postgres binds `127.0.0.1:5432` only so an operator can SSH-tunnel from
+  pgAdmin. Redis and MinIO stay unpublished. Do not open UFW 5432.
+
 ### Changed
 
 ## [1.1.1] — 2026-08-31

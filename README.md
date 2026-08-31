@@ -72,4 +72,4 @@ Defaults: 3 000 users, 12 000 accepted friendships, 15 000 posts, 20 000 comment
 
 ## VPS data plane
 
-PostgreSQL 18, Redis, and MinIO on the OVH VPS use **`deploy/compose.yaml`**, not this laptop file. Ports `5432` / `6379` / `9000` / `9001` are not published. `deploy/replace.sh` joins `gym-buddy-data` and injects VPS env from `/etc/gym-buddy/vps.env` (not committed). `DEPLOY_BIND` stays `127.0.0.1`. Operator steps: [`docs/vps-data-plane.md`](docs/vps-data-plane.md).
+PostgreSQL 18, Redis, and MinIO on the OVH VPS use **`deploy/compose.yaml`**, not this laptop file. Postgres binds **`127.0.0.1:5432` only** (SSH tunnel / pgAdmin). Redis and MinIO stay unpublished. Do not open UFW 5432. `deploy/replace.sh` joins `gym-buddy-data` and injects VPS env from `/etc/gym-buddy/vps.env` (not committed). `DEPLOY_BIND` stays `127.0.0.1`. Operator steps: [`docs/vps-data-plane.md`](docs/vps-data-plane.md).
