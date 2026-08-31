@@ -58,8 +58,8 @@ def main() -> None:
 
     sync = load_module("sync_pom_version", ".github/scripts/ci/sync_pom_version.py")
     pom = (ROOT / "pom.xml").read_text()
-    if "<version>1.0.0</version>" not in pom:
-        fail("working pom.xml must stay on the tagged 1.0.0 line until the next Release")
+    if "<version>1.1.0</version>" not in pom:
+        fail("working pom.xml must stay on the tagged 1.1.0 line until the next Release")
     if "<version>2.0.0</version>" in pom:
         fail("do not invent 2.0.0 in pom.xml")
 

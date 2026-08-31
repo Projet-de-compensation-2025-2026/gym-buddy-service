@@ -525,6 +525,123 @@ class AuthIT {
     }
 
     @Test
+    void fsAdm09_memberAdminSurfaceIsNotFoundBeforeValidation() {
+        RestClient client = restClient();
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("admin@example.com", "admin", PASSWORD, "Admin"))
+                .retrieve()
+                .toEntity(String.class);
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("member@example.com", "member", PASSWORD, "Member"))
+                .retrieve()
+                .toEntity(String.class);
+        String staffAccess = jsonField(
+                client.post()
+                        .uri("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"email\":\"admin@example.com\",\"password\":\"" + PASSWORD + "\"}")
+                        .retrieve()
+                        .toEntity(String.class)
+                        .getBody(),
+                "accessToken");
+        String memberAccess = jsonField(
+                client.post()
+                        .uri("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"email\":\"member@example.com\",\"password\":\"" + PASSWORD + "\"}")
+                        .retrieve()
+                        .toEntity(String.class)
+                        .getBody(),
+                "accessToken");
+        String targetId = "33333333-3333-4333-8333-333333333333";
+
+        ResponseEntity<String> anonymousContent =
+                client.get().uri("/api/v1/admin/content").retrieve().toEntity(String.class);
+        assertThat(anonymousContent.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(anonymousContent.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE))
+                .containsIgnoringCase("charset=UTF-8");
+        assertThat(anonymousContent.getBody()).contains("\"code\":\"UNAUTHENTICATED\"");
+
+        ResponseEntity<String> memberContent = client.get()
+                .uri("/api/v1/admin/content")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + memberAccess)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(memberContent.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(memberContent.getBody()).contains("\"code\":\"NOT_FOUND\"").doesNotContain("Bad Request");
+
+        ResponseEntity<String> staffContent = client.get()
+                .uri("/api/v1/admin/content")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + staffAccess)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(staffContent.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(staffContent.getBody()).contains("\"code\":\"VALIDATION\"").doesNotContain("Bad Request");
+
+        ResponseEntity<String> memberRole = client.patch()
+                .uri("/api/v1/admin/users/" + targetId + "/role")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + memberAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(memberRole.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(memberRole.getBody()).contains("\"code\":\"NOT_FOUND\"").doesNotContain("VALIDATION");
+
+        ResponseEntity<String> anonymousRole = client.patch()
+                .uri("/api/v1/admin/users/" + targetId + "/role")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(anonymousRole.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(anonymousRole.getBody()).contains("\"code\":\"UNAUTHENTICATED\"");
+
+        ResponseEntity<String> staffRole = client.patch()
+                .uri("/api/v1/admin/users/" + targetId + "/role")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + staffAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(staffRole.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(staffRole.getBody()).contains("\"code\":\"VALIDATION\"");
+
+        ResponseEntity<String> memberHide = client.post()
+                .uri("/api/v1/admin/content/post/" + targetId + "/hide")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + memberAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(memberHide.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(memberHide.getBody()).contains("\"code\":\"NOT_FOUND\"").doesNotContain("VALIDATION");
+
+        ResponseEntity<String> anonymousHide = client.post()
+                .uri("/api/v1/admin/content/post/" + targetId + "/hide")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(anonymousHide.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(anonymousHide.getBody()).contains("\"code\":\"UNAUTHENTICATED\"");
+
+        ResponseEntity<String> staffHide = client.post()
+                .uri("/api/v1/admin/content/post/" + targetId + "/hide")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + staffAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(staffHide.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(staffHide.getBody()).contains("\"code\":\"VALIDATION\"");
+    }
+
+    @Test
     void healthzStillWorksWhenAuthIsConfigured() {
         ResponseEntity<String> healthz =
                 restClient().get().uri("/api/v1/healthz").retrieve().toEntity(String.class);
