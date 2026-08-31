@@ -140,6 +140,62 @@ class EventsIT {
         assertThat(stranger.getBody()).doesNotContain(eventId);
     }
 
+    @Test
+    void fsEvt08_applicantGetAfterCancelIncludesCancelledViewerApplication() {
+        RestClient client = restClient();
+        String organizerAccess = registerAndLogin(client, "evt08.org@example.com", "evt08org", "Evt Organizer");
+        String applicantAccess = registerAndLogin(client, "evt08.app@example.com", "evt08app", "Evt Applicant");
+        String startsAt = Instant.now()
+                .plus(7, ChronoUnit.DAYS)
+                .truncatedTo(ChronoUnit.SECONDS)
+                .toString();
+        ResponseEntity<String> created = client.post()
+                .uri("/api/v1/events")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + organizerAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"title":"QA cancel session","activity":"Yoga","place":"Studio A",
+                         "startsAt":"%s","durationMin":45,"visibility":"public","capacity":2}
+                        """.formatted(startsAt))
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        String eventId = jsonField(created.getBody(), "id");
+        assertThat(eventId).isNotBlank();
+
+        ResponseEntity<String> applied = client.post()
+                .uri("/api/v1/events/" + eventId + "/applications")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + applicantAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(applied.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        ResponseEntity<String> cancelled = client.post()
+                .uri("/api/v1/events/" + eventId + "/cancel")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + organizerAccess)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{}")
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(cancelled.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cancelled.getBody()).contains("\"cancelledAt\":");
+
+        ResponseEntity<String> applicantGet = client.get()
+                .uri("/api/v1/events/" + eventId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + applicantAccess)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(applicantGet.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(applicantGet.getBody())
+                .contains("\"cancelledAt\":")
+                .contains("\"viewerApplication\":")
+                .contains("\"status\":\"cancelled\"")
+                .contains("\"remainingSeats\":0")
+                .contains("\"cancelled\":true");
+    }
+
     private String registerAndLogin(RestClient client, String email, String handle, String displayName) {
         ResponseEntity<String> registered = client.post()
                 .uri("/api/v1/auth/register")
