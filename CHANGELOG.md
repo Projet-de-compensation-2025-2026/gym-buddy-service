@@ -12,6 +12,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - Member JWTs receive contract `NOT_FOUND` for every `/api/v1/admin/*` call, including `GET /admin/content` without `type` and empty-body `PATCH /admin/users/{id}/role` / `POST /admin/content/{type}/{id}/hide` (ticket **#116**, FS-ADM-09). Staff authorization runs before query/body validation. Unauthenticated `/admin/*` stays `401` UTF-8 JSON (ticket **#85**).
+- `POST /api/v1/conversations` no longer returns Spring HTTP 500 when the two friends’ UUIDs disagree between Java `UUID.compareTo` (signed) and PostgreSQL `uuid <` (unsigned). Pair order now matches the `conversations_pair_order` check. Second POST for the same pair stays idempotent (ticket **#120**, FS-MSG-01).
 
 ## [1.1.0] — 2026-08-30
 
