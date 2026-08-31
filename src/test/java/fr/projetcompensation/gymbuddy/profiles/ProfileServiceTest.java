@@ -95,6 +95,40 @@ class ProfileServiceTest {
     }
 
     @Test
+    void fsProf02_omittedPatchFieldsStayUnchanged() {
+        VisibleProfile patched = service.patchMe(
+                owner.id(),
+                new ProfilePatch(
+                        null,
+                        null,
+                        null,
+                        false,
+                        ProfileVisibility.PUBLIC,
+                        java.util.List.of(),
+                        false,
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        false,
+                        java.util.List.of(),
+                        false,
+                        null,
+                        false));
+        assertThat(patched.profile().visibility()).isEqualTo(ProfileVisibility.PUBLIC);
+        assertThat(patched.profile().sports()).containsExactly("running");
+        assertThat(patched.profile().preferredWindows()).containsExactly(new PreferredWindow(1, "06:00", "08:00"));
+        assertThat(patched.profile().bio()).isEqualTo("Looking for a spotter");
+        assertThat(patched.profile().city()).isEqualTo("Austin, TX");
+        assertThat(patched.profile().lat()).isEqualTo(30.2672);
+        assertThat(patched.profile().lng()).isEqualTo(-97.7431);
+        assertThat(patched.profile().experienceLevel()).isEqualTo(ExperienceLevel.ADVANCED);
+    }
+
+    @Test
     void patchRejectsHandleThatIsAnEmail() {
         assertThatThrownBy(() -> service.patchMe(
                         owner.id(),
