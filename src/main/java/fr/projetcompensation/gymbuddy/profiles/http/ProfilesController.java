@@ -1,5 +1,6 @@
 package fr.projetcompensation.gymbuddy.profiles.http;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import fr.projetcompensation.gymbuddy.auth.AuthException;
 import fr.projetcompensation.gymbuddy.auth.AuthPrincipal;
 import fr.projetcompensation.gymbuddy.openapi.api.ProfilesApi;
@@ -31,8 +32,10 @@ public class ProfilesController implements ProfilesApi {
     @Override
     public ResponseEntity<Profile> patchProfilesMe(PatchProfileRequest patchProfileRequest) {
         AuthPrincipal principal = AuthPrincipal.require(httpRequest);
+        Object raw = httpRequest.getAttribute(PatchProfileBodyAdvice.ATTR);
+        JsonNode json = raw instanceof JsonNode node ? node : null;
         return ResponseEntity.ok(ProfileResponses.toApi(
-                service().patchMe(principal.userId(), ProfilePatches.fromApi(patchProfileRequest))));
+                service().patchMe(principal.userId(), ProfilePatches.fromApi(patchProfileRequest, json))));
     }
 
     @Override

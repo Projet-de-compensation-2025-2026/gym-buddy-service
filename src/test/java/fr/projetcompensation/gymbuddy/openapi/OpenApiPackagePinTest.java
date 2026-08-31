@@ -11,7 +11,7 @@ class OpenApiPackagePinTest {
     @Test
     void generateSourcesPinsVersionedPackageRefTree() throws Exception {
         String pom = Files.readString(Path.of("pom.xml"));
-        assertThat(pom).contains("<openapi.package.tag>16fd67df7691461062a797c25cbe2bb75531514d</openapi.package.tag>");
+        assertThat(pom).contains("<openapi.package.tag>41f6613e5653fac0e4fd6398eade24d1a84b2631</openapi.package.tag>");
         assertThat(pom).contains("<openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>");
         assertThat(pom).contains("<inputSpec>${openapi.spec.file}</inputSpec>");
         assertThat(pom).contains("getHealthz_200_response=HealthStatus");
