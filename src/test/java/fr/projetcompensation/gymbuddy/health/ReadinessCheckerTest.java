@@ -50,4 +50,17 @@ class ReadinessCheckerTest {
         assertThat(status.details()).containsEntry("objectStorage", "not configured");
         assertThat(status.details()).doesNotContainKey("postgres");
     }
+
+    @Test
+    void namesObjectStorageWhenMediaServiceIsMissingEvenIfS3HealthIsOk() {
+        PostgresHealthPort postgres = mock(PostgresHealthPort.class);
+        ObjectStorageHealthPort storage = mock(ObjectStorageHealthPort.class);
+        when(postgres.reachable()).thenReturn(true);
+        when(storage.reachable()).thenReturn(true);
+
+        HealthStatus status = new ReadinessChecker(postgres, storage, () -> false).evaluate();
+
+        assertThat(status.status()).isEqualTo("unavailable");
+        assertThat(status.details()).containsEntry("objectStorage", "not configured");
+    }
 }
