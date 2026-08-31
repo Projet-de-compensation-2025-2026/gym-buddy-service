@@ -575,11 +575,19 @@ class AuthIT {
         assertThat(memberContent.getBody()).contains("\"code\":\"NOT_FOUND\"").doesNotContain("Bad Request");
 
         ResponseEntity<String> staffContent = client.get()
-                .uri("/api/v1/admin/content?type=post")
+                .uri("/api/v1/admin/content")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + staffAccess)
                 .retrieve()
                 .toEntity(String.class);
-        assertThat(staffContent.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(staffContent.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(staffContent.getBody()).contains("\"code\":\"VALIDATION\"").doesNotContain("Bad Request");
+
+        ResponseEntity<String> staffUsers = client.get()
+                .uri("/api/v1/admin/users")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + staffAccess)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(staffUsers.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         ResponseEntity<String> memberRole = client.patch()
                 .uri("/api/v1/admin/users/" + targetId + "/role")
