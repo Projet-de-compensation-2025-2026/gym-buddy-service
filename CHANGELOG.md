@@ -7,6 +7,11 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Laptop Compose builds a sibling `gym-buddy-ui` image and publishes it on
+  `127.0.0.1:4200`. Nginx serves the member app and `/admin/`, and proxies
+  `/api` (including `/api/v1/ws`) to the API. `local` profile CORS/WS origins
+  include `http://127.0.0.1:4200` and `http://localhost:4200`.
+
 ### Changed
 
 ## [1.1.1] — 2026-08-31

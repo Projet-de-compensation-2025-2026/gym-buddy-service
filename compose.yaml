@@ -4,8 +4,9 @@
 # Runbook: gym-buddy-documentation 10-Getting-started/04-Environment-and-pipeline.md
 #
 #   cp .env.example .env
-#   docker compose up -d
+#   docker compose up -d --build
 #
+# UI image needs a sibling checkout: ../gym-buddy-ui (member :4200, admin :4200/admin/).
 # MailHog is optional: docker compose --profile mail up -d
 
 name: gym-buddy
@@ -14,7 +15,7 @@ services:
   api:
     build: .
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${API_HOST_PORT:-8080}:8080"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       FIXTURE_SEED: ${FIXTURE_SEED:-20260813}
@@ -38,6 +39,18 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  ui:
+    build:
+      context: ../gym-buddy-ui
+      dockerfile: Dockerfile
+    image: gym-buddy-ui:local
+    ports:
+      - "127.0.0.1:4200:80"
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+
   postgres:
     image: postgres:18.6
     environment:
@@ -45,7 +58,7 @@ services:
       POSTGRES_USER: gymbuddy
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:

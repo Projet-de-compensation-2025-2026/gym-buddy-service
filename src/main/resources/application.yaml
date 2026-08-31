@@ -12,3 +12,16 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+gym-buddy:
+  cors:
+    allowed-origins: https://projet-de-compensation-2025-2026.github.io
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+gym-buddy:
+  cors:
+    allowed-origins: https://projet-de-compensation-2025-2026.github.io,http://127.0.0.1:4200,http://localhost:4200
