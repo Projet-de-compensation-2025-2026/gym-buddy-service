@@ -4,6 +4,7 @@
 .vscode
 target
 .env
+vps.env
 *.iml
 *.log
 probe

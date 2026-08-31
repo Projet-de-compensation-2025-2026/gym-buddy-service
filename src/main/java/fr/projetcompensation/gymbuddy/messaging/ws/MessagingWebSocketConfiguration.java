@@ -12,17 +12,19 @@ public class MessagingWebSocketConfiguration implements WebSocketConfigurer {
 
     private final MessagingWebSocketHandler handler;
     private final MessagingHandshakeInterceptor interceptor;
+    private final ApiCorsConfiguration cors;
 
     public MessagingWebSocketConfiguration(
-            MessagingWebSocketHandler handler, MessagingHandshakeInterceptor interceptor) {
+            MessagingWebSocketHandler handler, MessagingHandshakeInterceptor interceptor, ApiCorsConfiguration cors) {
         this.handler = handler;
         this.interceptor = interceptor;
+        this.cors = cors;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(handler, "/api/v1/ws")
                 .addInterceptors(interceptor)
-                .setAllowedOrigins(ApiCorsConfiguration.PAGES_ORIGIN);
+                .setAllowedOrigins(cors.allowedOrigins());
     }
 }

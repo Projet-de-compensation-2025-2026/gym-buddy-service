@@ -15,7 +15,9 @@ COPY pom.xml .
 COPY .openapi-generator-ignore .
 COPY scripts ./scripts
 COPY src ./src
-RUN mvn -B -DskipTests package
+# Windows checkouts may copy CRLF; bash then rejects `set -o pipefail`.
+RUN sed -i 's/\r$//' scripts/*.sh \
+    && mvn -B -DskipTests package
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app

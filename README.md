@@ -14,12 +14,14 @@ See [07-CI-CD.md](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-
 
 ## Local data plane
 
-Postgres 18, Redis, MinIO, and this API. Laptop stack from the [runbook](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation/blob/develop/10-Getting-started/04-Environment-and-pipeline.md). Do **not** run `compose.yaml` on the VPS.
+Postgres 18, Redis, MinIO, this API, and the Angular UI image. Laptop stack from the [runbook](https://github.com/Projet-de-compensation-2025-2026/gym-buddy-documentation/blob/develop/10-Getting-started/04-Environment-and-pipeline.md). Do **not** run `compose.yaml` on the VPS. Clone `gym-buddy-ui` as a sibling of this repo (`../gym-buddy-ui`).
 
 ```bash
 cp .env.example .env
-docker compose up -d
+docker compose up -d --build
 ```
+
+Open http://127.0.0.1:4200 (member) and http://127.0.0.1:4200/admin/ (back-office). The UI container proxies `/api` to the API so the refresh cookie is first-party.
 
 Requires JDK 25 (Temurin) and Maven on the host if you run the app outside Compose:
 
@@ -34,8 +36,9 @@ Every published port binds `127.0.0.1`:
 
 | Service | Port |
 | --- | --- |
-| API | 8080 |
-| PostgreSQL 18 | 5432 |
+| UI (member + `/admin/`) | 4200 |
+| API | 8080 (`API_HOST_PORT` if 8080 is taken) |
+| PostgreSQL 18 | 5432 (`POSTGRES_HOST_PORT` if 5432 is taken) |
 | Redis | 6379 |
 | MinIO S3 | 9000 |
 | MinIO console | 9001 |
