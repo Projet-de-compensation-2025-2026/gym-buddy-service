@@ -62,20 +62,11 @@ public final class MessageFactory {
         return new Bundle(List.copyOf(conversations), List.copyOf(messages));
     }
 
-    /** PostgreSQL uuid `<` is unsigned; Java {@code UUID.compareTo} is signed. */
     static UUID lo(UUID left, UUID right) {
-        return unsignedLess(left, right) ? left : right;
+        return Conversation.lo(left, right);
     }
 
     static UUID hi(UUID left, UUID right) {
-        return unsignedLess(left, right) ? right : left;
-    }
-
-    private static boolean unsignedLess(UUID left, UUID right) {
-        int cmp = Long.compareUnsigned(left.getMostSignificantBits(), right.getMostSignificantBits());
-        if (cmp == 0) {
-            cmp = Long.compareUnsigned(left.getLeastSignificantBits(), right.getLeastSignificantBits());
-        }
-        return cmp < 0;
+        return Conversation.hi(left, right);
     }
 }

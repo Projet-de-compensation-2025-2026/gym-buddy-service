@@ -30,6 +30,7 @@ public class JdbcConversationRepository implements ConversationRepository {
                 """
                 INSERT INTO conversations (id, user_lo, user_hi, created_at)
                 VALUES (?, ?, ?, ?)
+                ON CONFLICT (user_lo, user_hi) DO NOTHING
                 """,
                 conversation.id(),
                 conversation.userLo(),
