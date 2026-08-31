@@ -13,7 +13,7 @@
 
     <groupId>fr.projetcompensation</groupId>
     <artifactId>gym-buddy-service</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
     <name>gym-buddy-service</name>
     <description>Gym Buddy Java API</description>
 

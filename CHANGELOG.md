@@ -9,6 +9,12 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+## [1.1.1] — 2026-08-31
+
+### Added
+
+### Changed
+
 ### Fixed
 
 - `PATCH /profiles/me` JSON-merges: omitted fields stay unchanged (visibility-only no longer wipes sports, windows, bio, city, or coords). Unknown `experienceLevel` is `422 VALIDATION`. Stored `preferredWindows` survive PostgreSQL jsonb key order on GET. Pin gym-buddy-openapi `41f6613e5653fac0e4fd6398eade24d1a84b2631` (ticket **#119**, FS-PROF-02, FS-PROF-06).
@@ -102,6 +108,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 [Unreleased]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service
 
+[1.1.1]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.0.0
 [0.1.1]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v0.1.1
