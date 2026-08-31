@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -256,6 +257,53 @@ class SearchServiceTest {
     }
 
     @Test
+    void fsSrch05_eventsSecondPageDoesNotRepeatLastIdWhenRankWouldStallOn12f() {
+        EventCandidate first = event(
+                "Stalling Rank HIIT",
+                "hiit",
+                "Remote",
+                4,
+                SearchEventVisibility.PUBLIC,
+                sarah,
+                NOW.plusSeconds(3600),
+                0,
+                0);
+        EventCandidate second = event(
+                "Later Rank HIIT",
+                "hiit",
+                "Remote",
+                4,
+                SearchEventVisibility.PUBLIC,
+                parisRunner,
+                NOW.plusSeconds(7200),
+                0,
+                0);
+        catalog.events.add(first);
+        catalog.events.add(second);
+
+        EventSearchList page1 =
+                search.searchEvents(alex.id(), null, "hiit", null, null, null, null, null, "relevance", false, null, 1);
+        assertThat(page1.data()).hasSize(1);
+        assertThat(page1.size()).isEqualTo(1);
+        assertThat(page1.next()).isNotBlank();
+        EventSearchHit last = page1.data().get(0);
+        assertThat(last.id()).isEqualTo(first.id());
+        assertThat(String.format(Locale.ROOT, "%.12f", last.rank())).isEqualTo("0.199405646798");
+        assertThat(Double.compare(Double.parseDouble("0.199405646798"), last.rank()))
+                .isPositive();
+
+        String stallingBefore = String.format(Locale.ROOT, "%.12f:%s", last.rank(), last.id());
+        EventSearchList stalled = search.searchEvents(
+                alex.id(), null, "hiit", null, null, null, null, null, "relevance", false, stallingBefore, 1);
+        assertThat(stalled.data()).extracting(EventSearchHit::id).containsExactly(last.id());
+
+        EventSearchList page2 = search.searchEvents(
+                alex.id(), null, "hiit", null, null, null, null, null, "relevance", false, page1.next(), 1);
+        assertThat(page2.data()).extracting(EventSearchHit::id).containsExactly(second.id());
+        assertThat(page2.size()).isEqualTo(1);
+    }
+
+    @Test
     void fsSrch08_unknownCallerIsUnauthenticated() {
         assertThatThrownBy(() -> search.searchPeople(
                         UUID.randomUUID(), null, List.of(), null, null, null, null, null, false, null, 20))
@@ -319,6 +367,19 @@ class SearchServiceTest {
             SearchEventVisibility visibility,
             User organizer,
             Instant startsAt) {
+        return event(title, activity, place, remaining, visibility, organizer, startsAt, LYON_LAT, LYON_LNG);
+    }
+
+    private EventCandidate event(
+            String title,
+            String activity,
+            String place,
+            int remaining,
+            SearchEventVisibility visibility,
+            User organizer,
+            Instant startsAt,
+            double lat,
+            double lng) {
         Profile organizerProfile =
                 profiles.findByUserId(organizer.id()).orElse(Profile.created(organizer.id(), organizer.handle()));
         return new EventCandidate(
@@ -329,8 +390,8 @@ class SearchServiceTest {
                 title + " description",
                 activity,
                 place,
-                LYON_LAT,
-                LYON_LNG,
+                lat,
+                lng,
                 startsAt,
                 remaining,
                 Math.max(remaining, 1),
