@@ -4,7 +4,7 @@ Apply this on the OVH VPS (`vps-c39cdf03.vps.ovh.net`). This cloud checkout cann
 
 This is **not** the laptop stack. Repo-root `compose.yaml` stays local (`127.0.0.1` published ports). Do not run that file on the VPS.
 
-Public story stays **Caddy → `127.0.0.1:8080`**. The API is not published on `0.0.0.0`. Data-plane ports stay off the host.
+Public story stays **Caddy → `127.0.0.1:8080`**. The API is not published on `0.0.0.0`. Redis and MinIO stay unpublished. Postgres listens on **`127.0.0.1:5432` only** so an operator can SSH-tunnel from pgAdmin. It is not on `0.0.0.0` and must not be allowed in UFW.
 
 Release → Deploy still replaces the API with `deploy/replace.sh` + GHCR. Stay on application **0.1.x** (do not tag `0.3.0`).
 
@@ -86,14 +86,46 @@ docker compose --env-file /etc/gym-buddy/vps.env -f deploy/compose.yaml ps
 
 That command creates the named network `gym-buddy-data`. `replace.sh` joins it with `docker run --network gym-buddy-data`. The API then resolves `postgres`, `redis`, and `minio` by Docker DNS.
 
-Do **not** add `ports:` for 5432 / 6379 / 9000 / 9001. Confirm the host is not listening on those:
+Redis and MinIO stay unpublished. Postgres is **loopback only**:
 
 ```bash
-ss -lnt | grep -E ':5432|:6379|:9000|:9001' || echo "data-plane ports not published"
+ss -lnt | grep -E ':5432|:6379|:9000|:9001'
 docker compose --env-file /etc/gym-buddy/vps.env -f deploy/compose.yaml ps --format '{{.Name}} {{.Publishers}}'
 ```
 
-`Publishers` must be empty.
+Expect Postgres `127.0.0.1:5432->5432/tcp`. Redis and MinIO `Publishers` stay empty. `0.0.0.0:5432` is a misconfiguration.
+
+### Operator: pgAdmin 4 over SSH
+
+Postgres is not reachable as `vps-c39cdf03.vps.ovh.net:5432`. Open no UFW rule for 5432.
+
+From a laptop that already SSHs to the VPS (identity file, not password):
+
+```bash
+ssh -N -L 15432:127.0.0.1:5432 USER@vps-c39cdf03.vps.ovh.net
+```
+
+Leave that session open. In pgAdmin 4: **Register → Server**
+
+| Field | Value |
+| --- | --- |
+| Host | `127.0.0.1` |
+| Port | `15432` |
+| Maintenance database | `gymbuddy` |
+| Username | `gymbuddy` |
+| Password | `POSTGRES_PASSWORD` in `/etc/gym-buddy/vps.env` on the VPS |
+| SSH tunnel | off (the `ssh -L` command is the tunnel) |
+| SSL mode | Prefer or Disable |
+
+pgAdmin's own **SSH Tunnel** tab is equivalent: Tunnel host `vps-c39cdf03.vps.ovh.net` port 22, identity file (PEM), then Connection host `127.0.0.1` port `5432` (that address is on the VPS after the tunnel). Username there is the Linux SSH user, not `gymbuddy`.
+
+Apply the loopback bind (once, on the VPS checkout):
+
+```bash
+docker compose --env-file /etc/gym-buddy/vps.env -f deploy/compose.yaml up -d
+```
+
+The `postgres_data` volume keeps the data. Do not `down -v`.
 
 ## 3. Replace the API (first time, or any time)
 
