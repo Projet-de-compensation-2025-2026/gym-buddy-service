@@ -114,6 +114,35 @@ jobs:
             --format json --output /output/released-image-critical.json \
             "${IMAGE}@${DIGEST}"
 
+      - name: Cache scanned release images on the target machine
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          PORT: ${{ secrets.DEPLOY_PORT }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API_IMAGE: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
+          DATABASE_IMAGE: ghcr.io/projet-de-compensation-2025-2026/gym-buddy-service@sha256:b4c403243955a07e36103b78aa2132c0bcf9015a9acba993a59a4782570d4068
+        run: |
+          set -euo pipefail
+          test -n "$HOST" && test -n "$SSH_USER" && test -n "$KEY"
+          mkdir -p ~/.ssh
+          key_file=$(mktemp ~/.ssh/gym-buddy-cache.XXXXXX)
+          trap 'rm -f -- "$key_file"' EXIT
+          printf '%s\n' "$KEY" > "$key_file"
+          chmod 600 "$key_file"
+          ssh_port="${PORT:-22}"
+          known_host="$HOST"
+          [[ "$ssh_port" == "22" ]] || known_host="[$HOST]:$ssh_port"
+          printf '%s ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAuLiXlbhuWwZxy0xYAVTgCJzWtGX6I1oiNog+vdxk7O\n' "$known_host" >> ~/.ssh/known_hosts
+          remote_script=$(ssh -o StrictHostKeyChecking=yes -i "$key_file" -p "$ssh_port" "$SSH_USER@$HOST" 'mktemp /tmp/gym-buddy-cache.XXXXXX')
+          [[ "$remote_script" =~ ^/tmp/gym-buddy-cache\.[A-Za-z0-9]+$ ]]
+          trap 'ssh -o StrictHostKeyChecking=yes -i "$key_file" -p "$ssh_port" "$SSH_USER@$HOST" "rm -f -- $remote_script" || true; rm -f -- "$key_file"' EXIT
+          scp -o StrictHostKeyChecking=yes -i "$key_file" -P "$ssh_port" deploy/cache-images.sh "$SSH_USER@$HOST:$remote_script"
+          printf -v remote_args '%q ' "$remote_script" "$GHCR_USERNAME" "$DATABASE_IMAGE" "$API_IMAGE"
+          printf '%s' "$GHCR_TOKEN" | ssh -o StrictHostKeyChecking=yes -i "$key_file" -p "$ssh_port" "$SSH_USER@$HOST" "bash $remote_args"
+
       - name: Upload released image security report
         if: always()
         uses: actions/upload-artifact@v4
@@ -153,7 +182,9 @@ jobs:
           printf '%s\n' "$KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh_port="${PORT:-22}"
-          ssh-keyscan -p "$ssh_port" -H "$HOST" >> ~/.ssh/known_hosts
+          known_host="$HOST"
+          [[ "$ssh_port" == "22" ]] || known_host="[$HOST]:$ssh_port"
+          printf '%s ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAuLiXlbhuWwZxy0xYAVTgCJzWtGX6I1oiNog+vdxk7O\n' "$known_host" >> ~/.ssh/known_hosts
           scp -i ~/.ssh/deploy_key -P "$ssh_port" deploy/replace.sh "${USER}@${HOST}:/tmp/gym-buddy-replace.sh"
           actor_q=$(printf '%q' "$GHCR_USERNAME")
           token_q=$(printf '%q' "$GHCR_TOKEN")
