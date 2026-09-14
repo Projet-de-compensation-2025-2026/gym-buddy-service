@@ -1,5 +1,6 @@
 package fr.projetcompensation.gymbuddy.media;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -48,7 +49,7 @@ final class ImageVariants {
                 if (!readers.hasNext()) throw new IllegalArgumentException("unreadable image");
                 var reader = readers.next();
                 try {
-                    reader.setInput(input, true, true);
+                    reader.setInput(input, true, false);
                     int width = reader.getWidth(0);
                     int height = reader.getHeight(0);
                     if (width < 1
@@ -58,7 +59,19 @@ final class ImageVariants {
                             || (long) width * height > MediaRules.MAX_PIXELS) {
                         throw new IllegalArgumentException("image dimensions exceed limit");
                     }
-                    return reader.read(0);
+                    net.coobird.thumbnailator.util.exif.Orientation orientation = null;
+                    try {
+                        orientation = net.coobird.thumbnailator.util.exif.ExifUtils.getExifOrientation(reader, 0);
+                    } catch (IOException | RuntimeException ignored) {
+                        // Damaged or unsupported metadata is discarded; pixel decoding still validates the image.
+                    }
+                    BufferedImage decoded = reader.read(0);
+                    if (orientation == null) return decoded;
+                    BufferedImage oriented =
+                            net.coobird.thumbnailator.util.exif.ExifFilterUtils.getFilterForOrientation(orientation)
+                                    .apply(decoded);
+                    if (oriented != decoded) decoded.flush();
+                    return oriented;
                 } finally {
                     reader.dispose();
                 }
@@ -95,8 +108,12 @@ final class ImageVariants {
                 source.getHeight(),
                 source.getColorModel().hasAlpha() ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = clean.createGraphics();
-        graphics.setColor(Color.WHITE);
-        graphics.fillRect(0, 0, clean.getWidth(), clean.getHeight());
+        if (source.getColorModel().hasAlpha()) {
+            graphics.setComposite(AlphaComposite.Src);
+        } else {
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, clean.getWidth(), clean.getHeight());
+        }
         graphics.drawImage(source, 0, 0, null);
         graphics.dispose();
         return clean;
