@@ -31,7 +31,7 @@
         <log4j2.version>2.25.5</log4j2.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
         <!-- Immutable contract revision with occurrence selection and owner-only block lists. -->
-        <openapi.package.tag>564470bf37e23246183f4c9a988c007121986e4d</openapi.package.tag>
+        <openapi.package.tag>c1baafbca5ce33807d6efb297c6fe257a21a8367</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>

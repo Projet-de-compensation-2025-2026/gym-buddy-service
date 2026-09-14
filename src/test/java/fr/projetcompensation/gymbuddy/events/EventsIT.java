@@ -80,6 +80,9 @@ class EventsIT {
     @Autowired
     private fr.projetcompensation.gymbuddy.matching.MatchingService matching;
 
+    @Autowired
+    private fr.projetcompensation.gymbuddy.friends.FriendshipService friendships;
+
     @Test
     void weeklyMatchInvitesPublicStrangerWithoutExposingPrivateSession() {
         RestClient client = restClient();
@@ -99,6 +102,13 @@ class EventsIT {
         matching.optIn(blake);
         var match = matching.assignCurrentWeek().getFirst();
         assertThat(match.eventId()).isNotNull();
+        assertThat(client.get()
+                        .uri("/api/v1/matching/me")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + alexAccess)
+                        .retrieve()
+                        .toEntity(String.class)
+                        .getBody())
+                .contains("\"visibility\":\"private\"");
         String applicantAccess = match.left().equals(alex) ? blakeAccess : alexAccess;
         var detail = client.get()
                 .uri("/api/v1/events/" + match.eventId())
@@ -125,6 +135,14 @@ class EventsIT {
                 .isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM friendships", Integer.class))
                 .isZero();
+        friendships.block(blake, alex);
+        assertThat(matching.me(alex).pair()).isNull();
+        assertThat(matching.me(alex).match()).isNull();
+        friendships.unblock(blake, alex);
+        jdbcTemplate.update("UPDATE profiles SET visibility = 'private' WHERE user_id = ?", blake);
+        assertThat(matching.me(alex).pair()).isNull();
+        assertThat(matching.me(alex).match()).isNull();
+        jdbcTemplate.update("UPDATE profiles SET visibility = 'public' WHERE user_id = ?", blake);
         jdbcTemplate.update("UPDATE users SET status = 'closed' WHERE id = ?", blake);
         assertThat(matching.me(alex).pair()).isNull();
         assertThat(matching.me(alex).match()).isNull();

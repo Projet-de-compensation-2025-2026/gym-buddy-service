@@ -45,6 +45,7 @@ public final class MatchingService {
 
     public MatchingState me(UUID userId) {
         requireActive(userId);
+        MemberSnapshot viewer = graph.requireMember(userId);
         LocalDate week = IsoWeek.mondayUtc(clock.instant());
         boolean opted = store.optedIn(userId, week);
         ProposedMatch match = store.pairFor(userId, week).orElse(null);
@@ -52,8 +53,13 @@ public final class MatchingService {
         if (match != null) {
             UUID other = match.userA().equals(userId) ? match.userB() : match.userA();
             pair = graph.membersByIds(List.of(other)).stream().findFirst().orElse(null);
+            boolean friends = graph.acceptedFriendIds(userId).contains(other);
             if (pair == null
                     || !pair.active()
+                    || (!friends
+                            && (viewer.visibility() != fr.projetcompensation.gymbuddy.profiles.ProfileVisibility.PUBLIC
+                                    || pair.visibility()
+                                            != fr.projetcompensation.gymbuddy.profiles.ProfileVisibility.PUBLIC))
                     || graph.blockedIds(userId).contains(other)
                     || graph.blockedIds(other).contains(userId)) {
                 pair = null;

@@ -2,7 +2,6 @@ package fr.projetcompensation.gymbuddy.suggestions;
 
 import fr.projetcompensation.gymbuddy.auth.AuthException;
 import fr.projetcompensation.gymbuddy.profiles.ExperienceLevel;
-import fr.projetcompensation.gymbuddy.profiles.PreferredWindow;
 import fr.projetcompensation.gymbuddy.profiles.ProfileVisibility;
 import fr.projetcompensation.gymbuddy.users.UserStatus;
 import java.sql.Array;
@@ -10,7 +9,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -221,7 +219,7 @@ public class JdbcSuggestionGraph implements SuggestionGraph {
                 rs.getString("city"),
                 (Double) rs.getObject("lat"),
                 (Double) rs.getObject("lng"),
-                readWindows(rs.getString("preferred_windows")),
+                fr.projetcompensation.gymbuddy.profiles.PreferredWindowJson.read(rs.getString("preferred_windows")),
                 ExperienceLevel.fromWire(rs.getString("experience_level")),
                 rs.getObject("avatar_media_id", UUID.class),
                 rs.getTimestamp("created_at").toInstant());
@@ -242,19 +240,5 @@ public class JdbcSuggestionGraph implements SuggestionGraph {
 
     private static String placeholders(int n) {
         return String.join(",", java.util.Collections.nCopies(n, "?"));
-    }
-
-    private static List<PreferredWindow> readWindows(String raw) {
-        if (raw == null || raw.isBlank() || raw.equals("[]")) {
-            return List.of();
-        }
-        ArrayList<PreferredWindow> windows = new ArrayList<>();
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(
-                        "\"weekday\"\\s*:\\s*(\\d+)\\s*,\\s*\"start\"\\s*:\\s*\"([^\"]+)\"\\s*,\\s*\"end\"\\s*:\\s*\"([^\"]+)\"")
-                .matcher(raw);
-        while (matcher.find()) {
-            windows.add(new PreferredWindow(Integer.parseInt(matcher.group(1)), matcher.group(2), matcher.group(3)));
-        }
-        return List.copyOf(windows);
     }
 }
