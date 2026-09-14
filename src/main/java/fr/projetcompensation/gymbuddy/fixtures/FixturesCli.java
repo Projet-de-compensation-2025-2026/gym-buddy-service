@@ -1,13 +1,10 @@
 package fr.projetcompensation.gymbuddy.fixtures;
 
-import fr.projetcompensation.gymbuddy.GymBuddyApplication;
-import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Profiles;
 
 /**
- * Non-web entry: {@code mvn compile exec:java
+ * No-listener entry: {@code mvn compile exec:java
  * -Dexec.mainClass=fr.projetcompensation.gymbuddy.fixtures.FixturesCli
  * -Dexec.args="--users 3000 --posts-per-user 5 --events 800 --reset"}.
  */
@@ -17,9 +14,8 @@ public final class FixturesCli {
 
     public static void main(String[] args) {
         FixtureArgs parsed = FixtureArgs.parse(args);
-        try (ConfigurableApplicationContext context = new SpringApplicationBuilder(GymBuddyApplication.class)
-                .web(WebApplicationType.NONE)
-                .run(args)) {
+        try (ConfigurableApplicationContext context =
+                FixtureCliApplication.application().run(args)) {
             if (context.getEnvironment().acceptsProfiles(Profiles.of("prod"))) {
                 System.err.println("fixtures are disabled when SPRING_PROFILES_ACTIVE=prod");
                 System.exit(1);
