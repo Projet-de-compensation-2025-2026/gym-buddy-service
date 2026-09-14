@@ -11,6 +11,15 @@ import org.springframework.web.socket.WebSocketSession;
 public final class MessagingSessionRegistry {
 
     static final String USER_ID = "gymBuddy.userId";
+    static final String EXPIRES_AT = "gymBuddy.expiresAt";
+
+    private final fr.projetcompensation.gymbuddy.users.UserRepository users;
+    private final java.time.Clock clock;
+
+    public MessagingSessionRegistry(fr.projetcompensation.gymbuddy.users.UserRepository users, java.time.Clock clock) {
+        this.users = users;
+        this.clock = clock;
+    }
 
     private final ConcurrentHashMap<UUID, CopyOnWriteArraySet<WebSocketSession>> sessions = new ConcurrentHashMap<>();
 
@@ -48,11 +57,32 @@ public final class MessagingSessionRegistry {
             }
             try {
                 synchronized (session) {
+                    if (!authorized(userId, session)) {
+                        unregister(session);
+                        session.close(org.springframework.web.socket.CloseStatus.POLICY_VIOLATION);
+                        continue;
+                    }
                     session.sendMessage(message);
                 }
             } catch (IOException ignored) {
                 // Dropped sockets never fail the HTTP write.
             }
+        }
+    }
+
+    private boolean authorized(UUID userId, WebSocketSession session) {
+        Object expiration = session.getAttributes().get(EXPIRES_AT);
+        if (!(expiration instanceof java.time.Instant expiresAt)
+                || !clock.instant().isBefore(expiresAt)
+                || users == null) {
+            return false;
+        }
+        try {
+            return users.findById(userId)
+                    .filter(fr.projetcompensation.gymbuddy.users.User::active)
+                    .isPresent();
+        } catch (RuntimeException unavailable) {
+            return false;
         }
     }
 

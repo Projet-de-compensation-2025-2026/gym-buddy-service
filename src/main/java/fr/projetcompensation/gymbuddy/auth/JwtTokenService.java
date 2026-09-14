@@ -73,10 +73,11 @@ public final class JwtTokenService implements TokenService {
                 UUID userId = UUID.fromString(claims.getSubject());
                 String handle = claims.get("handle", String.class);
                 UserRole role = UserRole.fromWire(claims.get("role", String.class));
-                if (handle == null || handle.isBlank()) {
+                if (handle == null || handle.isBlank() || claims.getExpiration() == null) {
                     return Optional.empty();
                 }
-                return Optional.of(new AccessClaims(userId, handle, role));
+                return Optional.of(new AccessClaims(
+                        userId, handle, role, claims.getExpiration().toInstant()));
             } catch (RuntimeException ex) {
                 return Optional.empty();
             }
