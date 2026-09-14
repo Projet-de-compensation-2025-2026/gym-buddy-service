@@ -89,7 +89,7 @@ jobs:
           git fetch origin
           git checkout -B main origin/main
           git merge --squash origin/develop
-          git commit -m "release: v${VERSION}"
+          git commit -m "chore(release): release v${VERSION}"
           git tag -a "v${VERSION}" -m "v${VERSION}"
           git push origin main
           git push origin "v${VERSION}"
