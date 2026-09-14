@@ -43,13 +43,49 @@ final class ImageVariants {
 
     private static BufferedImage read(Path original) {
         try (InputStream in = Files.newInputStream(original)) {
-            BufferedImage image = ImageIO.read(in);
-            if (image == null) {
-                throw new IllegalArgumentException("unreadable image");
+            try (var input = new javax.imageio.stream.MemoryCacheImageInputStream(in)) {
+                var readers = ImageIO.getImageReaders(input);
+                if (!readers.hasNext()) throw new IllegalArgumentException("unreadable image");
+                var reader = readers.next();
+                try {
+                    reader.setInput(input, true, true);
+                    int width = reader.getWidth(0);
+                    int height = reader.getHeight(0);
+                    if (width < 1
+                            || height < 1
+                            || width > MediaRules.MAX_DIMENSION_PX
+                            || height > MediaRules.MAX_DIMENSION_PX
+                            || (long) width * height > MediaRules.MAX_PIXELS) {
+                        throw new IllegalArgumentException("image dimensions exceed limit");
+                    }
+                    return reader.read(0);
+                } finally {
+                    reader.dispose();
+                }
             }
-            return image;
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("unreadable image", ex);
+        }
+    }
+
+    static byte[] sanitize(Path original, String mime) {
+        BufferedImage source = read(original);
+        try {
+            BufferedImage clean = stripMetadata(source);
+            try {
+                if ("image/webp".equals(mime)) return writeWebp(clean);
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                if (!ImageIO.write(clean, "image/jpeg".equals(mime) ? "jpeg" : "png", output)) {
+                    throw new IllegalArgumentException("unsupported image format");
+                }
+                return output.toByteArray();
+            } finally {
+                clean.flush();
+            }
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
+        } finally {
+            source.flush();
         }
     }
 

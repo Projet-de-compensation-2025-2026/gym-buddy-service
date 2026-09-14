@@ -72,6 +72,60 @@ class MediaServiceTest {
     }
 
     @Test
+    void deletionDuringProcessingCannotRestoreMedia() {
+        byte[] image = jpeg();
+        CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", image.length);
+        Media pending = media.findById(upload.mediaId()).orElseThrow();
+        storage.put(pending.objectKey(), "image/jpeg", image);
+        storage.onProcessedPut = () -> service.delete(alex.id(), pending.id());
+        service.sweep();
+        assertThat(media.findById(pending.id()).orElseThrow().deletedAt()).isEqualTo(NOW);
+        assertThat(storage.exists(pending.processedKey())).isFalse();
+        assertThatThrownBy(() -> service.url(alex.id(), pending.id())).isInstanceOf(AuthException.class);
+    }
+
+    @Test
+    void moderationDuringProcessingRemainsHidden() {
+        byte[] image = jpeg();
+        CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", image.length);
+        Media pending = media.findById(upload.mediaId()).orElseThrow();
+        storage.put(pending.objectKey(), "image/jpeg", image);
+        storage.onProcessedPut =
+                () -> media.update(media.findById(pending.id()).orElseThrow().hide(NOW, "review"));
+        service.sweep();
+        Media ready = media.findById(pending.id()).orElseThrow();
+        assertThat(ready.ready()).isTrue();
+        assertThat(ready.hidden()).isTrue();
+        assertThatThrownBy(() -> service.url(alex.id(), pending.id())).isInstanceOf(AuthException.class);
+    }
+
+    @Test
+    void processedImageCannotBeReplacedUsingTheUploadUrl() {
+        byte[] image = jpeg();
+        CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", image.length);
+        Media pending = media.findById(upload.mediaId()).orElseThrow();
+        storage.put(pending.objectKey(), "image/jpeg", image);
+        service.sweep();
+        Media ready = media.findById(pending.id()).orElseThrow();
+        byte[] sanitized = storage.get(ready.objectKey()).orElseThrow();
+        assertThat(ready.objectKey()).isNotEqualTo(pending.objectKey());
+        storage.put(pending.objectKey(), "image/jpeg", new byte[] {1, 2, 3});
+        assertThat(storage.get(ready.objectKey()).orElseThrow()).isEqualTo(sanitized);
+        assertThat(service.url(alex.id(), ready.id()).url().toString()).contains("processed/");
+    }
+
+    @Test
+    void mismatchedDeclaredSizeRejectsAndDeletesObject() {
+        byte[] image = jpeg();
+        CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", 1);
+        Media pending = media.findById(upload.mediaId()).orElseThrow();
+        storage.put(pending.objectKey(), "image/jpeg", image);
+        service.sweep();
+        assertThat(media.findById(pending.id()).orElseThrow().status()).isEqualTo(MediaStatus.REJECTED);
+        assertThat(storage.get(pending.objectKey())).isEmpty();
+    }
+
+    @Test
     void fsMed05_quotaExceededWhenUserAlreadyAt1GiB() {
         media.save(new Media(
                 UUID.randomUUID(),
@@ -324,6 +378,7 @@ class MediaServiceTest {
 
     private static final class InMemoryStorage implements ObjectStorage {
         private final Map<String, byte[]> objects = new ConcurrentHashMap<>();
+        private Runnable onProcessedPut;
 
         @Override
         public URI signPut(String key, String mime, Duration ttl) {
@@ -338,6 +393,11 @@ class MediaServiceTest {
         @Override
         public void put(String key, String mime, byte[] body) {
             objects.put(key, body);
+            if (key.startsWith("processed/") && onProcessedPut != null) {
+                Runnable action = onProcessedPut;
+                onProcessedPut = null;
+                action.run();
+            }
         }
 
         @Override

@@ -58,6 +58,10 @@ public final class MediaService {
     }
 
     public CreateUpload create(UUID ownerId, String kindWire, String mime, long bytes) {
+        return users.withAccountLock(ownerId, () -> createLocked(ownerId, kindWire, mime, bytes));
+    }
+
+    private CreateUpload createLocked(UUID ownerId, String kindWire, String mime, long bytes) {
         User owner = requireActive(ownerId);
         MediaKind kind = parseKind(kindWire);
         MediaRules.validateDeclare(kind, mime, bytes);
@@ -80,7 +84,7 @@ public final class MediaService {
                 null);
         media.save(row);
         Instant expiresAt = now.plus(SIGNED_TTL);
-        return new CreateUpload(id, storage.signPut(row.objectKey(), mime, SIGNED_TTL), expiresAt);
+        return new CreateUpload(id, storage.signPut(row.objectKey(), mime, SIGNED_TTL, bytes), expiresAt);
     }
 
     public SignedGet url(UUID viewerId, UUID mediaId) {
@@ -94,6 +98,13 @@ public final class MediaService {
     }
 
     public void delete(UUID viewerId, UUID mediaId) {
+        users.withAccountLock(viewerId, () -> {
+            deleteLocked(viewerId, mediaId);
+            return null;
+        });
+    }
+
+    private void deleteLocked(UUID viewerId, UUID mediaId) {
         User viewer = requireActive(viewerId);
         Media row = media.findById(mediaId).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
         if (!row.ownerId().equals(viewer.id()) || row.deletedAt() != null) {
@@ -105,7 +116,16 @@ public final class MediaService {
     public void sweep() {
         Instant now = clock.instant();
         for (Media pending : media.findPending()) {
-            ingest(pending);
+            try {
+                ingest(pending);
+            } catch (RuntimeException ex) {
+                System.getLogger(MediaService.class.getName())
+                        .log(
+                                System.Logger.Level.WARNING,
+                                "Media processing will retry for {0}: {1}",
+                                pending.id(),
+                                ex.getClass().getSimpleName());
+            }
         }
         for (Media orphan : media.findPendingCreatedBefore(now.minus(PENDING_ORPHAN))) {
             Media latest = media.findById(orphan.id()).orElse(null);
@@ -114,6 +134,14 @@ public final class MediaService {
             }
             deleteObjectTree(latest);
             media.delete(latest.id());
+        }
+        for (Media completed : media.findUploadCleanupCandidates(now.minus(PENDING_ORPHAN))) {
+            String uploadKey = Media.originalKey(completed.ownerId(), completed.id());
+            if (completed.status() == MediaStatus.REJECTED
+                    || !completed.objectKey().equals(uploadKey)) {
+                storage.delete(uploadKey);
+            }
+            media.markUploadCleaned(completed.id(), now);
         }
         for (Media expired : media.findDeletedBefore(now.minus(OBJECT_GRACE))) {
             deleteObjectTree(expired);
@@ -125,16 +153,32 @@ public final class MediaService {
         if (!pending.pending()) {
             return;
         }
-        Optional<byte[]> body = storage.get(pending.objectKey());
-        if (body.isEmpty()) {
-            return;
-        }
-        byte[] original = body.get();
         try {
+            Optional<byte[]> body = storage.get(pending.objectKey());
+            if (body.isEmpty()) return;
+            byte[] original = body.get();
             MediaProcessor.Result result = processor.process(pending, original);
-            media.update(pending.processed(result.bytes(), result.variantBytes()));
-        } catch (RuntimeException ex) {
-            media.update(pending.rejected());
+            users.withAccountLock(pending.ownerId(), () -> {
+                Media current = media.findById(pending.id()).orElse(null);
+                if (current == null || !current.pending()) {
+                    if (current == null || !current.ready()) deleteObjectTree(pending);
+                    return null;
+                }
+                long projected =
+                        media.usedBytes(current.ownerId()) - current.bytes() + result.bytes() + result.variantBytes();
+                if (projected > MediaRules.QUOTA_BYTES)
+                    throw new IllegalArgumentException("processed media exceeds quota");
+                media.update(current.processed(result.bytes(), result.variantBytes()));
+                return null;
+            });
+            storage.delete(pending.objectKey());
+        } catch (IllegalArgumentException ex) {
+            users.withAccountLock(pending.ownerId(), () -> {
+                Media current = media.findById(pending.id()).orElse(null);
+                if (current == null || !current.ready()) deleteObjectTree(pending);
+                if (current != null && current.pending()) media.update(current.rejected());
+                return null;
+            });
         }
     }
 
@@ -191,6 +235,8 @@ public final class MediaService {
 
     private void deleteObjectTree(Media row) {
         storage.delete(row.objectKey());
+        storage.delete(Media.originalKey(row.ownerId(), row.id()));
+        storage.delete(row.processedKey());
         storage.delete(row.variantKey("sm"));
         storage.delete(row.variantKey("md"));
     }

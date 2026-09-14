@@ -4,13 +4,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Optional;
-import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -33,10 +30,16 @@ public final class S3ObjectStorage implements ObjectStorage {
 
     @Override
     public URI signPut(String key, String mime, Duration ttl) {
+        return signPut(key, mime, ttl, MediaRules.MAX_FILE_BYTES);
+    }
+
+    @Override
+    public URI signPut(String key, String mime, Duration ttl, long bytes) {
         PutObjectRequest put = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
                 .contentType(mime)
+                .contentLength(bytes)
                 .build();
         try {
             return presigner
@@ -86,9 +89,21 @@ public final class S3ObjectStorage implements ObjectStorage {
     @Override
     public Optional<byte[]> get(String key) {
         try {
-            ResponseBytes<GetObjectResponse> bytes = client.getObject(
-                    GetObjectRequest.builder().bucket(bucket).key(key).build(), ResponseTransformer.toBytes());
-            return Optional.of(bytes.asByteArray());
+            try (var input = client.getObject(
+                    GetObjectRequest.builder().bucket(bucket).key(key).build())) {
+                if (input.response().contentLength() > MediaRules.MAX_FILE_BYTES) {
+                    input.abort();
+                    throw new IllegalArgumentException("object exceeds 8 MiB");
+                }
+                byte[] bytes = input.readNBytes((int) MediaRules.MAX_FILE_BYTES + 1);
+                if (bytes.length > MediaRules.MAX_FILE_BYTES) {
+                    input.abort();
+                    throw new IllegalArgumentException("object exceeds 8 MiB");
+                }
+                return Optional.of(bytes);
+            } catch (java.io.IOException ex) {
+                throw new java.io.UncheckedIOException(ex);
+            }
         } catch (NoSuchKeyException ex) {
             return Optional.empty();
         } catch (S3Exception ex) {

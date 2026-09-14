@@ -21,5 +21,11 @@ public interface MediaRepository {
 
     List<Media> findPending();
 
+    default List<Media> findUploadCleanupCandidates(Instant cutoff) {
+        return List.of();
+    }
+
+    default void markUploadCleaned(UUID id, Instant at) {}
+
     List<Media> findDeletedBefore(Instant cutoff);
 }

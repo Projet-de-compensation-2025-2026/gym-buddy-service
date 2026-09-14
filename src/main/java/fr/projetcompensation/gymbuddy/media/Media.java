@@ -75,6 +75,10 @@ public record Media(
                 hiddenReason);
     }
 
+    String processedKey() {
+        return "processed/" + ownerId + "/" + id;
+    }
+
     Media processed(long actualBytes, long variantBytes) {
         return new Media(
                 id,
@@ -84,7 +88,7 @@ public record Media(
                 actualBytes,
                 variantBytes,
                 MediaStatus.READY,
-                objectKey,
+                processedKey(),
                 createdAt,
                 deletedAt,
                 hiddenAt,

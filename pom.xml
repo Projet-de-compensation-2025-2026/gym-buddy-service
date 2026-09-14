@@ -22,9 +22,15 @@
         <aws.sdk.version>2.31.78</aws.sdk.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <jjwt.version>0.12.6</jjwt.version>
-        <bouncycastle.version>1.81</bouncycastle.version>
+        <bouncycastle.version>1.84</bouncycastle.version>
+        <tomcat.version>11.0.25</tomcat.version>
+        <netty.version>4.2.17.Final</netty.version>
+        <postgresql.version>42.7.12</postgresql.version>
+        <jackson-2-bom.version>2.21.5</jackson-2-bom.version>
+        <jackson-bom.version>3.1.5</jackson-bom.version>
+        <log4j2.version>2.25.5</log4j2.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- gym-buddy-openapi develop SHA after #119 PATCH merge. Pin a 0.1.x tag when Release cuts one. -->
+        <!-- Immutable reviewed API contract revision. -->
         <openapi.package.tag>41f6613e5653fac0e4fd6398eade24d1a84b2631</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
@@ -86,9 +92,9 @@
             <version>3.12.0</version>
         </dependency>
         <dependency>
-            <groupId>org.sejda.imageio</groupId>
+            <groupId>io.github.darkxanter</groupId>
             <artifactId>webp-imageio</artifactId>
-            <version>0.1.6</version>
+            <version>0.3.3</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
