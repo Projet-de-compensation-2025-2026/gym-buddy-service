@@ -84,7 +84,7 @@ public class JdbcMediaRepository implements MediaRepository {
         Long used = jdbc.queryForObject("""
                 SELECT COALESCE(SUM(bytes + variant_bytes), 0)
                 FROM media
-                WHERE owner_id = ? AND status <> 'rejected'
+                WHERE owner_id = ? AND (status <> 'rejected' OR upload_cleaned_at IS NULL)
                 """, Long.class, ownerId);
         return used == null ? 0L : used;
     }

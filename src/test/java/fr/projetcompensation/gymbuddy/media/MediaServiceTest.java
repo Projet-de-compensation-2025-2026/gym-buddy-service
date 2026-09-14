@@ -126,6 +126,31 @@ class MediaServiceTest {
     }
 
     @Test
+    void rejectedUploadKeepsReservationUntilReplayWindowAndCleanupPass() {
+        UUID id = UUID.randomUUID();
+        Media rejected = new Media(
+                id,
+                alex.id(),
+                MediaKind.AVATAR,
+                "image/jpeg",
+                MediaRules.QUOTA_BYTES,
+                0,
+                MediaStatus.REJECTED,
+                Media.originalKey(alex.id(), id),
+                NOW,
+                null);
+        media.save(rejected);
+        storage.put(rejected.objectKey(), "image/jpeg", new byte[] {1, 2, 3});
+        assertThatThrownBy(() -> service.create(alex.id(), "avatar", "image/jpeg", 100))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.QUOTA_EXCEEDED));
+        clock.set(NOW.plus(MediaService.PENDING_ORPHAN).plusSeconds(1));
+        service.sweep();
+        assertThat(storage.exists(rejected.objectKey())).isFalse();
+        assertThat(service.create(alex.id(), "avatar", "image/jpeg", 100)).isNotNull();
+    }
+
+    @Test
     void deletedMediaConsumesQuotaUntilItsObjectsArePurged() {
         UUID id = UUID.randomUUID();
         media.save(new Media(
@@ -441,6 +466,21 @@ class MediaServiceTest {
 
     private static final class InMemoryMedia implements MediaRepository {
         private final Map<UUID, Media> store = new LinkedHashMap<>();
+        private final Set<UUID> uploadCleaned = new java.util.HashSet<>();
+
+        @Override
+        public List<Media> findUploadCleanupCandidates(Instant cutoff) {
+            return store.values().stream()
+                    .filter(row -> (row.status() == MediaStatus.READY || row.status() == MediaStatus.REJECTED)
+                            && row.createdAt().isBefore(cutoff)
+                            && !uploadCleaned.contains(row.id()))
+                    .toList();
+        }
+
+        @Override
+        public void markUploadCleaned(UUID id, Instant at) {
+            uploadCleaned.add(id);
+        }
 
         @Override
         public void save(Media row) {
@@ -465,7 +505,8 @@ class MediaServiceTest {
         @Override
         public long usedBytes(UUID ownerId) {
             return store.values().stream()
-                    .filter(row -> row.ownerId().equals(ownerId) && row.status() != MediaStatus.REJECTED)
+                    .filter(row -> row.ownerId().equals(ownerId)
+                            && (row.status() != MediaStatus.REJECTED || !uploadCleaned.contains(row.id())))
                     .mapToLong(row -> row.bytes() + row.variantBytes())
                     .sum();
         }
