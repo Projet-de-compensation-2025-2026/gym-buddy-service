@@ -48,6 +48,32 @@ class FriendshipServiceTest {
     }
 
     @Test
+    void blockedMemberCannotTakeOwnershipAndRemoveAnotherMembersBlock() {
+        service.block(alex.id(), blake.id());
+        assertThatThrownBy(() -> service.block(blake.id(), alex.id()))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> service.unblock(blake.id(), alex.id())).isInstanceOf(AuthException.class);
+        assertThat(friendships.findPair(alex.id(), blake.id()).orElseThrow().requesterId())
+                .isEqualTo(alex.id());
+        assertThat(friendships.isBlockedEitherWay(alex.id(), blake.id())).isTrue();
+        service.unblock(alex.id(), blake.id());
+        assertThat(friendships.isBlockedEitherWay(alex.id(), blake.id())).isFalse();
+    }
+
+    @Test
+    void blockedListContainsOnlyBlocksCreatedByTheCaller() {
+        service.block(alex.id(), blake.id());
+        service.block(casey.id(), alex.id());
+        assertThat(service.list(alex.id(), "blocked", null, null, 20).data())
+                .extracting(row -> row.peer().id())
+                .containsExactly(blake.id());
+        assertThat(service.list(blake.id(), "blocked", null, null, 20).data()).isEmpty();
+        assertThatThrownBy(() -> service.list(blake.id(), "blocked", "alex", null, 20))
+                .isInstanceOf(AuthException.class);
+    }
+
+    @Test
     void fsFrnd01And02_requestThenAcceptIsSymmetric() {
         ListedFriendship pending = service.request(alex.id(), "blake", null);
 
@@ -253,6 +279,17 @@ class FriendshipServiceTest {
             return page(
                     store.values().stream()
                             .filter(row -> row.status() == FriendshipStatus.PENDING
+                                    && row.requesterId().equals(userId))
+                            .toList(),
+                    after,
+                    limit);
+        }
+
+        @Override
+        public List<Friendship> listBlocked(UUID userId, InstantIdCursor after, int limit) {
+            return page(
+                    store.values().stream()
+                            .filter(row -> row.status() == FriendshipStatus.BLOCKED
                                     && row.requesterId().equals(userId))
                             .toList(),
                     after,

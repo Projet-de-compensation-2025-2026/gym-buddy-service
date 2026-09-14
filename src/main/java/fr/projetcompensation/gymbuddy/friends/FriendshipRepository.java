@@ -22,6 +22,10 @@ public interface FriendshipRepository {
 
     List<Friendship> listOutgoing(UUID userId, InstantIdCursor after, int limit);
 
+    default List<Friendship> listBlocked(UUID userId, InstantIdCursor after, int limit) {
+        return List.of();
+    }
+
     boolean areAcceptedFriends(UUID left, UUID right);
 
     int acceptedCount(UUID userId);

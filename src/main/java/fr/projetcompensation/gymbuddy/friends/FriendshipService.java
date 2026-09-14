@@ -101,6 +101,13 @@ public final class FriendshipService {
     }
 
     public void block(UUID callerId, UUID targetId) {
+        if (targetId == null) {
+            throw AuthException.validation("userId is required", new FieldIssue("userId", "required"));
+        }
+        withPairLock(callerId, targetId, () -> blockLocked(callerId, targetId));
+    }
+
+    private void blockLocked(UUID callerId, UUID targetId) {
         User caller = requireActive(callerId);
         if (targetId == null) {
             throw AuthException.validation("userId is required", new FieldIssue("userId", "required"));
@@ -115,6 +122,10 @@ public final class FriendshipService {
         Instant now = clock.instant();
         Optional<Friendship> existing = friendships.findPair(caller.id(), target.id());
         if (existing.isPresent()) {
+            if (existing.get().status() == FriendshipStatus.BLOCKED
+                    && !existing.get().requesterId().equals(caller.id())) {
+                throw AuthException.notFound(NOT_FOUND);
+            }
             friendships.update(existing.get().asBlock(caller.id(), target.id(), now));
             return;
         }
@@ -123,12 +134,27 @@ public final class FriendshipService {
     }
 
     public void unblock(UUID callerId, UUID targetId) {
+        withPairLock(callerId, targetId, () -> unblockLocked(callerId, targetId));
+    }
+
+    private void unblockLocked(UUID callerId, UUID targetId) {
         requireActive(callerId);
         Friendship row = friendships.findPair(callerId, targetId).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
         if (row.status() != FriendshipStatus.BLOCKED || !row.requesterId().equals(callerId)) {
             throw AuthException.notFound(NOT_FOUND);
         }
         friendships.delete(row.id());
+    }
+
+    private void withPairLock(UUID left, UUID right, Runnable operation) {
+        UUID first = left.compareTo(right) <= 0 ? left : right;
+        UUID second = first.equals(left) ? right : left;
+        users.withAccountLock(
+                first,
+                () -> users.withAccountLock(second, () -> {
+                    operation.run();
+                    return null;
+                }));
     }
 
     public FriendshipList list(UUID callerId, String filterRaw, String handle, String after, Integer size) {
@@ -156,6 +182,7 @@ public final class FriendshipService {
                     case ACCEPTED -> friendships.listAccepted(owner.id(), cursor, pageSize + 1);
                     case INCOMING -> friendships.listIncoming(owner.id(), cursor, pageSize + 1);
                     case OUTGOING -> friendships.listOutgoing(owner.id(), cursor, pageSize + 1);
+                    case BLOCKED -> friendships.listBlocked(owner.id(), cursor, pageSize + 1);
                 };
         String next = null;
         if (rows.size() > pageSize) {
