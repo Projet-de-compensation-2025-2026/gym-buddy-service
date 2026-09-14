@@ -28,6 +28,9 @@ class PostgresImageIT {
                 .isEqualTo("i");
         source.execute("CREATE TABLE migration_probe (id integer PRIMARY KEY, handle text UNIQUE NOT NULL)");
         source.execute("INSERT INTO migration_probe VALUES (1, 'alex'), (2, 'Élodie'), (3, 'élodie'), (4, 'Zoë')");
+        source.execute("CREATE EXTENSION citext");
+        source.execute("CREATE TABLE email_probe (email citext UNIQUE NOT NULL)");
+        source.update("INSERT INTO email_probe VALUES (?)", "MixedCase@Example.invalid");
         var dump = POSTGRES.execInContainer(
                 "pg_dump",
                 "-U",
@@ -49,6 +52,12 @@ class PostgresImageIT {
                 new DriverManagerDataSource(restoredUrl, POSTGRES.getUsername(), POSTGRES.getPassword()));
         assertThat(restored.queryForList("SELECT id, handle FROM migration_probe ORDER BY id"))
                 .isEqualTo(source.queryForList("SELECT id, handle FROM migration_probe ORDER BY id"));
+        assertThat(restored.queryForObject(
+                        "SELECT COUNT(*) FROM email_probe WHERE email = 'mixedcase@example.INVALID'", Integer.class))
+                .isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> restored.update("INSERT INTO email_probe VALUES (?)", "mixedcase@example.invalid"))
+                .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
         assertThat(restored.queryForObject(
                         "SELECT COUNT(*) FROM pg_index WHERE indrelid = 'migration_probe'::regclass AND indisunique AND indisvalid",
                         Integer.class))
