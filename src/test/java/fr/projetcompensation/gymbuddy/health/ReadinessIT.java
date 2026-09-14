@@ -30,10 +30,12 @@ import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 class ReadinessIT {
 
     @Container
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6")
+            .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure);
 
     @Container
     static final GenericContainer<?> MINIO = new GenericContainer<>("minio/minio:RELEASE.2025-09-07T16-13-09Z")
+            .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure)
             .withExposedPorts(9000)
             .withEnv("MINIO_ROOT_USER", "minioadmin")
             .withEnv("MINIO_ROOT_PASSWORD", "minioadmin")

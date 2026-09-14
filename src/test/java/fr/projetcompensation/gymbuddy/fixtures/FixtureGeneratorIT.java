@@ -18,7 +18,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @Testcontainers(disabledWithoutDocker = true)
 class FixtureGeneratorIT {
 
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6")
+            .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure);
 
     static {
         if (DockerClientFactory.instance().isDockerAvailable()) {

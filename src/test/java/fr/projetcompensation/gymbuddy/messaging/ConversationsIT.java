@@ -37,9 +37,11 @@ class ConversationsIT {
 
     private static final UUID JAVA_LO = UUID.fromString("afcada6c-62a6-4059-853e-5f256b5d86f1");
 
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6")
+            .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure);
 
     static final GenericContainer<?> REDIS = new GenericContainer<>("redis:8-alpine")
+            .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure)
             .withExposedPorts(6379)
             .waitingFor(Wait.forListeningPort())
             .withStartupTimeout(Duration.ofMinutes(2));
