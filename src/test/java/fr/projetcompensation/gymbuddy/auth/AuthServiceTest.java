@@ -43,6 +43,40 @@ class AuthServiceTest {
     }
 
     @Test
+    void concurrentRefreshConsumesCredentialOnce() throws Exception {
+        auth.register(register("alex@example.com", "alex", "Alex"));
+        String refresh = auth.login(new LoginCommand("alex@example.com", PASSWORD))
+                .tokens()
+                .refreshToken();
+        var start = new java.util.concurrent.CountDownLatch(1);
+        try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            java.util.concurrent.Callable<Integer> attempt = () -> {
+                start.await();
+                try {
+                    auth.refresh(refresh);
+                    return 1;
+                } catch (AuthException ex) {
+                    assertThat(ex.code()).isEqualTo(ErrorCode.UNAUTHENTICATED);
+                    return 0;
+                }
+            };
+            var first = pool.submit(attempt);
+            var second = pool.submit(attempt);
+            start.countDown();
+            assertThat(first.get() + second.get()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void lastActiveAdminCannotCloseAccount() {
+        RegisteredUser admin = auth.register(register("admin@example.com", "admin", "Admin"));
+        assertThatThrownBy(() -> auth.closeAccount(admin.id(), PASSWORD))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.CONFLICT));
+        assertThat(users.findById(admin.id()).orElseThrow().active()).isTrue();
+    }
+
+    @Test
     void fsAcct01_registerCreatesUserWithEmailHandleAndDisplayName() {
         RegisteredUser registered = auth.register(register("alex@example.com", "alex", "Alex"));
 
@@ -233,6 +267,7 @@ class AuthServiceTest {
 
     @Test
     void fsAcct07_closeAccountHidesLoginWithGenericForbidden() {
+        auth.register(register("admin@example.com", "admin", "Admin"));
         RegisteredUser registered = auth.register(register("alex@example.com", "alex", "Alex"));
         AuthSession session = auth.login(new LoginCommand("alex@example.com", PASSWORD));
 

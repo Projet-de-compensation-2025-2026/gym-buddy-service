@@ -81,7 +81,8 @@ public class JdbcAdminCatalog implements AdminCatalog {
 
     @Override
     public long countAdmins() {
-        Long count = jdbc.queryForObject("SELECT COUNT(*) FROM users WHERE role = 'admin'", Long.class);
+        Long count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM users WHERE role = 'admin' AND status = 'active'", Long.class);
         return count == null ? 0 : count;
     }
 
@@ -204,7 +205,7 @@ public class JdbcAdminCatalog implements AdminCatalog {
                 UserRole.fromWire(rs.getString("role")),
                 UserStatus.fromWire(rs.getString("status")),
                 rs.getTimestamp("created_at").toInstant());
-        boolean lastAdmin = user.role() == UserRole.ADMIN && admins <= 1;
+        boolean lastAdmin = user.active() && user.role() == UserRole.ADMIN && admins <= 1;
         return new ListedAdminUser(user, rs.getString("display_name"), lastAdmin);
     }
 

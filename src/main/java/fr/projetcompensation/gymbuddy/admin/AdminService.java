@@ -90,8 +90,14 @@ public final class AdminService {
     }
 
     public ListedAdminUser lock(UUID callerId, UUID targetId, String reason) {
+        return users.withAdministrationLock(
+                () -> users.withAccountLock(targetId, () -> lockLocked(callerId, targetId, reason)));
+    }
+
+    private ListedAdminUser lockLocked(UUID callerId, UUID targetId, String reason) {
         User caller = requireStaff(callerId);
         User target = requireUser(targetId);
+        requireCanManage(caller, target);
         if (lastAdmin(target)) {
             throw AuthException.conflict("last admin cannot be locked", new FieldIssue("id", "last_admin"));
         }
@@ -101,14 +107,25 @@ public final class AdminService {
     }
 
     public ListedAdminUser unlock(UUID callerId, UUID targetId, String reason) {
+        return users.withAdministrationLock(
+                () -> users.withAccountLock(targetId, () -> unlockLocked(callerId, targetId, reason)));
+    }
+
+    private ListedAdminUser unlockLocked(UUID callerId, UUID targetId, String reason) {
         User caller = requireStaff(callerId);
         User target = requireUser(targetId);
+        requireCanManage(caller, target);
         users.update(target.withStatus(UserStatus.ACTIVE));
         writeAudit(caller, AuditEvent.UNLOCK_USER, "user", target.id(), reason);
         return view(users.findById(target.id()).orElseThrow());
     }
 
     public ListedAdminUser changeRole(UUID callerId, UUID targetId, String roleWire, String reason) {
+        return users.withAdministrationLock(
+                () -> users.withAccountLock(targetId, () -> changeRoleLocked(callerId, targetId, roleWire, reason)));
+    }
+
+    private ListedAdminUser changeRoleLocked(UUID callerId, UUID targetId, String roleWire, String reason) {
         User caller = requireAdmin(callerId);
         User target = requireUser(targetId);
         UserRole role;
@@ -144,7 +161,11 @@ public final class AdminService {
             }
             case "media" -> {
                 Media row = media.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
-                media.update(row.hide(now, normalized));
+                users.withAccountLock(row.ownerId(), () -> {
+                    Media current = media.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
+                    media.update(current.hide(now, normalized));
+                    return null;
+                });
             }
             case "event" -> {
                 Event row = events.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
@@ -169,7 +190,11 @@ public final class AdminService {
             }
             case "media" -> {
                 Media row = media.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
-                media.update(row.unhide());
+                users.withAccountLock(row.ownerId(), () -> {
+                    Media current = media.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
+                    media.update(current.unhide());
+                    return null;
+                });
             }
             case "event" -> {
                 Event row = events.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
@@ -305,8 +330,14 @@ public final class AdminService {
         return users.findById(id).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
     }
 
+    private static void requireCanManage(User caller, User target) {
+        if (caller.role() == UserRole.MODERATOR && target.role() != UserRole.MEMBER) {
+            throw AuthException.forbidden("moderators can only manage members");
+        }
+    }
+
     private boolean lastAdmin(User user) {
-        return user.role() == UserRole.ADMIN && catalog.countAdmins() <= 1;
+        return user.active() && user.role() == UserRole.ADMIN && catalog.countAdmins() <= 1;
     }
 
     private ListedAdminUser view(User user) {

@@ -10,6 +10,9 @@ public interface RefreshTokenStore {
 
     Optional<UUID> findAllowedUserId(String jti);
 
+    /** Atomically consumes an allowed refresh credential exactly once. */
+    Optional<UUID> consume(String jti, Instant expiresAt);
+
     void revoke(String jti, Instant expiresAt);
 
     void revokeAll(UUID userId);

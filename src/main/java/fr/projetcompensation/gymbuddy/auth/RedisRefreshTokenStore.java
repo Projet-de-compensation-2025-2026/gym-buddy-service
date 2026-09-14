@@ -51,6 +51,28 @@ public final class RedisRefreshTokenStore implements RefreshTokenStore {
     }
 
     @Override
+    public Optional<UUID> consume(String jti, Instant expiresAt) {
+        long ttl = ttlSeconds(expiresAt);
+        if (ttl <= 0) return Optional.empty();
+        String userId = redis.eval(
+                """
+                if redis.call('EXISTS', KEYS[2]) == 1 then return false end
+                local user = redis.call('GET', KEYS[1])
+                if not user then return false end
+                redis.call('DEL', KEYS[1])
+                redis.call('SETEX', KEYS[2], ARGV[1], '1')
+                redis.call('SREM', ARGV[2] .. user, ARGV[3])
+                return user
+                """,
+                io.lettuce.core.ScriptOutputType.VALUE,
+                new String[] {ALLOW_PREFIX + jti, DENY_PREFIX + jti},
+                Long.toString(ttl),
+                USER_PREFIX,
+                jti);
+        return userId == null ? Optional.empty() : Optional.of(UUID.fromString(userId));
+    }
+
+    @Override
     public void revoke(String jti, Instant expiresAt) {
         String userId = redis.get(ALLOW_PREFIX + jti);
         redis.del(ALLOW_PREFIX + jti);

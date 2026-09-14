@@ -52,7 +52,8 @@ public final class AuthService {
         passwordPolicy.validate(password, email, handle).ifPresent(issue -> {
             throw AuthException.validation("password does not meet requirements", issue);
         });
-        return transactions.inTransaction(() -> persistRegistration(email, handle, displayName, password));
+        return users.withAdministrationLock(
+                () -> transactions.inTransaction(() -> persistRegistration(email, handle, displayName, password)));
     }
 
     private RegisteredUser persistRegistration(String email, String handle, String displayName, String password) {
@@ -84,7 +85,12 @@ public final class AuthService {
         if (found.isEmpty()) {
             throw AuthException.forbidden(INVALID_CREDENTIALS);
         }
-        User user = found.get();
+        return users.withAccountLock(
+                found.get().id(), () -> loginUser(found.get().id(), password));
+    }
+
+    private AuthSession loginUser(UUID userId, String password) {
+        User user = users.findById(userId).orElseThrow(() -> AuthException.forbidden(INVALID_CREDENTIALS));
         if (user.blockedFromAuth()) {
             passwords.matches(password, user.passwordHash());
             throw AuthException.forbidden(ACCOUNT_LOCKED);
@@ -97,18 +103,24 @@ public final class AuthService {
 
     public AuthSession refresh(String refreshToken) {
         RefreshClaims claims = requireRefresh(refreshToken);
+        return users.withAccountLock(claims.userId(), () -> refreshUser(claims));
+    }
+
+    private AuthSession refreshUser(RefreshClaims claims) {
         User user =
                 users.findById(claims.userId()).orElseThrow(() -> AuthException.unauthenticated(INVALID_CREDENTIALS));
         if (user.blockedFromAuth()) {
             throw AuthException.forbidden(ACCOUNT_LOCKED);
         }
-        if (refreshTokens.findAllowedUserId(claims.jti()).isEmpty()) {
+        if (refreshTokens
+                .consume(claims.jti(), claims.expiresAt())
+                .filter(user.id()::equals)
+                .isEmpty()) {
             throw AuthException.unauthenticated("refresh credential is not valid");
         }
         if (!user.active()) {
             throw AuthException.unauthenticated(INVALID_CREDENTIALS);
         }
-        refreshTokens.revoke(claims.jti(), claims.expiresAt());
         return sessionFor(user);
     }
 
@@ -118,6 +130,13 @@ public final class AuthService {
     }
 
     public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        users.withAccountLock(userId, () -> {
+            changePasswordLocked(userId, currentPassword, newPassword);
+            return null;
+        });
+    }
+
+    private void changePasswordLocked(UUID userId, String currentPassword, String newPassword) {
         User user = requireActive(userId);
         if (currentPassword == null
                 || currentPassword.isBlank()
@@ -134,12 +153,23 @@ public final class AuthService {
     }
 
     public void closeAccount(UUID userId, String password) {
+        users.withAdministrationLock(() -> users.withAccountLock(userId, () -> {
+            closeAccountLocked(userId, password);
+            return null;
+        }));
+    }
+
+    private void closeAccountLocked(UUID userId, String password) {
         User user = requireActive(userId);
         if (password == null || password.isBlank()) {
             throw AuthException.validation("password is required", new FieldIssue("password", "required"));
         }
         if (!passwords.matches(password, user.passwordHash())) {
             throw AuthException.forbidden(INVALID_CREDENTIALS);
+        }
+        if (user.role() == UserRole.ADMIN && !users.hasOtherActiveAdmin(user.id())) {
+            throw AuthException.conflict(
+                    "last active admin cannot close their account", new FieldIssue("id", "last_admin"));
         }
         users.update(user.withStatus(UserStatus.CLOSED));
         refreshTokens.revokeAll(user.id());

@@ -32,6 +32,14 @@ public final class FakeUserRepository implements UserRepository {
     }
 
     @Override
+    public boolean hasOtherActiveAdmin(UUID userId) {
+        return users.values().stream()
+                .anyMatch(user -> !user.id().equals(userId)
+                        && user.active()
+                        && user.role() == fr.projetcompensation.gymbuddy.users.UserRole.ADMIN);
+    }
+
+    @Override
     public long count() {
         return users.size();
     }

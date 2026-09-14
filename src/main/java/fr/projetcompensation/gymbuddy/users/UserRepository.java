@@ -16,4 +16,22 @@ public interface UserRepository {
     void save(User user);
 
     void update(User user);
+
+    default boolean hasOtherActiveAdmin(UUID userId) {
+        return false;
+    }
+
+    /** Serializes token issuance and revocation for one account. */
+    default <T> T withAccountLock(UUID userId, java.util.function.Supplier<T> work) {
+        synchronized (this) {
+            return work.get();
+        }
+    }
+
+    /** Serializes changes that can remove the last active administrator. */
+    default <T> T withAdministrationLock(java.util.function.Supplier<T> work) {
+        synchronized (this) {
+            return work.get();
+        }
+    }
 }

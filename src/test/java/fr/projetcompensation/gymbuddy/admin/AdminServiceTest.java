@@ -100,6 +100,58 @@ class AdminServiceTest {
     }
 
     @Test
+    void moderatorCannotLockOrUnlockStaff() {
+        User secondAdmin = user("secondadmin", UserRole.ADMIN);
+        assertThatThrownBy(() -> admin.lock(moderator.id(), secondAdmin.id(), "reason"))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.FORBIDDEN));
+        assertThatThrownBy(() -> admin.unlock(moderator.id(), secondAdmin.id(), "reason"))
+                .isInstanceOf(AuthException.class);
+        assertThat(audit.events).isEmpty();
+    }
+
+    @Test
+    void inactiveAdminsDoNotPermitRemovingTheLastActiveAdmin() {
+        User secondAdmin = user("secondadmin", UserRole.ADMIN);
+        users.update(secondAdmin.withStatus(UserStatus.LOCKED));
+        assertThatThrownBy(() -> admin.lock(administrator.id(), administrator.id(), "reason"))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.CONFLICT));
+        assertThatThrownBy(() -> admin.changeRole(administrator.id(), administrator.id(), "member", "reason"))
+                .isInstanceOf(AuthException.class);
+        assertThat(users.findById(administrator.id()).orElseThrow().active()).isTrue();
+    }
+
+    @Test
+    void concurrentAdminDemotionsKeepOneActiveAdmin() throws Exception {
+        User other = user("secondadmin", UserRole.ADMIN);
+        var start = new java.util.concurrent.CountDownLatch(1);
+        try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var first = pool.submit(() -> {
+                start.await();
+                try {
+                    admin.changeRole(administrator.id(), administrator.id(), "member", "test");
+                    return 1;
+                } catch (AuthException ex) {
+                    return 0;
+                }
+            });
+            var second = pool.submit(() -> {
+                start.await();
+                try {
+                    admin.changeRole(other.id(), other.id(), "member", "test");
+                    return 1;
+                } catch (AuthException ex) {
+                    return 0;
+                }
+            });
+            start.countDown();
+            assertThat(first.get() + second.get()).isEqualTo(1);
+            assertThat(catalog.countAdmins()).isEqualTo(1);
+        }
+    }
+
+    @Test
     void listContentMemberIsNotFound() {
         assertThatThrownBy(() -> admin.listContent(member.id(), "post", null, null, null, 20))
                 .isInstanceOf(AuthException.class)
@@ -267,6 +319,7 @@ class AdminServiceTest {
         @Override
         public List<ListedAdminUser> listUsers(String q, String role, String status, InstantIdCursor after, int limit) {
             return users.stream()
+                    .map(user -> AdminServiceTest.this.users.findById(user.id()).orElseThrow())
                     .sorted(Comparator.comparing(User::createdAt).reversed().thenComparing(User::id))
                     .map(user -> new ListedAdminUser(
                             user, user.handle(), user.role() == UserRole.ADMIN && countAdmins() <= 1))
@@ -276,7 +329,10 @@ class AdminServiceTest {
 
         @Override
         public long countAdmins() {
-            return users.stream().filter(user -> user.role() == UserRole.ADMIN).count();
+            return users.stream()
+                    .map(user -> AdminServiceTest.this.users.findById(user.id()).orElseThrow())
+                    .filter(user -> user.active() && user.role() == UserRole.ADMIN)
+                    .count();
         }
 
         @Override
