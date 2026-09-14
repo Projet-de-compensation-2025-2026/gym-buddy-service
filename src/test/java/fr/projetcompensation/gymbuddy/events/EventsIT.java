@@ -83,8 +83,11 @@ class EventsIT {
     @Autowired
     private fr.projetcompensation.gymbuddy.friends.FriendshipService friendships;
 
+    @Autowired
+    private EventService eventService;
+
     @Test
-    void weeklyMatchInvitesPublicStrangerWithoutExposingPrivateSession() {
+    void weeklyMatchInvitesPublicStrangerWithoutExposingPrivateSession() throws Exception {
         RestClient client = restClient();
         registerAndLogin(client, "staff@example.com", "staff", "Staff");
         String alexAccess = registerAndLogin(client, "match.alex@example.com", "matchalex", "Alex");
@@ -135,6 +138,49 @@ class EventsIT {
                 .isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM friendships", Integer.class))
                 .isZero();
+        registerAndLogin(client, "match.dana@example.com", "matchdana", "Dana");
+        registerAndLogin(client, "match.eli@example.com", "matcheli", "Eli");
+        jdbcTemplate.update("""
+                UPDATE profiles SET (visibility, sports, city, preferred_windows) =
+                  (SELECT visibility, sports, city, preferred_windows FROM profiles WHERE user_id = ?)
+                WHERE user_id IN (SELECT id FROM users WHERE handle IN ('matchdana', 'matcheli'))
+                """, alex);
+        var dana = jdbcTemplate.queryForObject("SELECT id FROM users WHERE handle = 'matchdana'", java.util.UUID.class);
+        var eli = jdbcTemplate.queryForObject("SELECT id FROM users WHERE handle = 'matcheli'", java.util.UUID.class);
+        matching.optIn(dana);
+        matching.optIn(eli);
+        EventService failingEvents = org.mockito.Mockito.mock(EventService.class);
+        org.mockito.Mockito.when(
+                        failingEvents.create(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> {
+                    eventService.create(invocation.getArgument(0), invocation.getArgument(1));
+                    throw new IllegalStateException("synthetic failure after event insert");
+                });
+        var failingMatching = new fr.projetcompensation.gymbuddy.matching.MatchingService(
+                new fr.projetcompensation.gymbuddy.matching.JdbcMatchingStore(jdbcTemplate),
+                new fr.projetcompensation.gymbuddy.suggestions.JdbcSuggestionGraph(jdbcTemplate),
+                java.time.Clock.systemUTC(),
+                failingEvents);
+        org.assertj.core.api.Assertions.assertThatThrownBy(failingMatching::assignCurrentWeek)
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM events", Integer.class))
+                .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM matching_pairs", Integer.class))
+                .isEqualTo(1);
+        try (var workers = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var first = workers.submit(matching::assignCurrentWeek);
+            var second = workers.submit(matching::assignCurrentWeek);
+            assertThat(first.get(10, java.util.concurrent.TimeUnit.SECONDS).size()
+                            + second.get(10, java.util.concurrent.TimeUnit.SECONDS)
+                                    .size())
+                    .isEqualTo(1);
+        }
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM events", Integer.class))
+                .isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM matching_pairs", Integer.class))
+                .isEqualTo(2);
+        assertThat(matching.me(alex).match().eventId()).isEqualTo(match.eventId());
+        assertThat(matching.assignCurrentWeek()).isEmpty();
         friendships.block(blake, alex);
         assertThat(matching.me(alex).pair()).isNull();
         assertThat(matching.me(alex).match()).isNull();
