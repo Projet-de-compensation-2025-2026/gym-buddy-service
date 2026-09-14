@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -88,6 +89,26 @@ jobs:
             -v "$PWD/image-audit:/reports" \
             aquasec/trivy:0.74.0 image --scanners vuln --severity CRITICAL --exit-code 1 \
             --format json --output /reports/postgres-critical.json gym-buddy-postgres:18.6-secure
+
+      - name: Publish verified database image
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:postgres-18.6-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker tag gym-buddy-postgres:18.6-secure "$IMAGE"
+          docker push "$IMAGE"
+          DIGEST=$(docker image inspect "$IMAGE" --format '{{index .RepoDigests 0}}')
+          export IMAGE DIGEST
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          manifest = {'image': os.environ['IMAGE'], 'digest': os.environ['DIGEST'],
+                      'revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()}
+          pathlib.Path('image-audit/postgres-published.json').write_text(json.dumps(manifest, indent=2))
+          print(json.dumps(manifest))
+          PY
 
       - name: Preserve test and runtime audit evidence
         if: always()

@@ -16,6 +16,8 @@ class PostgresImageIT {
 
     @Test
     void officialEntrypointDropsPrivilegesAndLogicalRestoreRebuildsIndexes() throws Exception {
+        assertThat(POSTGRES.execInContainer("test", "-e", "/usr/local/bin/gosu").getExitCode())
+                .isEqualTo(1);
         assertThat(POSTGRES.execInContainer("stat", "-c", "%U", "/proc/1")
                         .getStdout()
                         .trim())
