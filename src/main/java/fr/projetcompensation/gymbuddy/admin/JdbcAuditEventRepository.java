@@ -51,8 +51,8 @@ public class JdbcAuditEventRepository implements AuditEventRepository {
                     SELECT + """
                               WHERE (?::uuid IS NULL OR a.actor_id = ?)
                                 AND (? = FALSE OR a.action IN ('hide_content', 'unhide_content') OR a.actor_id = ?)
-                                AND (? IS NULL OR a.action = ?)
-                                AND (? IS NULL OR u.handle ILIKE ? OR a.action ILIKE ? OR COALESCE(a.reason, '') ILIKE ?)
+                                AND (?::text IS NULL OR a.action = ?)
+                                AND (?::text IS NULL OR u.handle ILIKE ? OR a.action ILIKE ? OR COALESCE(a.reason, '') ILIKE ?)
                               ORDER BY a.at DESC, a.id DESC
                               LIMIT ?
                               """,
@@ -73,8 +73,8 @@ public class JdbcAuditEventRepository implements AuditEventRepository {
                 SELECT + """
                           WHERE (?::uuid IS NULL OR a.actor_id = ?)
                             AND (? = FALSE OR a.action IN ('hide_content', 'unhide_content') OR a.actor_id = ?)
-                            AND (? IS NULL OR a.action = ?)
-                            AND (? IS NULL OR u.handle ILIKE ? OR a.action ILIKE ? OR COALESCE(a.reason, '') ILIKE ?)
+                            AND (?::text IS NULL OR a.action = ?)
+                            AND (?::text IS NULL OR u.handle ILIKE ? OR a.action ILIKE ? OR COALESCE(a.reason, '') ILIKE ?)
                             AND (a.at, a.id) < (?, ?)
                           ORDER BY a.at DESC, a.id DESC
                           LIMIT ?

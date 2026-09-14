@@ -80,7 +80,7 @@ public class JdbcReportRepository implements ReportRepository {
         if (after == null) {
             return jdbc.query(SELECT + """
                               WHERE r.status = ?
-                                AND (? IS NULL OR u.handle ILIKE ? OR r.reason ILIKE ?)
+                                AND (?::text IS NULL OR u.handle ILIKE ? OR r.reason ILIKE ?)
                               ORDER BY r.created_at DESC, r.id DESC
                               LIMIT ?
                               """, this::map, status, like, like, like, limit);
@@ -88,7 +88,7 @@ public class JdbcReportRepository implements ReportRepository {
         return jdbc.query(
                 SELECT + """
                           WHERE r.status = ?
-                            AND (? IS NULL OR u.handle ILIKE ? OR r.reason ILIKE ?)
+                            AND (?::text IS NULL OR u.handle ILIKE ? OR r.reason ILIKE ?)
                             AND (r.created_at, r.id) < (?, ?)
                           ORDER BY r.created_at DESC, r.id DESC
                           LIMIT ?

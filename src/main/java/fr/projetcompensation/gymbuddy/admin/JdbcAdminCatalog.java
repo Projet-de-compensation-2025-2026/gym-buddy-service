@@ -36,9 +36,9 @@ public class JdbcAdminCatalog implements AdminCatalog {
                     SELECT u.id, u.email, u.handle, u.password_hash, u.role, u.status, u.created_at, p.display_name
                     FROM users u
                     JOIN profiles p ON p.user_id = u.id
-                    WHERE (? IS NULL OR u.handle ILIKE ? OR u.email ILIKE ? OR p.display_name ILIKE ?)
-                      AND (? IS NULL OR u.role = ?)
-                      AND (? IS NULL OR u.status = ?)
+                    WHERE (?::text IS NULL OR u.handle ILIKE ? OR u.email ILIKE ? OR p.display_name ILIKE ?)
+                      AND (?::text IS NULL OR u.role = ?)
+                      AND (?::text IS NULL OR u.status = ?)
                     ORDER BY u.created_at DESC, u.id DESC
                     LIMIT ?
                     """,
@@ -58,9 +58,9 @@ public class JdbcAdminCatalog implements AdminCatalog {
                 SELECT u.id, u.email, u.handle, u.password_hash, u.role, u.status, u.created_at, p.display_name
                 FROM users u
                 JOIN profiles p ON p.user_id = u.id
-                WHERE (? IS NULL OR u.handle ILIKE ? OR u.email ILIKE ? OR p.display_name ILIKE ?)
-                  AND (? IS NULL OR u.role = ?)
-                  AND (? IS NULL OR u.status = ?)
+                WHERE (?::text IS NULL OR u.handle ILIKE ? OR u.email ILIKE ? OR p.display_name ILIKE ?)
+                  AND (?::text IS NULL OR u.role = ?)
+                  AND (?::text IS NULL OR u.status = ?)
                   AND (u.created_at, u.id) < (?, ?)
                 ORDER BY u.created_at DESC, u.id DESC
                 LIMIT ?
@@ -103,8 +103,8 @@ public class JdbcAdminCatalog implements AdminCatalog {
                               FROM posts p
                               JOIN users u ON u.id = p.author_id
                               WHERE p.deleted_at IS NULL
-                                AND (? IS NULL OR u.handle ILIKE ? OR p.body ILIKE ? OR p.id::text ILIKE ?)
-                                AND (? IS NULL OR (p.hidden_at IS NOT NULL) = ?)
+                                AND (?::text IS NULL OR u.handle ILIKE ? OR p.body ILIKE ? OR p.id::text ILIKE ?)
+                                AND (?::boolean IS NULL OR (p.hidden_at IS NOT NULL) = ?)
                             ) row
                             WHERE TRUE
                             """ + cursor + " ORDER BY row.created_at DESC, row.id DESC LIMIT ?";
@@ -117,8 +117,8 @@ public class JdbcAdminCatalog implements AdminCatalog {
                                      c.created_at, (c.hidden_at IS NOT NULL) AS hidden, c.hidden_reason
                               FROM comments c
                               JOIN users u ON u.id = c.author_id
-                              WHERE (? IS NULL OR u.handle ILIKE ? OR c.body ILIKE ? OR c.id::text ILIKE ?)
-                                AND (? IS NULL OR (c.hidden_at IS NOT NULL) = ?)
+                              WHERE (?::text IS NULL OR u.handle ILIKE ? OR c.body ILIKE ? OR c.id::text ILIKE ?)
+                                AND (?::boolean IS NULL OR (c.hidden_at IS NOT NULL) = ?)
                             ) row
                             WHERE TRUE
                             """ + cursor + " ORDER BY row.created_at DESC, row.id DESC LIMIT ?";
@@ -131,8 +131,8 @@ public class JdbcAdminCatalog implements AdminCatalog {
                                      e.created_at, (e.hidden_at IS NOT NULL) AS hidden, NULL::text AS hidden_reason
                               FROM events e
                               JOIN users u ON u.id = e.organizer_id
-                              WHERE (? IS NULL OR u.handle ILIKE ? OR e.title ILIKE ? OR e.id::text ILIKE ?)
-                                AND (? IS NULL OR (e.hidden_at IS NOT NULL) = ?)
+                              WHERE (?::text IS NULL OR u.handle ILIKE ? OR e.title ILIKE ? OR e.id::text ILIKE ?)
+                                AND (?::boolean IS NULL OR (e.hidden_at IS NOT NULL) = ?)
                             ) row
                             WHERE TRUE
                             """ + cursor + " ORDER BY row.created_at DESC, row.id DESC LIMIT ?";
@@ -146,8 +146,8 @@ public class JdbcAdminCatalog implements AdminCatalog {
                               FROM media m
                               JOIN users u ON u.id = m.owner_id
                               WHERE m.deleted_at IS NULL
-                                AND (? IS NULL OR u.handle ILIKE ? OR m.object_key ILIKE ? OR m.id::text ILIKE ?)
-                                AND (? IS NULL OR (m.hidden_at IS NOT NULL) = ?)
+                                AND (?::text IS NULL OR u.handle ILIKE ? OR m.object_key ILIKE ? OR m.id::text ILIKE ?)
+                                AND (?::boolean IS NULL OR (m.hidden_at IS NOT NULL) = ?)
                             ) row
                             WHERE TRUE
                             """ + cursor + " ORDER BY row.created_at DESC, row.id DESC LIMIT ?";
@@ -179,7 +179,7 @@ public class JdbcAdminCatalog implements AdminCatalog {
                            m.status, m.object_key, m.created_at, m.deleted_at, m.hidden_at, m.hidden_reason
                     FROM media m
                     JOIN users u ON u.id = m.owner_id
-                    WHERE (? IS NULL OR u.handle ILIKE ? OR m.object_key ILIKE ? OR m.id::text ILIKE ?)
+                    WHERE (?::text IS NULL OR u.handle ILIKE ? OR m.object_key ILIKE ? OR m.id::text ILIKE ?)
                     ORDER BY m.created_at DESC, m.id DESC
                     LIMIT ?
                     """, this::mapMedia, like, like, like, like, limit);
@@ -189,7 +189,7 @@ public class JdbcAdminCatalog implements AdminCatalog {
                        m.status, m.object_key, m.created_at, m.deleted_at, m.hidden_at, m.hidden_reason
                 FROM media m
                 JOIN users u ON u.id = m.owner_id
-                WHERE (? IS NULL OR u.handle ILIKE ? OR m.object_key ILIKE ? OR m.id::text ILIKE ?)
+                WHERE (?::text IS NULL OR u.handle ILIKE ? OR m.object_key ILIKE ? OR m.id::text ILIKE ?)
                   AND (m.created_at, m.id) < (?, ?)
                 ORDER BY m.created_at DESC, m.id DESC
                 LIMIT ?
