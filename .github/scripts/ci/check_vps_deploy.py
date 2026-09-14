@@ -10,8 +10,8 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
-FORBIDDEN_HOST_PORTS = {5432, 6379, 9000, 9001}
-VPS_LOOPBACK_PORTS = {"postgres": 5432, "minio": 9000}
+FORBIDDEN_HOST_PORTS = {5432, 6379, 8333, 9000, 9001}
+VPS_LOOPBACK_PORTS = {"postgres": 5432, "storage": 8333}
 REQUIRED_REPLACE_KEYS = (
     "DATABASE_URL",
     "REDIS_URL",
@@ -97,7 +97,7 @@ def main() -> None:
     if not any("127.0.0.1:8080:8080" in str(p) for p in laptop_api_ports):
         fail("laptop compose.yaml must keep the API on 127.0.0.1:8080")
 
-    for name in ("postgres", "redis", "minio"):
+    for name in ("postgres", "redis", "storage"):
         ports = published_ports((laptop.get("services") or {}).get(name) or {})
         if not ports:
             fail(f"laptop compose.yaml service {name} lost its 127.0.0.1 published ports")

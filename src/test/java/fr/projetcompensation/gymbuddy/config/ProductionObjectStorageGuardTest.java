@@ -32,7 +32,7 @@ class ProductionObjectStorageGuardTest {
     void refusesToStartWhenCredentialsAreBlank() {
         MockEnvironment environment = new MockEnvironment();
         environment.setActiveProfiles("prod");
-        environment.setProperty("S3_ENDPOINT", "http://minio:9000");
+        environment.setProperty("S3_ENDPOINT", "http://storage:8333");
         environment.setProperty("S3_BUCKET", "gym-buddy");
         environment.setProperty("S3_ACCESS_KEY", " ");
         environment.setProperty("S3_SECRET_KEY", "secret");
@@ -52,7 +52,7 @@ class ProductionObjectStorageGuardTest {
                         "s3",
                         java.util.Map.of(
                                 "S3_ENDPOINT",
-                                "http://minio:9000",
+                                "http://storage:8333",
                                 "S3_BUCKET",
                                 "gym-buddy",
                                 "S3_ACCESS_KEY",

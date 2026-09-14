@@ -21,14 +21,14 @@ vps-c39cdf03.vps.ovh.net {
         method GET HEAD PUT
     }
     handle @media {
-        reverse_proxy 127.0.0.1:9000 {
+        reverse_proxy 127.0.0.1:8333 {
             header_down Access-Control-Allow-Origin https://projet-de-compensation-2025-2026.github.io
             header_down Access-Control-Expose-Headers ETag
             header_down Vary Origin
         }
     }
 
-    # No bucket-listing root, MinIO console, or administrative S3 route is proxied.
+    # No bucket-listing root, SeaweedFS console, or administrative S3 route is proxied.
     handle {
         reverse_proxy 127.0.0.1:8080
     }
