@@ -30,8 +30,8 @@
         <jackson-bom.version>3.1.5</jackson-bom.version>
         <log4j2.version>2.25.5</log4j2.version>
         <openapi-generator.version>7.16.0</openapi-generator.version>
-        <!-- Immutable reviewed API contract revision. -->
-        <openapi.package.tag>41f6613e5653fac0e4fd6398eade24d1a84b2631</openapi.package.tag>
+        <!-- Immutable contract revision with selected event occurrence support. -->
+        <openapi.package.tag>24c45bbb933be5fb2d42743a93f34bed7aba04c2</openapi.package.tag>
         <openapi.package.dir>${project.build.directory}/openapi/gym-buddy-openapi</openapi.package.dir>
         <openapi.spec.file>${openapi.package.dir}/openapi/openapi.yaml</openapi.spec.file>
     </properties>

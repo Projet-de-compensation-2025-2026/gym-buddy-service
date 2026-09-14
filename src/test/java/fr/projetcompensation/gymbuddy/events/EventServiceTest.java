@@ -79,6 +79,33 @@ class EventServiceTest {
     }
 
     @Test
+    void selectedRecurringOccurrenceHasItsOwnApplicationsAndCapacity() {
+        var created = service.create(alex.id(), draft("FREQ=WEEKLY;BYDAY=TU", "public", 1));
+        UUID first = created.occurrences().get(0).occurrence().id();
+        UUID second = created.occurrences().get(1).occurrence().id();
+        var application = service.apply(blake.id(), created.event().id(), second);
+        assertThat(service.get(blake.id(), created.event().id(), first).viewerApplication())
+                .isNull();
+        assertThat(service.get(blake.id(), created.event().id(), second)
+                        .viewerApplication()
+                        .application()
+                        .id())
+                .isEqualTo(application.application().id());
+        assertThat(service.get(alex.id(), created.event().id(), second).pendingApplicants())
+                .hasSize(1);
+        assertThat(service.get(alex.id(), created.event().id(), first).pendingApplicants())
+                .isEmpty();
+        service.accept(alex.id(), application.application().id());
+        assertThat(service.get(blake.id(), created.event().id(), second).remainingSeats())
+                .isZero();
+        assertThat(service.get(blake.id(), created.event().id(), first).remainingSeats())
+                .isEqualTo(1);
+        assertThatThrownBy(() -> service.get(blake.id(), created.event().id(), UUID.randomUUID()))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+    }
+
+    @Test
     void fsEvt01And02_createInstantEvent() {
         VisibleEvent created = service.create(alex.id(), draft(null, EventVisibility.PUBLIC.wireValue(), 3));
 
