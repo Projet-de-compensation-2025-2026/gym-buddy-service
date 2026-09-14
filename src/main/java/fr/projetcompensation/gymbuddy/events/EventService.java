@@ -158,6 +158,10 @@ public final class EventService {
     }
 
     public VisibleEvent patch(UUID callerId, UUID eventId, EventDraft draft) {
+        return transactions.inTransaction(() -> patchLocked(callerId, eventId, draft));
+    }
+
+    private VisibleEvent patchLocked(UUID callerId, UUID eventId, EventDraft draft) {
         User caller = requireActive(callerId);
         Event row = events.findById(eventId).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
         if (row.hidden() || row.cancelled() || !row.organizerId().equals(caller.id())) {
@@ -193,9 +197,12 @@ public final class EventService {
         boolean updatedAfterAccept = row.updatedAfterAccept() || acceptedAnyone;
         Event updated = row.withDetails(
                 title, description, activity, place, lat, lng, startsAt, duration, tags, cover, updatedAfterAccept);
+        List<UUID> invitees = draft.inviteeIds() == null
+                ? null
+                : normalizeInvitees(caller.id(), row.visibility(), draft.inviteeIds());
         events.update(updated);
-        if (draft.inviteeIds() != null) {
-            events.replaceInvitees(row.id(), normalizeInvitees(caller.id(), row.visibility(), draft.inviteeIds()));
+        if (invitees != null) {
+            events.replaceInvitees(row.id(), invitees);
         }
         if (!startsAt.equals(row.startsAt())) {
             rescheduleFirst(updated);

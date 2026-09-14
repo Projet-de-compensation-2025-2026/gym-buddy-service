@@ -79,6 +79,32 @@ class EventServiceTest {
     }
 
     @Test
+    void invalidInviteeCannotPartiallySaveEventEdits() {
+        VisibleEvent original = service.create(alex.id(), draft(null, "private", 2));
+        EventDraft edit = new EventDraft(
+                "Changed title",
+                "Changed description",
+                null,
+                "Changed place",
+                null,
+                null,
+                START.plusSeconds(3600),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(UUID.randomUUID()));
+        assertThatThrownBy(() -> service.patch(alex.id(), original.event().id(), edit))
+                .isInstanceOf(AuthException.class);
+        VisibleEvent after = service.get(alex.id(), original.event().id());
+        assertThat(after.event()).isEqualTo(original.event());
+        assertThat(after.occurrences()).isEqualTo(original.occurrences());
+        assertThat(after.inviteeIds()).isEqualTo(original.inviteeIds());
+    }
+
+    @Test
     void eventCoverRejectsHiddenMediaAndRetainsAnUnchangedAttachment() {
         UUID coverId = UUID.randomUUID();
         Media cover = new Media(
