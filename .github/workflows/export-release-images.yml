@@ -1,0 +1,64 @@
+name: Export verified release images
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to the existing package
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Export the two approved immutable images
+        run: |
+          set -euo pipefail
+          mkdir transfer
+          PG=ghcr.io/projet-de-compensation-2025-2026/gym-buddy-service@sha256:b4c403243955a07e36103b78aa2132c0bcf9015a9acba993a59a4782570d4068
+          API=ghcr.io/projet-de-compensation-2025-2026/gym-buddy-service@sha256:c87197b05da67abade743490517e1081966f638bd6d6520821eaa5ef65b28679
+          docker pull --platform linux/amd64 "$PG"
+          docker pull --platform linux/amd64 "$API"
+          docker image inspect "$PG" "$API" > images.json
+          docker tag "$PG" gym-buddy-transfer:postgres-18.6
+          docker tag "$API" gym-buddy-transfer:service-1.2.0
+          docker save gym-buddy-transfer:postgres-18.6 gym-buddy-transfer:service-1.2.0 | gzip -1 > transfer/images.tar.gz
+          export PG API
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          images = json.loads(pathlib.Path('images.json').read_text())
+          entries = []
+          for image, key, tag in zip(images, ['PG', 'API'], ['postgres-18.6', 'service-1.2.0']):
+              reference = os.environ[key]
+              assert reference in image['RepoDigests']
+              assert image['Os'] == 'linux' and image['Architecture'] == 'amd64'
+              entries.append({'reference': reference, 'imageId': image['Id'],
+                              'os': image['Os'], 'architecture': image['Architecture'],
+                              'archiveTag': 'gym-buddy-transfer:' + tag,
+                              'labels': image['Config'].get('Labels', {})})
+          archive = pathlib.Path('transfer/images.tar.gz')
+          with archive.open('rb') as stream:
+              digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+          for entry in entries:
+              entry.update(archive=archive.name, archiveSha256=digest)
+          manifest = {'sourceRun': os.environ['GITHUB_RUN_ID'], 'sourceRevision': os.environ['GITHUB_SHA'], 'archive': archive.name,
+                      'archiveSha256': digest, 'images': entries}
+          pathlib.Path('transfer/manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          print(json.dumps(manifest, indent=2))
+          PY
+
+      - name: Preserve exact deployment images and provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-release-images
+          path: transfer/
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
