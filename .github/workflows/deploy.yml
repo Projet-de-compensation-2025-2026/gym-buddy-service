@@ -106,7 +106,13 @@ jobs:
           [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
           docker pull "${IMAGE}@${DIGEST}"
           mkdir -p release-security
-          docker run --rm             -v /var/run/docker.sock:/var/run/docker.sock             -v "$PWD/release-security:/output"             aquasec/trivy:0.74.0 image --image-src docker             --scanners vuln --severity CRITICAL --exit-code 1             --format json --output /output/released-image-critical.json             "${IMAGE}@${DIGEST}"
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/release-security:/output" \
+            aquasec/trivy:0.74.0 image --image-src docker \
+            --scanners vuln --severity CRITICAL --exit-code 1 \
+            --format json --output /output/released-image-critical.json \
+            "${IMAGE}@${DIGEST}"
 
       - name: Upload released image security report
         if: always()

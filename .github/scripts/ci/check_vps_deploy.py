@@ -90,8 +90,8 @@ def main() -> None:
         fail("deploy/compose.yaml must name the network gym-buddy-data so replace.sh can join it")
 
     postgres = (vps.get("services") or {}).get("postgres") or {}
-    if postgres.get("image") != "postgres:18.6":
-        fail("VPS postgres image must be postgres:18.6")
+    if postgres.get("image") != "gym-buddy-postgres:18.6-secure" or postgres.get("build") != "./postgres":
+        fail("VPS postgres image must use the reviewed security-patched build")
 
     laptop_api_ports = published_ports((laptop.get("services") or {}).get("api") or {})
     if not any("127.0.0.1:8080:8080" in str(p) for p in laptop_api_ports):

@@ -13,15 +13,17 @@ name: gym-buddy-vps
 
 services:
   postgres:
-    image: postgres:18.6
+    image: gym-buddy-postgres:18.6-secure
+    build: ./postgres
     environment:
       POSTGRES_DB: gymbuddy
       POSTGRES_USER: gymbuddy
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: --locale-provider=icu --icu-locale=en-US --locale=C.UTF-8
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_icu_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gymbuddy -d gymbuddy"]
       interval: 5s
@@ -75,5 +77,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_icu_data:
   seaweedfs_data:

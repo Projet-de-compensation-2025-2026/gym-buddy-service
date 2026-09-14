@@ -30,8 +30,7 @@ import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 class ReadinessIT {
 
     @Container
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6")
-            .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure);
+    static final PostgreSQLContainer POSTGRES = fr.projetcompensation.gymbuddy.support.PostgresTestContainer.create();
 
     @Container
     static final GenericContainer<?> STORAGE = S3TestContainer.create();

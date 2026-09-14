@@ -56,7 +56,7 @@ jobs:
           import pathlib
           import xml.etree.ElementTree as ET
           suites = [ET.parse(path).getroot() for path in pathlib.Path('target/surefire-reports').glob('TEST-*.xml')]
-          required = {'AuthIT', 'ProfilesIT', 'ConversationsIT', 'EventsIT', 'MediaIT', 'ReadinessIT', 'FixtureGeneratorIT'}
+          required = {'AuthIT', 'ProfilesIT', 'ConversationsIT', 'EventsIT', 'MediaIT', 'ReadinessIT', 'FixtureGeneratorIT', 'AdminCatalogIT', 'PostgresImageIT'}
           present = {suite.get('name', '').split('.')[-1] for suite in suites}
           assert required <= present, f'Missing integration suites: {required - present}'
           totals = {key: sum(int(suite.get(key, 0)) for suite in suites) for key in ('tests', 'failures', 'errors', 'skipped')}
@@ -80,6 +80,14 @@ jobs:
             -v "$PWD/image-audit:/reports" \
             aquasec/trivy:0.74.0 image --scanners vuln --severity CRITICAL --exit-code 1 \
             --format json --output /reports/critical.json gym-buddy-service:smoke
+
+      - name: Audit database image vulnerabilities
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/image-audit:/reports" \
+            aquasec/trivy:0.74.0 image --scanners vuln --severity CRITICAL --exit-code 1 \
+            --format json --output /reports/postgres-critical.json gym-buddy-postgres:18.6-secure
 
       - name: Preserve test and runtime audit evidence
         if: always()
