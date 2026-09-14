@@ -98,6 +98,11 @@ public class JdbcFriendshipRepository implements FriendshipRepository, Friendshi
     }
 
     @Override
+    public List<Friendship> listBlocked(UUID userId, InstantIdCursor after, int limit) {
+        return list("WHERE status = 'blocked' AND requester_id = ?", userId, after, limit, false);
+    }
+
+    @Override
     public boolean areAcceptedFriends(UUID left, UUID right) {
         Integer count = jdbc.queryForObject("""
                 SELECT COUNT(*) FROM friendships

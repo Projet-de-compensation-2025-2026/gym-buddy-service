@@ -100,6 +100,7 @@ public class AccessTokenFilter extends OncePerRequestFilter {
         User found = user.get();
         request.setAttribute(
                 AuthPrincipal.REQUEST_ATTRIBUTE, new AuthPrincipal(found.id(), found.handle(), found.role()));
+        request.setAttribute(AuthPrincipal.EXPIRATION_ATTRIBUTE, claims.get().expiresAt());
         // FS-ADM-09: members must not learn /admin exists via 400/422 on missing params or bodies.
         if (isStaffHttpSurface(request) && !found.isStaff()) {
             writeError(response, HttpServletResponse.SC_NOT_FOUND, ErrorCode.NOT_FOUND, "not found");

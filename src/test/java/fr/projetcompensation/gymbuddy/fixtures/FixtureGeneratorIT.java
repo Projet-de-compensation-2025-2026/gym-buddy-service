@@ -18,7 +18,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @Testcontainers(disabledWithoutDocker = true)
 class FixtureGeneratorIT {
 
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6");
+    static final PostgreSQLContainer POSTGRES = fr.projetcompensation.gymbuddy.support.PostgresTestContainer.create();
 
     static {
         if (DockerClientFactory.instance().isDockerAvailable()) {
@@ -58,6 +58,32 @@ class FixtureGeneratorIT {
                 "change-me-local-demo",
                 "change-me-local-demo");
         generator.reset(null);
+    }
+
+    @Test
+    void generatesOneThousandUsersWithRelatedSocialData() {
+        FixtureMagnitude magnitude = new FixtureMagnitude(1000, 3000, 2500, 3500, 150, 600, 1500, 800);
+        long started = System.nanoTime();
+        FixtureReport report = generator.generate(magnitude);
+        long elapsedMillis = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+        assertThat(report.users()).isEqualTo(1000);
+        assertThat(count("users")).isEqualTo(1000);
+        assertThat(count("profiles")).isEqualTo(1000);
+        assertThat(count("posts")).isEqualTo(magnitude.posts());
+        assertThat(count("comments")).isEqualTo(magnitude.comments());
+        assertThat(count("events")).isEqualTo(magnitude.events());
+        assertThat(count("messages")).isEqualTo(magnitude.messages());
+        assertThat(count("media")).isEqualTo(magnitude.media());
+        assertThat(count("friendships")).isEqualTo(report.friendships()).isGreaterThan(0);
+        assertThat(count("event_applications")).isEqualTo(report.applications()).isGreaterThan(0);
+        assertThat(jdbc.queryForList("""
+                SELECT p.id FROM posts p JOIN users u ON u.id = p.author_id
+                WHERE u.status = 'active' ORDER BY p.created_at DESC, p.id DESC LIMIT 20
+                """, java.util.UUID.class)).hasSize(20);
+        assertThat(alexBlakeFriends()).isTrue();
+        System.out.printf(
+                "Fixture scale evidence: users=%d posts=%d comments=%d events=%d messages=%d elapsedMs=%d%n",
+                report.users(), report.posts(), report.comments(), report.events(), report.messages(), elapsedMillis);
     }
 
     @Test

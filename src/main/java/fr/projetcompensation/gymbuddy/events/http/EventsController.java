@@ -54,9 +54,9 @@ public class EventsController implements EventsApi {
     }
 
     @Override
-    public ResponseEntity<Event> getEventsId(UUID id) {
+    public ResponseEntity<Event> getEventsId(UUID id, @Nullable UUID occurrenceId) {
         AuthPrincipal principal = AuthPrincipal.require(httpRequest);
-        return ResponseEntity.ok(EventResponses.toApi(service().get(principal.userId(), id)));
+        return ResponseEntity.ok(EventResponses.toApi(service().get(principal.userId(), id, occurrenceId)));
     }
 
     @Override

@@ -27,7 +27,10 @@ public class MessagingHandshakeInterceptor implements HandshakeInterceptor {
         if (!(value instanceof AuthPrincipal principal)) {
             return false;
         }
+        Object expiration = http.getAttribute(AuthPrincipal.EXPIRATION_ATTRIBUTE);
+        if (!(expiration instanceof java.time.Instant)) return false;
         attributes.put(MessagingSessionRegistry.USER_ID, principal.userId());
+        attributes.put(MessagingSessionRegistry.EXPIRES_AT, expiration);
         return true;
     }
 

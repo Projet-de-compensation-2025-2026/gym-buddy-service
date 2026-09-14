@@ -18,6 +18,15 @@ class MatchingAlgorithmTest {
     private static final LocalDate WEEK = LocalDate.of(2026, 8, 24);
 
     @Test
+    void canonicalPairOrderMatchesPostgresAcrossUuidSignBoundary() {
+        UUID low = UUID.fromString("00000000-0000-4000-8000-000000000001");
+        UUID high = UUID.fromString("f0000000-0000-4000-8000-000000000001");
+        ProposedMatch match = new ProposedMatch(high, low, 0, "running", NOW, 60, WEEK, null);
+        assertThat(match.left()).isEqualTo(low);
+        assertThat(match.right()).isEqualTo(high);
+    }
+
+    @Test
     void fsMatchGreedy_neverAssignsOnePersonTwice() {
         MatchingMember a = member("a", List.of("running"), windows(1, "07:00", "09:00"));
         MatchingMember b = member("b", List.of("running"), windows(1, "07:00", "09:00"));
@@ -62,7 +71,9 @@ class MatchingAlgorithmTest {
         assertThat(Set.of(match.userA(), match.userB())).containsExactlyInAnyOrder(a.userId(), b.userId());
         assertThat(match.activity()).isEqualTo("running");
         assertThat(match.durationMin()).isEqualTo(120);
-        assertThat(match.startsAt()).isEqualTo(Instant.parse("2026-08-24T08:00:00Z"));
+        assertThat(match.startsAt()).isEqualTo(Instant.parse("2026-08-24T07:00:00Z"));
+        assertThat(match.startsAt().plusSeconds(match.durationMin() * 60L))
+                .isEqualTo(Instant.parse("2026-08-24T09:00:00Z"));
     }
 
     @Test

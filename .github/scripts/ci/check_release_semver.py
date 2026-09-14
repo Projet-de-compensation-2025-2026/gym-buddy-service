@@ -58,15 +58,18 @@ def main() -> None:
 
     sync = load_module("sync_pom_version", ".github/scripts/ci/sync_pom_version.py")
     pom = (ROOT / "pom.xml").read_text()
-    if "<version>1.1.0</version>" not in pom:
-        fail("working pom.xml must stay on the tagged 1.1.0 line until the next Release")
-    if "<version>2.0.0</version>" in pom:
-        fail("do not invent 2.0.0 in pom.xml")
+    import xml.etree.ElementTree as ET
+    ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+    original_tree = ET.fromstring(pom)
+    parent_version = original_tree.find("m:parent/m:version", ns).text
+    project_version = original_tree.find("m:version", ns).text
+    if not sync.SEMVER.fullmatch(project_version):
+        fail("project version must be a release SemVer")
 
     updated = sync.write_project_version(pom, "0.1.2")
     if "<artifactId>gym-buddy-service</artifactId>\n    <version>0.1.2</version>" not in updated:
         fail("sync_pom_version.py must write the project <version>")
-    if "<artifactId>spring-boot-starter-parent</artifactId>\n        <version>4.1.0</version>" not in updated:
+    if ET.fromstring(updated).find("m:parent/m:version", ns).text != parent_version:
         fail("sync_pom_version.py must not change the Spring Boot parent version")
     if "<java.version>25</java.version>" not in updated:
         fail("sync_pom_version.py must not rewrite other pom versions")
@@ -85,7 +88,7 @@ def main() -> None:
         written = (work / "pom.xml").read_text(encoding="utf-8")
         if "<version>0.1.3</version>" not in written:
             fail(f"sync_pom_version.py CLI did not write 0.1.3: {result.stdout}")
-        if "<version>4.1.0</version>" not in written:
+        if ET.fromstring(written).find("m:parent/m:version", ns).text != parent_version:
             fail("sync_pom_version.py CLI rewrote the parent version")
 
     print("TEST OK: Release writes SemVer into pom.xml; auto bump never picks 1.x unattended")

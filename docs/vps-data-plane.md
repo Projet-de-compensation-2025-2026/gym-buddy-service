@@ -1,12 +1,12 @@
 # VPS data plane (operator runbook)
 
-Apply this on the OVH VPS (`vps-c39cdf03.vps.ovh.net`). This cloud checkout cannot SSH there.
+Apply this on the OVH VPS (`vps-c39cdf03.vps.ovh.net`) through the authorized operator SSH account.
 
 This is **not** the laptop stack. Repo-root `compose.yaml` stays local (`127.0.0.1` published ports). Do not run that file on the VPS.
 
-Public story stays **Caddy → `127.0.0.1:8080`**. The API is not published on `0.0.0.0`. Data-plane ports stay off the host.
+HTTPS enters through Caddy. API requests reach `127.0.0.1:8080`; signed object requests reach MinIO on `127.0.0.1:9000`. Redis and the MinIO console are unpublished. Postgres listens on `127.0.0.1:5432` for operator SSH tunnels. Do not open these internal ports in the firewall.
 
-Release → Deploy still replaces the API with `deploy/replace.sh` + GHCR. Stay on application **0.1.x** (do not tag `0.3.0`).
+Release and Deploy replace the API with a versioned GHCR image through `deploy/replace.sh`.
 
 ## Files on the VPS
 
@@ -32,6 +32,7 @@ Do not put JWT material, database passwords, or object-store secrets in git or i
 | `REDIS_URL` | API via `replace.sh` | Cache / refresh denylist. Host must be `redis`. |
 | `JWT_ACCESS_SECRET` | API via `replace.sh` | HS256 signing secret for access tokens. |
 | `S3_ENDPOINT` | API + MinIO | S3-compatible API URL. Use `http://minio:9000` on the Docker network. |
+| `S3_PUBLIC_ENDPOINT` | API presigner | Browser-reachable HTTPS origin, e.g. `https://vps-c39cdf03.vps.ovh.net`. No bucket/path suffix. |
 | `S3_BUCKET` | API + `minio-init` | Bucket name. |
 | `S3_ACCESS_KEY` | API + MinIO | Object-store access key. |
 | `S3_SECRET_KEY` | API + MinIO | Object-store secret key. |
@@ -52,6 +53,14 @@ Do not put JWT material, database passwords, or object-store secrets in git or i
 | `DEPLOY_ENV_FILE` | `/etc/gym-buddy/vps.env` | Env file on the VPS. |
 
 GitHub Actions secrets stay the existing names only: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, optional `DEPLOY_PORT`. Those are SSH, not application secrets.
+
+## Browser uploads and downloads
+
+Use separate internal and public endpoints: the API talks to Docker's `http://minio:9000`, while signed browser URLs use `S3_PUBLIC_ENDPOINT`. Docker hostnames cannot be resolved by a visitor's browser.
+
+Merge the handlers in [deploy/Caddyfile.example](../deploy/Caddyfile.example) into the existing HTTPS site, preserving its TLS and access policy. Replace `/gym-buddy/*` if the configured bucket has a different name. Preserve the complete request path and `Host`; rewriting either invalidates the S3 signature. Only object `GET`, `HEAD`, `PUT` and Pages-origin CORS preflight are routed. Bucket listing, MinIO administration, console access and anonymous bucket policies are unnecessary.
+
+Before applying, back up the existing Caddy configuration, Compose file and protected environment file. Keep the current named MinIO volume and image digest; apply only the loopback port/CORS changes to the MinIO service, then validate and reload Caddy. Forward `S3_PUBLIC_ENDPOINT` when replacing the API. Verify unsigned object access is denied, Pages preflight permits the exact origin, and a fresh signed image upload/download succeeds in the browser. Do not log signed query strings. Rollback restores the saved configuration and previous API image without deleting any data volume.
 
 ## 1. Create the env file
 
@@ -86,14 +95,46 @@ docker compose --env-file /etc/gym-buddy/vps.env -f deploy/compose.yaml ps
 
 That command creates the named network `gym-buddy-data`. `replace.sh` joins it with `docker run --network gym-buddy-data`. The API then resolves `postgres`, `redis`, and `minio` by Docker DNS.
 
-Do **not** add `ports:` for 5432 / 6379 / 9000 / 9001. Confirm the host is not listening on those:
+Redis and MinIO stay unpublished. Postgres is **loopback only**:
 
 ```bash
-ss -lnt | grep -E ':5432|:6379|:9000|:9001' || echo "data-plane ports not published"
+ss -lnt | grep -E ':5432|:6379|:9000|:9001'
 docker compose --env-file /etc/gym-buddy/vps.env -f deploy/compose.yaml ps --format '{{.Name}} {{.Publishers}}'
 ```
 
-`Publishers` must be empty.
+Expect Postgres `127.0.0.1:5432->5432/tcp`. Redis and MinIO `Publishers` stay empty. `0.0.0.0:5432` is a misconfiguration.
+
+### Operator: pgAdmin 4 over SSH
+
+Postgres is not reachable as `vps-c39cdf03.vps.ovh.net:5432`. Open no UFW rule for 5432.
+
+From a laptop that already SSHs to the VPS (identity file, not password):
+
+```bash
+ssh -N -L 15432:127.0.0.1:5432 USER@vps-c39cdf03.vps.ovh.net
+```
+
+Leave that session open. In pgAdmin 4: **Register → Server**
+
+| Field | Value |
+| --- | --- |
+| Host | `127.0.0.1` |
+| Port | `15432` |
+| Maintenance database | `gymbuddy` |
+| Username | `gymbuddy` |
+| Password | `POSTGRES_PASSWORD` in `/etc/gym-buddy/vps.env` on the VPS |
+| SSH tunnel | off (the `ssh -L` command is the tunnel) |
+| SSL mode | Prefer or Disable |
+
+pgAdmin's own **SSH Tunnel** tab is equivalent: Tunnel host `vps-c39cdf03.vps.ovh.net` port 22, identity file (PEM), then Connection host `127.0.0.1` port `5432` (that address is on the VPS after the tunnel). Username there is the Linux SSH user, not `gymbuddy`.
+
+Apply the loopback bind (once, on the VPS checkout):
+
+```bash
+docker compose --env-file /etc/gym-buddy/vps.env -f deploy/compose.yaml up -d
+```
+
+The `postgres_data` volume keeps the data. Do not `down -v`.
 
 ## 3. Replace the API (first time, or any time)
 
@@ -109,7 +150,7 @@ sudo env \
   ./deploy/replace.sh gym-buddy-service:local
 ```
 
-After a **0.1.x** Release (not `0.3.0`), Deploy copies `deploy/replace.sh` over SSH and runs it with the GHCR tag. Same env file, same network. You do not pass secret values through GitHub Actions.
+After a reviewed semantic-version Release, Deploy copies `deploy/replace.sh` over SSH and runs it with the GHCR tag. Same env file, same network. You do not pass secret values through GitHub Actions.
 
 Manual GHCR replace (operator already logged in, or `GHCR_USERNAME` + `GHCR_TOKEN` in the environment):
 
@@ -119,7 +160,7 @@ sudo env \
   DEPLOY_BIND=127.0.0.1 \
   GHCR_USERNAME="$GHCR_USERNAME" \
   GHCR_TOKEN="$GHCR_TOKEN" \
-  ./deploy/replace.sh ghcr.io/projet-de-compensation-2025-2026/gym-buddy-service:v0.1.x
+  ./deploy/replace.sh ghcr.io/projet-de-compensation-2025-2026/gym-buddy-service:vX.Y.Z
 ```
 
 What `replace.sh` does on that `docker run`:
@@ -162,7 +203,7 @@ Expect `127.0.0.1:8080`. Not `0.0.0.0:8080`.
 ## 5. Ongoing releases
 
 1. Keep `/etc/gym-buddy/vps.env` and `docker compose … -f deploy/compose.yaml` running.
-2. When a 0.1.x version is stable, run the existing **Release** workflow (pin `version=0.1.x` if needed). Do not bump the application to `0.3.0`.
+2. When the reviewed version is ready, run the existing **Release** workflow with its intended semantic version.
 3. **Deploy** builds `ghcr.io/projet-de-compensation-2025-2026/gym-buddy-service:vX.Y.Z`, copies `deploy/replace.sh`, and runs it. The new container joins `gym-buddy-data` and reads the VPS env file.
 
-Do not compose the API on the VPS. Do not publish friends / feed / events in this slice.
+The data-plane Compose file does not manage the API. Verify the deployed image revision and core browser journeys after replacement.

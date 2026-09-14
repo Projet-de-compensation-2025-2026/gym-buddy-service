@@ -9,6 +9,21 @@ on:
       version:
         required: false
         type: string
+      deployToVm:
+        description: Replace the VPS container after the image passes its security scan.
+        required: false
+        type: boolean
+        default: true
+    outputs:
+      image:
+        description: Published image repository.
+        value: ${{ jobs.image.outputs.image }}
+      digest:
+        description: Immutable published image digest.
+        value: ${{ jobs.image.outputs.digest }}
+      revision:
+        description: Source revision checked out from the release tag.
+        value: ${{ jobs.image.outputs.revision }}
 
 permissions:
   contents: read
@@ -24,9 +39,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.meta.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+      revision: ${{ steps.meta.outputs.source_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version && format('refs/tags/v{0}', inputs.version) || github.ref }}
 
       - name: Image name
         id: meta
@@ -36,7 +55,19 @@ jobs:
           if [[ -z "$VERSION" ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
           fi
+          python3 - "$VERSION" <<'PY'
+          import re
+          import sys
+          import xml.etree.ElementTree as ET
+          version = sys.argv[1]
+          if not re.fullmatch(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", version):
+              sys.exit("Deploy requires a stable SemVer release tag")
+          declared = ET.parse("pom.xml").getroot().findtext("{http://maven.apache.org/POM/4.0.0}version")
+          if declared != version:
+              sys.exit(f"Ref version {declared!r} does not match requested release {version!r}")
+          PY
           IMAGE="ghcr.io/${OWNER}/gym-buddy-service"
+          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
@@ -50,21 +81,86 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
+          build-args: |
+            APP_VERSION=${{ env.VERSION }}
+            VCS_REF=${{ steps.meta.outputs.source_sha }}
+          labels: |
+            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.source_sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           tags: |
             ${{ env.IMAGE }}:v${{ env.VERSION }}
             ${{ env.IMAGE }}:latest
 
+      - name: Scan the published image for critical vulnerabilities
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker pull "${IMAGE}@${DIGEST}"
+          mkdir -p release-security
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/release-security:/output" \
+            aquasec/trivy:0.74.0 image --image-src docker \
+            --scanners vuln --severity CRITICAL --exit-code 1 \
+            --format json --output /output/released-image-critical.json \
+            "${IMAGE}@${DIGEST}"
+
+      - name: Cache scanned release images on the target machine
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          PORT: ${{ secrets.DEPLOY_PORT }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API_IMAGE: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
+          DATABASE_IMAGE: ghcr.io/projet-de-compensation-2025-2026/gym-buddy-service@sha256:b4c403243955a07e36103b78aa2132c0bcf9015a9acba993a59a4782570d4068
+        run: |
+          set -euo pipefail
+          test -n "$HOST" && test -n "$SSH_USER" && test -n "$KEY"
+          mkdir -p ~/.ssh
+          key_file=$(mktemp ~/.ssh/gym-buddy-cache.XXXXXX)
+          trap 'rm -f -- "$key_file"' EXIT
+          printf '%s\n' "$KEY" > "$key_file"
+          chmod 600 "$key_file"
+          ssh_port="${PORT:-22}"
+          known_host="$HOST"
+          [[ "$ssh_port" == "22" ]] || known_host="[$HOST]:$ssh_port"
+          printf '%s ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAuLiXlbhuWwZxy0xYAVTgCJzWtGX6I1oiNog+vdxk7O\n' "$known_host" >> ~/.ssh/known_hosts
+          remote_script=$(ssh -o StrictHostKeyChecking=yes -i "$key_file" -p "$ssh_port" "$SSH_USER@$HOST" 'mktemp /tmp/gym-buddy-cache.XXXXXX')
+          [[ "$remote_script" =~ ^/tmp/gym-buddy-cache\.[A-Za-z0-9]+$ ]]
+          trap 'ssh -o StrictHostKeyChecking=yes -i "$key_file" -p "$ssh_port" "$SSH_USER@$HOST" "rm -f -- $remote_script" || true; rm -f -- "$key_file"' EXIT
+          scp -o StrictHostKeyChecking=yes -i "$key_file" -P "$ssh_port" deploy/cache-images.sh "$SSH_USER@$HOST:$remote_script"
+          printf -v remote_args '%q ' "$remote_script" "$GHCR_USERNAME" "$DATABASE_IMAGE" "$API_IMAGE"
+          printf '%s' "$GHCR_TOKEN" | ssh -o StrictHostKeyChecking=yes -i "$key_file" -p "$ssh_port" "$SSH_USER@$HOST" "bash $remote_args"
+
+      - name: Upload released image security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: released-image-security
+          path: release-security/
+          if-no-files-found: warn
+
   vm:
     name: vm
+    if: ${{ github.event_name == 'push' || inputs.deployToVm }}
     needs: image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout replace script
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version && format('refs/tags/v{0}', inputs.version) || github.ref }}
 
       - name: Replace container on the target machine
         env:
@@ -81,17 +177,14 @@ jobs:
             echo "Image was pushed to GHCR. Skipping SSH replace until secrets exist."
             exit 0
           fi
-          VERSION="${{ inputs.version }}"
-          if [[ -z "$VERSION" ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          fi
-          OWNER="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
-          IMAGE="ghcr.io/${OWNER}/gym-buddy-service:v${VERSION}"
+          IMAGE="${{ needs.image.outputs.image }}@${{ needs.image.outputs.digest }}"
           mkdir -p ~/.ssh
           printf '%s\n' "$KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh_port="${PORT:-22}"
-          ssh-keyscan -p "$ssh_port" -H "$HOST" >> ~/.ssh/known_hosts
+          known_host="$HOST"
+          [[ "$ssh_port" == "22" ]] || known_host="[$HOST]:$ssh_port"
+          printf '%s ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAuLiXlbhuWwZxy0xYAVTgCJzWtGX6I1oiNog+vdxk7O\n' "$known_host" >> ~/.ssh/known_hosts
           scp -i ~/.ssh/deploy_key -P "$ssh_port" deploy/replace.sh "${USER}@${HOST}:/tmp/gym-buddy-replace.sh"
           actor_q=$(printf '%q' "$GHCR_USERNAME")
           token_q=$(printf '%q' "$GHCR_TOKEN")

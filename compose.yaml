@@ -1,5 +1,5 @@
 # Local laptop stack only. Do not run this file on the VPS.
-# VPS data plane is deploy/compose.yaml (private network, no published ports).
+# VPS data plane is deploy/compose.yaml (private network, loopback operator ports).
 # VPS API replace stays deploy/replace.sh + docker run on 127.0.0.1:8080.
 # Runbook: gym-buddy-documentation 10-Getting-started/04-Environment-and-pipeline.md
 #
@@ -21,8 +21,8 @@ services:
       DATABASE_URL: postgresql://gymbuddy:${POSTGRES_PASSWORD}@postgres:5432/gymbuddy
       REDIS_URL: redis://redis:6379
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
-      S3_ENDPOINT: http://minio:9000
-      S3_PUBLIC_ENDPOINT: http://127.0.0.1:9000
+      S3_ENDPOINT: http://storage:8333
+      S3_PUBLIC_ENDPOINT: http://127.0.0.1:8333
       S3_BUCKET: ${S3_BUCKET}
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
@@ -32,22 +32,22 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
+      storage:
         condition: service_started
-      minio-init:
-        condition: service_completed_successfully
     restart: unless-stopped
 
   postgres:
-    image: postgres:18.6
+    image: gym-buddy-postgres:18.6-secure
+    build: ./deploy/postgres
     environment:
       POSTGRES_DB: gymbuddy
       POSTGRES_USER: gymbuddy
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: --locale-provider=icu --icu-locale=en-US --locale=C.UTF-8
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_icu_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gymbuddy -d gymbuddy"]
       interval: 5s
@@ -66,52 +66,29 @@ services:
       retries: 10
     restart: unless-stopped
 
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
-    ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
-    volumes:
-      - minio_data:/data
-    restart: unless-stopped
-
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      - minio
-    environment:
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
-      S3_SECRET_KEY: ${S3_SECRET_KEY}
-      S3_BUCKET: ${S3_BUCKET}
-    entrypoint: ["/bin/sh", "-c"]
+  storage:
+    image: chrislusf/seaweedfs@sha256:ce9e796f1fe6f06968f4c04bdaf8f678dad9c8acdfef3d244133d71bfa6bf882
     command:
-      - |
-        i=0
-        until mc alias set local http://minio:9000 "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY"; do
-          i=$$((i+1))
-          [ "$$i" -gt 30 ] && exit 1
-          sleep 1
-        done
-        mc mb -p "local/$$S3_BUCKET" || true
-        cat > /tmp/cors.json << 'EOF'
-        {
-          "CORSRules": [
-            {
-              "AllowedOrigins": ["*"],
-              "AllowedMethods": ["GET", "PUT", "HEAD"],
-              "AllowedHeaders": ["*"],
-              "ExposeHeaders": ["ETag", "Content-Type"],
-              "MaxAgeSeconds": 3000
-            }
-          ]
-        }
-        EOF
-        mc cors set /tmp/cors.json "local/$$S3_BUCKET" || mc cors set "local/$$S3_BUCKET" /tmp/cors.json || true
-    restart: "no"
+      - mini
+      - -dir=/data
+      - -ip=127.0.0.1
+      - -ip.bind=0.0.0.0
+      - -webdav=false
+      - -admin.ui=false
+      - -s3.port.iceberg=0
+      - -s3.port.lance=0
+      - -s3.iam=false
+      - -master.telemetry=false
+      - -s3.allowedOrigins=http://localhost:4200,http://127.0.0.1:4200
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:?Set S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET:?Set S3_BUCKET}
+    ports:
+      - "127.0.0.1:8333:8333"
+    volumes:
+      - seaweedfs_data:/data
+    restart: unless-stopped
 
   mailhog:
     image: mailhog/mailhog:v1.0.1
@@ -122,5 +99,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
-  minio_data:
+  postgres_icu_data:
+  seaweedfs_data:

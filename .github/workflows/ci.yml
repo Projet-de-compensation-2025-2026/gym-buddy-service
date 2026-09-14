@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -50,5 +51,70 @@ jobs:
       - name: Test
         run: bash .github/scripts/ci/test.sh
 
+      - name: Require integration execution
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as ET
+          suites = [ET.parse(path).getroot() for path in pathlib.Path('target/surefire-reports').glob('TEST-*.xml')]
+          required = {'AuthIT', 'ProfilesIT', 'ConversationsIT', 'EventsIT', 'MediaIT', 'ReadinessIT', 'FixtureGeneratorIT', 'AdminCatalogIT', 'PostgresImageIT'}
+          present = {suite.get('name', '').split('.')[-1] for suite in suites}
+          assert required <= present, f'Missing integration suites: {required - present}'
+          totals = {key: sum(int(suite.get(key, 0)) for suite in suites) for key in ('tests', 'failures', 'errors', 'skipped')}
+          print(totals)
+          assert totals['tests'] > 0 and not any(totals[key] for key in ('failures', 'errors', 'skipped')), totals
+          PY
+
+      - name: Validate media gateway configuration
+        run: |
+          docker run --rm -v "$PWD/deploy/Caddyfile.example:/etc/caddy/Caddyfile:ro" \
+            caddy:2 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
       - name: Smoke (container must respond)
         run: bash .github/scripts/ci/smoke.sh
+
+      - name: Audit runtime image vulnerabilities
+        run: |
+          mkdir -p image-audit
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/image-audit:/reports" \
+            aquasec/trivy:0.74.0 image --scanners vuln --severity CRITICAL --exit-code 1 \
+            --format json --output /reports/critical.json gym-buddy-service:smoke
+
+      - name: Audit database image vulnerabilities
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/image-audit:/reports" \
+            aquasec/trivy:0.74.0 image --scanners vuln --severity CRITICAL --exit-code 1 \
+            --format json --output /reports/postgres-critical.json gym-buddy-postgres:18.6-secure
+
+      - name: Publish verified database image
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:postgres-18.6-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker tag gym-buddy-postgres:18.6-secure "$IMAGE"
+          docker push "$IMAGE"
+          DIGEST=$(docker image inspect "$IMAGE" --format '{{index .RepoDigests 0}}')
+          export IMAGE DIGEST
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          manifest = {'image': os.environ['IMAGE'], 'digest': os.environ['DIGEST'],
+                      'revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()}
+          pathlib.Path('image-audit/postgres-published.json').write_text(json.dumps(manifest, indent=2))
+          print(json.dumps(manifest))
+          PY
+
+      - name: Preserve test and runtime audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-verification
+          path: |
+            target/surefire-reports/
+            image-audit/

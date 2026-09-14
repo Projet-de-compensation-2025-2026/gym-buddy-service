@@ -20,6 +20,13 @@ RUN mvn -B -DskipTests package
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 
+ARG APP_VERSION=unknown
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.title="Gym Buddy service" \
+      org.opencontainers.image.source="https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service" \
+      org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}"
+
 RUN groupadd --system app \
     && useradd --system --gid app --no-create-home --shell /usr/sbin/nologin app
 

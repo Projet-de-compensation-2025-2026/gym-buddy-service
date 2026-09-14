@@ -42,7 +42,7 @@ class JwtTokenServiceTest {
         assertThat(claims.get("email")).isNull();
         assertThat(claims.getExpiration()).isEqualTo(Date.from(NOW.plus(JwtTokenService.ACCESS_TTL)));
         assertThat(tokens.parseAccess(issued.accessToken()))
-                .contains(new AccessClaims(user.id(), "alex", UserRole.MEMBER));
+                .contains(new AccessClaims(user.id(), "alex", UserRole.MEMBER, NOW.plus(JwtTokenService.ACCESS_TTL)));
     }
 
     @Test

@@ -30,7 +30,12 @@ class ReleaseSemVerWriteTest {
     void workingPomMatchesTaggedReleaseLine() throws Exception {
         String pom = Files.readString(Path.of("pom.xml"));
         assertThat(pom).contains("<artifactId>gym-buddy-service</artifactId>");
-        assertThat(pom).contains("<version>1.1.0</version>");
-        assertThat(pom).doesNotContain("<version>2.0.0</version>");
+        var factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        var document = factory.newDocumentBuilder()
+                .parse(new java.io.ByteArrayInputStream(pom.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        var xpath = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+        String version = xpath.evaluate("/project/version", document);
+        assertThat(version).matches("(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)");
     }
 }

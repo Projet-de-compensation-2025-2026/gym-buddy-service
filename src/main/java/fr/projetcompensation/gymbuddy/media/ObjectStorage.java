@@ -8,6 +8,10 @@ public interface ObjectStorage {
 
     URI signPut(String key, String mime, Duration ttl);
 
+    default URI signPut(String key, String mime, Duration ttl, long bytes) {
+        return signPut(key, mime, ttl);
+    }
+
     URI signGet(String key, String mime, Duration ttl);
 
     void put(String key, String mime, byte[] body);

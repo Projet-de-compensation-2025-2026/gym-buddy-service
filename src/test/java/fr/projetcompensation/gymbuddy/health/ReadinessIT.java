@@ -2,6 +2,7 @@ package fr.projetcompensation.gymbuddy.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import fr.projetcompensation.gymbuddy.support.S3TestContainer;
 import java.net.URI;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -30,15 +30,10 @@ import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 class ReadinessIT {
 
     @Container
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6");
+    static final PostgreSQLContainer POSTGRES = fr.projetcompensation.gymbuddy.support.PostgresTestContainer.create();
 
     @Container
-    static final GenericContainer<?> MINIO = new GenericContainer<>("minio/minio:RELEASE.2025-09-07T16-13-09Z")
-            .withExposedPorts(9000)
-            .withEnv("MINIO_ROOT_USER", "minioadmin")
-            .withEnv("MINIO_ROOT_PASSWORD", "minioadmin")
-            .withCommand("server", "/data")
-            .waitingFor(Wait.forListeningPort());
+    static final GenericContainer<?> STORAGE = S3TestContainer.create();
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
@@ -49,10 +44,11 @@ class ReadinessIT {
                         POSTGRES.getHost(),
                         POSTGRES.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT),
                         POSTGRES.getDatabaseName()));
-        registry.add("S3_ENDPOINT", () -> "http://" + MINIO.getHost() + ":" + MINIO.getMappedPort(9000));
+        registry.add(
+                "S3_ENDPOINT", () -> "http://" + STORAGE.getHost() + ":" + STORAGE.getMappedPort(S3TestContainer.PORT));
         registry.add("S3_BUCKET", () -> "gym-buddy");
-        registry.add("S3_ACCESS_KEY", () -> "minioadmin");
-        registry.add("S3_SECRET_KEY", () -> "minioadmin");
+        registry.add("S3_ACCESS_KEY", () -> S3TestContainer.ACCESS_KEY);
+        registry.add("S3_SECRET_KEY", () -> S3TestContainer.SECRET_KEY);
         registry.add("S3_REGION", () -> "us-east-1");
     }
 
@@ -61,12 +57,12 @@ class ReadinessIT {
 
     @BeforeAll
     static void createConfiguredBucket() {
-        URI endpoint = URI.create("http://" + MINIO.getHost() + ":" + MINIO.getMappedPort(9000));
+        URI endpoint = URI.create("http://" + STORAGE.getHost() + ":" + STORAGE.getMappedPort(S3TestContainer.PORT));
         try (S3Client client = S3Client.builder()
                 .endpointOverride(endpoint)
                 .region(Region.US_EAST_1)
-                .credentialsProvider(
-                        StaticCredentialsProvider.create(AwsBasicCredentials.create("minioadmin", "minioadmin")))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(S3TestContainer.ACCESS_KEY, S3TestContainer.SECRET_KEY)))
                 .serviceConfiguration(
                         S3Configuration.builder().pathStyleAccessEnabled(true).build())
                 .build()) {
@@ -76,7 +72,7 @@ class ReadinessIT {
     }
 
     @Test
-    void readyzReturnsOkWhenPostgresAndMinioAreReachable() {
+    void readyzReturnsOkWhenPostgresAndStorageAreReachable() {
         RestClient client = RestClient.create();
         ResponseEntity<HealthStatus> response = client.get()
                 .uri("http://127.0.0.1:" + port + "/api/v1/readyz")

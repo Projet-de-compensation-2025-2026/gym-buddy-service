@@ -9,6 +9,15 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+## [1.2.0] — 2026-09-14
+
+### Added
+
+- VPS Postgres binds `127.0.0.1:5432` only so an operator can SSH-tunnel from
+  pgAdmin. Redis and MinIO stay unpublished. Do not open UFW 5432.
+
+### Changed
+
 ## [1.1.1] — 2026-08-31
 
 ### Added
@@ -108,6 +117,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 [Unreleased]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service
 
+[1.2.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.2.0
 [1.1.1]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Projet-de-compensation-2025-2026/gym-buddy-service/releases/tag/v1.0.0

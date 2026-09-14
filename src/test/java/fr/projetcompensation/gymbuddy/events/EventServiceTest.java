@@ -79,6 +79,85 @@ class EventServiceTest {
     }
 
     @Test
+    void invalidInviteeCannotPartiallySaveEventEdits() {
+        VisibleEvent original = service.create(alex.id(), draft(null, "private", 2));
+        EventDraft edit = new EventDraft(
+                "Changed title",
+                "Changed description",
+                null,
+                "Changed place",
+                null,
+                null,
+                START.plusSeconds(3600),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(UUID.randomUUID()));
+        assertThatThrownBy(() -> service.patch(alex.id(), original.event().id(), edit))
+                .isInstanceOf(AuthException.class);
+        VisibleEvent after = service.get(alex.id(), original.event().id());
+        assertThat(after.event()).isEqualTo(original.event());
+        assertThat(after.occurrences()).isEqualTo(original.occurrences());
+        assertThat(after.inviteeIds()).isEqualTo(original.inviteeIds());
+    }
+
+    @Test
+    void eventCoverRejectsHiddenMediaAndRetainsAnUnchangedAttachment() {
+        UUID coverId = UUID.randomUUID();
+        Media cover = new Media(
+                coverId,
+                alex.id(),
+                fr.projetcompensation.gymbuddy.media.MediaKind.EVENT,
+                "image/jpeg",
+                100,
+                0,
+                fr.projetcompensation.gymbuddy.media.MediaStatus.READY,
+                "key",
+                NOW,
+                null);
+        EventDraft covered = new EventDraft(
+                "Run", null, "running", "Park", null, null, START, 60, "public", 4, null, List.of(), coverId,
+                List.of());
+        media.save(cover.hide(NOW, "policy"));
+        assertThatThrownBy(() -> service.create(alex.id(), covered)).isInstanceOf(AuthException.class);
+        media.update(cover);
+        UUID eventId = service.create(alex.id(), covered).event().id();
+        assertThat(service.patch(alex.id(), eventId, covered).event().coverMediaId())
+                .isEqualTo(coverId);
+        assertThatThrownBy(() -> service.create(alex.id(), covered)).isInstanceOf(AuthException.class);
+    }
+
+    @Test
+    void selectedRecurringOccurrenceHasItsOwnApplicationsAndCapacity() {
+        var created = service.create(alex.id(), draft("FREQ=WEEKLY;BYDAY=TU", "public", 1));
+        UUID first = created.occurrences().get(0).occurrence().id();
+        UUID second = created.occurrences().get(1).occurrence().id();
+        var application = service.apply(blake.id(), created.event().id(), second);
+        assertThat(service.get(blake.id(), created.event().id(), first).viewerApplication())
+                .isNull();
+        assertThat(service.get(blake.id(), created.event().id(), second)
+                        .viewerApplication()
+                        .application()
+                        .id())
+                .isEqualTo(application.application().id());
+        assertThat(service.get(alex.id(), created.event().id(), second).pendingApplicants())
+                .hasSize(1);
+        assertThat(service.get(alex.id(), created.event().id(), first).pendingApplicants())
+                .isEmpty();
+        service.accept(alex.id(), application.application().id());
+        assertThat(service.get(blake.id(), created.event().id(), second).remainingSeats())
+                .isZero();
+        assertThat(service.get(blake.id(), created.event().id(), first).remainingSeats())
+                .isEqualTo(1);
+        assertThatThrownBy(() -> service.get(blake.id(), created.event().id(), UUID.randomUUID()))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+    }
+
+    @Test
     void fsEvt01And02_createInstantEvent() {
         VisibleEvent created = service.create(alex.id(), draft(null, EventVisibility.PUBLIC.wireValue(), 3));
 

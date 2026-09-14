@@ -147,13 +147,21 @@ public final class EventService {
     }
 
     public VisibleEvent get(UUID callerId, UUID eventId) {
+        return get(callerId, eventId, null);
+    }
+
+    public VisibleEvent get(UUID callerId, UUID eventId, UUID occurrenceId) {
         User caller = requireActive(callerId);
         Event row = requireVisible(caller, eventId);
         extendOccurrences(row);
-        return visible(row, caller, true);
+        return visible(row, caller, true, occurrenceId);
     }
 
     public VisibleEvent patch(UUID callerId, UUID eventId, EventDraft draft) {
+        return transactions.inTransaction(() -> patchLocked(callerId, eventId, draft));
+    }
+
+    private VisibleEvent patchLocked(UUID callerId, UUID eventId, EventDraft draft) {
         User caller = requireActive(callerId);
         Event row = events.findById(eventId).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
         if (row.hidden() || row.cancelled() || !row.organizerId().equals(caller.id())) {
@@ -179,8 +187,9 @@ public final class EventService {
                 ? row.durationMin()
                 : requireRange(draft.durationMin(), "durationMin", 1, MAX_DURATION);
         List<String> tags = draft.tags() == null ? row.tags() : normalizeTags(draft.tags());
-        UUID cover =
-                draft.coverMediaId() == null ? row.coverMediaId() : requireCover(caller.id(), draft.coverMediaId());
+        UUID cover = draft.coverMediaId() == null
+                ? row.coverMediaId()
+                : requireCover(caller.id(), draft.coverMediaId(), row.id());
         Double lat = draft.lat() == null ? row.lat() : optionalCoord(draft.lat(), "lat", -90, 90);
         Double lng = draft.lng() == null ? row.lng() : optionalCoord(draft.lng(), "lng", -180, 180);
         boolean acceptedAnyone = events.applicationsForEvent(row.id()).stream()
@@ -188,9 +197,12 @@ public final class EventService {
         boolean updatedAfterAccept = row.updatedAfterAccept() || acceptedAnyone;
         Event updated = row.withDetails(
                 title, description, activity, place, lat, lng, startsAt, duration, tags, cover, updatedAfterAccept);
+        List<UUID> invitees = draft.inviteeIds() == null
+                ? null
+                : normalizeInvitees(caller.id(), row.visibility(), draft.inviteeIds());
         events.update(updated);
-        if (draft.inviteeIds() != null) {
-            events.replaceInvitees(row.id(), normalizeInvitees(caller.id(), row.visibility(), draft.inviteeIds()));
+        if (invitees != null) {
+            events.replaceInvitees(row.id(), invitees);
         }
         if (!startsAt.equals(row.startsAt())) {
             rescheduleFirst(updated);
@@ -407,6 +419,10 @@ public final class EventService {
     }
 
     private VisibleEvent visible(Event row, User caller, boolean detail) {
+        return visible(row, caller, detail, null);
+    }
+
+    private VisibleEvent visible(Event row, User caller, boolean detail, UUID selectedOccurrenceId) {
         User organizer = users.findById(row.organizerId()).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
         Profile organizerProfile =
                 profiles.findByUserId(organizer.id()).orElse(Profile.created(organizer.id(), organizer.handle()));
@@ -431,12 +447,18 @@ public final class EventService {
             }
         }
         occurrences.sort(Comparator.comparing(item -> item.occurrence().startsAt()));
-        int remainingSeats = nextOpen == null ? 0 : nextOpen.remainingSeats();
-        VisibleApplication viewerApplication = viewerApplication(row, caller.id(), nextOpen);
+        VisibleOccurrence selected = selectedOccurrenceId == null
+                ? nextOpen
+                : occurrences.stream()
+                        .filter(item -> item.occurrence().id().equals(selectedOccurrenceId))
+                        .findFirst()
+                        .orElseThrow(() -> AuthException.notFound(NOT_FOUND));
+        int remainingSeats = selected == null ? 0 : selected.remainingSeats();
+        VisibleApplication viewerApplication = viewerApplication(row, caller.id(), selected);
         List<VisibleApplicant> pending = List.of();
         List<UUID> invitees = List.of();
         if (detail && row.organizerId().equals(caller.id())) {
-            pending = rankPending(row, occurrences);
+            pending = rankPending(row, selected);
             if (row.visibility() == EventVisibility.PRIVATE) {
                 invitees = events.inviteeIds(row.id());
             }
@@ -448,17 +470,13 @@ public final class EventService {
                 row, organizer, organizerProfile, occurrences, remainingSeats, viewerApplication, pending, invitees);
     }
 
-    private List<VisibleApplicant> rankPending(Event event, List<VisibleOccurrence> occurrences) {
-        Instant now = clock.instant();
-        UUID occurrenceId = occurrences.stream()
-                .filter(item -> !item.occurrence().cancelled()
-                        && item.occurrence().startsAt().isAfter(now))
-                .map(item -> item.occurrence().id())
-                .findFirst()
-                .orElse(null);
-        if (occurrenceId == null) {
+    private List<VisibleApplicant> rankPending(Event event, VisibleOccurrence selected) {
+        if (selected == null
+                || selected.occurrence().cancelled()
+                || !selected.occurrence().startsAt().isAfter(clock.instant())) {
             return List.of();
         }
+        UUID occurrenceId = selected.occurrence().id();
         List<VisibleApplicant> ranked = new ArrayList<>();
         for (EventApplication application : events.pendingForOccurrence(occurrenceId)) {
             User applicant = users.findById(application.applicantId()).orElse(null);
@@ -506,6 +524,10 @@ public final class EventService {
     }
 
     private UUID requireCover(UUID ownerId, UUID mediaId) {
+        return requireCover(ownerId, mediaId, null);
+    }
+
+    private UUID requireCover(UUID ownerId, UUID mediaId, UUID allowedEventId) {
         if (mediaId == null) {
             return null;
         }
@@ -516,13 +538,16 @@ public final class EventService {
                 || row.kind() != MediaKind.EVENT
                 || row.status() != MediaStatus.READY
                 || row.deletedAt() != null
+                || row.hidden()
                 || row.mime() == null
                 || !row.mime().startsWith("image/")) {
             throw AuthException.validation("media is not allowed", new FieldIssue("coverMediaId", "invalid"));
         }
-        events.findByCoverMediaId(mediaId).ifPresent(existing -> {
-            throw AuthException.validation("media is not allowed", new FieldIssue("coverMediaId", "attached"));
-        });
+        events.findByCoverMediaId(mediaId)
+                .filter(existing -> !existing.id().equals(allowedEventId))
+                .ifPresent(existing -> {
+                    throw AuthException.validation("media is not allowed", new FieldIssue("coverMediaId", "attached"));
+                });
         return mediaId;
     }
 

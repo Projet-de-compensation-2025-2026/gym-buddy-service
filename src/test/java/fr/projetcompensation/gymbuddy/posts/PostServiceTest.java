@@ -66,6 +66,14 @@ class PostServiceTest {
     }
 
     @Test
+    void hiddenMediaCannotBeAttachedToAPost() {
+        Media image = readyPostImage(alex);
+        media.update(image.hide(NOW, "policy"));
+        assertThatThrownBy(() -> service.create(alex.id(), "caption", "public", List.of(image.id())))
+                .isInstanceOf(AuthException.class);
+    }
+
+    @Test
     void fsPost01_createTextPost() {
         VisiblePost created = service.create(alex.id(), "Crushed leg day.", "friends", List.of());
 

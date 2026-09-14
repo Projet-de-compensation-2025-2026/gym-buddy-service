@@ -47,6 +47,22 @@ class MatchingServiceTest {
     }
 
     @Test
+    void nightlyRunAddsLaterOptInsWithoutReassigningExistingPairs() {
+        service.optIn(alex.userId());
+        service.optIn(blake.userId());
+        ProposedMatch original = service.assignCurrentWeek().getFirst();
+        MemberSnapshot dana = member("dana", List.of("running"), 1, "07:00", "09:00");
+        MemberSnapshot eli = member("eli", List.of("running"), 1, "07:00", "09:00");
+        service.optIn(dana.userId());
+        service.optIn(eli.userId());
+        assertThat(service.assignCurrentWeek()).hasSize(1);
+        assertThat(service.me(alex.userId()).match()).isEqualTo(original);
+        assertThat(service.me(dana.userId()).pair().userId()).isEqualTo(eli.userId());
+        assertThat(service.assignCurrentWeek()).isEmpty();
+        assertThat(store.pairs).hasSize(2);
+    }
+
+    @Test
     void fsMatch01_optInAndOutAreIdempotent() {
         service.optIn(alex.userId());
         service.optIn(alex.userId());
@@ -198,9 +214,8 @@ class MatchingServiceTest {
         }
 
         @Override
-        public void replacePairs(LocalDate weekStart, List<ProposedMatch> matches) {
+        public void appendPairs(LocalDate weekStart, List<ProposedMatch> matches) {
             pairWeek = weekStart;
-            pairs.clear();
             pairs.addAll(matches);
         }
 
@@ -210,11 +225,6 @@ class MatchingServiceTest {
                     .filter(match ->
                             match.userA().equals(userId) || match.userB().equals(userId))
                     .findFirst();
-        }
-
-        @Override
-        public boolean hasPairs(LocalDate weekStart) {
-            return pairWeek != null && pairWeek.equals(weekStart) && !pairs.isEmpty();
         }
     }
 }

@@ -1,0 +1,35 @@
+# Merge this media handler into the existing site; keep its TLS and access policy.
+# The path must match S3_BUCKET. Never strip the bucket prefix or rewrite Host:
+# both are part of the signature generated using S3_PUBLIC_ENDPOINT.
+vps-c39cdf03.vps.ovh.net {
+    @media_preflight {
+        path_regexp ^/gym-buddy/.+
+        method OPTIONS
+        header Origin https://projet-de-compensation-2025-2026.github.io
+    }
+    handle @media_preflight {
+        header Access-Control-Allow-Origin https://projet-de-compensation-2025-2026.github.io
+        header Access-Control-Allow-Methods "GET, HEAD, PUT, OPTIONS"
+        header Access-Control-Allow-Headers Content-Type
+        header Access-Control-Max-Age 600
+        header Vary Origin
+        respond "" 204
+    }
+
+    @media {
+        path_regexp ^/gym-buddy/.+
+        method GET HEAD PUT
+    }
+    handle @media {
+        reverse_proxy 127.0.0.1:8333 {
+            header_down Access-Control-Allow-Origin https://projet-de-compensation-2025-2026.github.io
+            header_down Access-Control-Expose-Headers ETag
+            header_down Vary Origin
+        }
+    }
+
+    # No bucket-listing root, SeaweedFS console, or administrative S3 route is proxied.
+    handle {
+        reverse_proxy 127.0.0.1:8080
+    }
+}

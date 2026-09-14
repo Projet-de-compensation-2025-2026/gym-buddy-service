@@ -16,8 +16,18 @@ public final class ProfileService {
     private final UserRepository users;
     private final ProfileRepository profiles;
     private final FriendshipQueries friendships;
+    private final fr.projetcompensation.gymbuddy.media.MediaRepository media;
 
     public ProfileService(UserRepository users, ProfileRepository profiles, FriendshipQueries friendships) {
+        this(users, profiles, friendships, null);
+    }
+
+    public ProfileService(
+            UserRepository users,
+            ProfileRepository profiles,
+            FriendshipQueries friendships,
+            fr.projetcompensation.gymbuddy.media.MediaRepository media) {
+        this.media = media;
         this.users = users;
         this.profiles = profiles;
         this.friendships = friendships;
@@ -46,9 +56,25 @@ public final class ProfileService {
     }
 
     public VisibleProfile patchMe(UUID viewerId, ProfilePatch patch) {
+        return users.withAccountLock(viewerId, () -> patchMeLocked(viewerId, patch));
+    }
+
+    private VisibleProfile patchMeLocked(UUID viewerId, ProfilePatch patch) {
         User owner = requireActive(viewerId);
         Profile current = profiles.findByUserId(owner.id()).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
         ProfileRules.validate(patch);
+        if (patch.avatarSet() && patch.avatarMediaId() != null) {
+            var avatar =
+                    media == null ? null : media.findById(patch.avatarMediaId()).orElse(null);
+            if (avatar == null
+                    || !avatar.ownerId().equals(viewerId)
+                    || avatar.kind() != fr.projetcompensation.gymbuddy.media.MediaKind.AVATAR
+                    || avatar.status() != fr.projetcompensation.gymbuddy.media.MediaStatus.READY
+                    || avatar.deletedAt() != null
+                    || avatar.hidden()) {
+                throw AuthException.validation("avatar is not allowed", new FieldIssue("avatarMediaId", "invalid"));
+            }
+        }
         User updatedUser = owner;
         if (patch.handle() != null
                 && !patch.handle().isBlank()

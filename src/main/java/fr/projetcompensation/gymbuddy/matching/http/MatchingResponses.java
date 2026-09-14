@@ -38,7 +38,7 @@ final class MatchingResponses {
                 OffsetDateTime.ofInstant(match.startsAt(), ZoneOffset.UTC),
                 match.durationMin(),
                 1,
-                MatchingDraftEvent.VisibilityEnum.FRIENDS);
+                MatchingDraftEvent.VisibilityEnum.PRIVATE);
         event.setId(match.eventId());
         return event;
     }

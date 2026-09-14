@@ -21,6 +21,36 @@ public class JdbcUserRepository implements UserRepository {
     }
 
     @Override
+    public <T> T withAdministrationLock(java.util.function.Supplier<T> work) {
+        var manager = new org.springframework.jdbc.support.JdbcTransactionManager(jdbc.getDataSource());
+        return new org.springframework.transaction.support.TransactionTemplate(manager).execute(status -> {
+            // Transaction-scoped lock also serializes changes from other service instances.
+            jdbc.query("SELECT pg_advisory_xact_lock(718220260914::bigint)", rs -> {
+                return null;
+            });
+            return work.get();
+        });
+    }
+
+    @Override
+    public boolean hasOtherActiveAdmin(UUID userId) {
+        Long count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM users WHERE role = 'admin' AND status = 'active' AND id <> ?",
+                Long.class,
+                userId);
+        return count != null && count > 0;
+    }
+
+    @Override
+    public <T> T withAccountLock(UUID userId, java.util.function.Supplier<T> work) {
+        var manager = new org.springframework.jdbc.support.JdbcTransactionManager(jdbc.getDataSource());
+        return new org.springframework.transaction.support.TransactionTemplate(manager).execute(status -> {
+            jdbc.query("SELECT id FROM users WHERE id = ? FOR UPDATE", (rs, row) -> rs.getObject(1), userId);
+            return work.get();
+        });
+    }
+
+    @Override
     public Optional<User> findById(UUID id) {
         return jdbc
                 .query(
