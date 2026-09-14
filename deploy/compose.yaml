@@ -1,7 +1,7 @@
 # VPS data plane only. Do not use this file on a laptop.
 # Laptop stack stays the repo-root compose.yaml (127.0.0.1 published ports).
 #
-# Private Docker network. Redis and MinIO stay unpublished.
+# Private Docker network. Redis stays unpublished; MinIO S3 binds loopback for Caddy.
 # Postgres binds 127.0.0.1:5432 only (operator SSH tunnel / pgAdmin).
 # Do not publish 0.0.0.0:5432 and do not open UFW 5432.
 # The API is not in this file: Release → Deploy still runs deploy/replace.sh,
@@ -48,6 +48,9 @@ services:
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+      MINIO_API_CORS_ALLOW_ORIGIN: https://projet-de-compensation-2025-2026.github.io
+    ports:
+      - "127.0.0.1:9000:9000"
     volumes:
       - minio_data:/data
     restart: unless-stopped

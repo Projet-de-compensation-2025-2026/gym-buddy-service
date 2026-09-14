@@ -1,12 +1,12 @@
 # VPS data plane (operator runbook)
 
-Apply this on the OVH VPS (`vps-c39cdf03.vps.ovh.net`). This cloud checkout cannot SSH there.
+Apply this on the OVH VPS (`vps-c39cdf03.vps.ovh.net`) through the authorized operator SSH account.
 
 This is **not** the laptop stack. Repo-root `compose.yaml` stays local (`127.0.0.1` published ports). Do not run that file on the VPS.
 
-Public story stays **Caddy → `127.0.0.1:8080`**. The API is not published on `0.0.0.0`. Redis and MinIO stay unpublished. Postgres listens on **`127.0.0.1:5432` only** so an operator can SSH-tunnel from pgAdmin. It is not on `0.0.0.0` and must not be allowed in UFW.
+HTTPS enters through Caddy. API requests reach `127.0.0.1:8080`; signed object requests reach MinIO on `127.0.0.1:9000`. Redis and the MinIO console are unpublished. Postgres listens on `127.0.0.1:5432` for operator SSH tunnels. Do not open these internal ports in the firewall.
 
-Release → Deploy still replaces the API with `deploy/replace.sh` + GHCR. Stay on application **0.1.x** (do not tag `0.3.0`).
+Release and Deploy replace the API with a versioned GHCR image through `deploy/replace.sh`.
 
 ## Files on the VPS
 
@@ -32,6 +32,7 @@ Do not put JWT material, database passwords, or object-store secrets in git or i
 | `REDIS_URL` | API via `replace.sh` | Cache / refresh denylist. Host must be `redis`. |
 | `JWT_ACCESS_SECRET` | API via `replace.sh` | HS256 signing secret for access tokens. |
 | `S3_ENDPOINT` | API + MinIO | S3-compatible API URL. Use `http://minio:9000` on the Docker network. |
+| `S3_PUBLIC_ENDPOINT` | API presigner | Browser-reachable HTTPS origin, e.g. `https://vps-c39cdf03.vps.ovh.net`. No bucket/path suffix. |
 | `S3_BUCKET` | API + `minio-init` | Bucket name. |
 | `S3_ACCESS_KEY` | API + MinIO | Object-store access key. |
 | `S3_SECRET_KEY` | API + MinIO | Object-store secret key. |
@@ -52,6 +53,14 @@ Do not put JWT material, database passwords, or object-store secrets in git or i
 | `DEPLOY_ENV_FILE` | `/etc/gym-buddy/vps.env` | Env file on the VPS. |
 
 GitHub Actions secrets stay the existing names only: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, optional `DEPLOY_PORT`. Those are SSH, not application secrets.
+
+## Browser uploads and downloads
+
+Use separate internal and public endpoints: the API talks to Docker's `http://minio:9000`, while signed browser URLs use `S3_PUBLIC_ENDPOINT`. Docker hostnames cannot be resolved by a visitor's browser.
+
+Merge the handlers in [deploy/Caddyfile.example](../deploy/Caddyfile.example) into the existing HTTPS site, preserving its TLS and access policy. Replace `/gym-buddy/*` if the configured bucket has a different name. Preserve the complete request path and `Host`; rewriting either invalidates the S3 signature. Only object `GET`, `HEAD`, `PUT` and Pages-origin CORS preflight are routed. Bucket listing, MinIO administration, console access and anonymous bucket policies are unnecessary.
+
+Before applying, back up the existing Caddy configuration, Compose file and protected environment file. Keep the current named MinIO volume and image digest; apply only the loopback port/CORS changes to the MinIO service, then validate and reload Caddy. Forward `S3_PUBLIC_ENDPOINT` when replacing the API. Verify unsigned object access is denied, Pages preflight permits the exact origin, and a fresh signed image upload/download succeeds in the browser. Do not log signed query strings. Rollback restores the saved configuration and previous API image without deleting any data volume.
 
 ## 1. Create the env file
 

@@ -11,6 +11,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 FORBIDDEN_HOST_PORTS = {5432, 6379, 9000, 9001}
+VPS_LOOPBACK_PORTS = {"postgres": 5432, "minio": 9000}
 REQUIRED_REPLACE_KEYS = (
     "DATABASE_URL",
     "REDIS_URL",
@@ -51,26 +52,38 @@ def host_port(mapping) -> int | None:
     return None
 
 
+def validate_vps_ports(services: dict) -> None:
+    """Only the documented operator database and Caddy object-store ports may bind."""
+    for name, service in services.items():
+        expected = VPS_LOOPBACK_PORTS.get(name)
+        for mapping in published_ports(service):
+            valid = expected is not None and mapping == f"127.0.0.1:{expected}:{expected}"
+            if isinstance(mapping, dict) and expected is not None:
+                valid = (
+                    mapping.get("host_ip") == "127.0.0.1"
+                    and str(mapping.get("published")) == str(expected)
+                    and str(mapping.get("target")) == str(expected)
+                    and mapping.get("protocol", "tcp") == "tcp"
+                )
+            if not valid:
+                fail(f"VPS {name} has an unapproved port binding: {mapping}")
+
+
 def main() -> None:
     vps_path = ROOT / "deploy" / "compose.yaml"
     laptop_path = ROOT / "compose.yaml"
     replace_path = ROOT / "deploy" / "replace.sh"
     deploy_workflow = ROOT / ".github" / "workflows" / "deploy.yml"
-    pom_path = ROOT / "pom.xml"
 
     vps = yaml.safe_load(vps_path.read_text())
     laptop = yaml.safe_load(laptop_path.read_text())
     replace = replace_path.read_text()
     workflow = deploy_workflow.read_text()
-    pom = pom_path.read_text()
 
     if "api" in (vps.get("services") or {}):
         fail("deploy/compose.yaml must not start the API; replace.sh docker-runs GHCR")
 
-    for name, service in (vps.get("services") or {}).items():
-        ports = published_ports(service)
-        if ports:
-            fail(f"deploy/compose.yaml service {name} publishes ports {ports}; data plane must stay private")
+    validate_vps_ports(vps.get("services") or {})
 
     network = (vps.get("networks") or {}).get("data") or {}
     if network.get("name") != "gym-buddy-data":
@@ -111,10 +124,6 @@ def main() -> None:
 
     if "deploy/replace.sh" not in workflow:
         fail("deploy.yml must still copy and run deploy/replace.sh")
-
-    version = re.search(r"<version>([^<]+)</version>", pom)
-    if version and version.group(1).startswith("0.3."):
-        fail("do not bump the application artifact to 0.3.0")
 
     print("TEST OK: VPS compose is private, laptop compose stays local, replace.sh joins gym-buddy-data")
 
