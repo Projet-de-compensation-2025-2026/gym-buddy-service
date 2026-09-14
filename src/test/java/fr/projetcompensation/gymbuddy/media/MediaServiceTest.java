@@ -72,6 +72,129 @@ class MediaServiceTest {
     }
 
     @Test
+    void finalizationBeforeOrphanLockCannotDeleteReadyMedia() {
+        byte[] image = jpeg();
+        CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", image.length);
+        Media pending = media.findById(upload.mediaId()).orElseThrow();
+        clock.set(NOW.plus(Duration.ofHours(2)));
+        UserRepository lockedUsers = org.mockito.Mockito.spy(users);
+        org.mockito.Mockito.doAnswer(invocation -> {
+                    // A concurrent ingest committed while cleanup waited to acquire this account.
+                    media.update(pending.processed(image.length, 0));
+                    storage.put(pending.processedKey(), "image/jpeg", image);
+                    return invocation.callRealMethod();
+                })
+                .when(lockedUsers)
+                .withAccountLock(org.mockito.ArgumentMatchers.eq(alex.id()), org.mockito.ArgumentMatchers.any());
+        service = new MediaService(media, storage, lockedUsers, profiles, friends, clock);
+        service.sweep();
+        assertThat(media.findById(pending.id()).orElseThrow().ready()).isTrue();
+        assertThat(storage.exists(pending.processedKey())).isTrue();
+    }
+
+    @Test
+    void deletionDuringProcessingCannotRestoreMedia() {
+        byte[] image = jpeg();
+        CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", image.length);
+        Media pending = media.findById(upload.mediaId()).orElseThrow();
+        storage.put(pending.objectKey(), "image/jpeg", image);
+        storage.onProcessedPut = () -> service.delete(alex.id(), pending.id());
+        service.sweep();
+        assertThat(media.findById(pending.id()).orElseThrow().deletedAt()).isEqualTo(NOW);
+        assertThat(storage.exists(pending.processedKey())).isFalse();
+        assertThatThrownBy(() -> service.url(alex.id(), pending.id())).isInstanceOf(AuthException.class);
+    }
+
+    @Test
+    void moderationDuringProcessingRemainsHidden() {
+        byte[] image = jpeg();
+        CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", image.length);
+        Media pending = media.findById(upload.mediaId()).orElseThrow();
+        storage.put(pending.objectKey(), "image/jpeg", image);
+        storage.onProcessedPut =
+                () -> media.update(media.findById(pending.id()).orElseThrow().hide(NOW, "review"));
+        service.sweep();
+        Media ready = media.findById(pending.id()).orElseThrow();
+        assertThat(ready.ready()).isTrue();
+        assertThat(ready.hidden()).isTrue();
+        assertThatThrownBy(() -> service.url(alex.id(), pending.id())).isInstanceOf(AuthException.class);
+    }
+
+    @Test
+    void processedImageCannotBeReplacedUsingTheUploadUrl() {
+        byte[] image = jpeg();
+        CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", image.length);
+        Media pending = media.findById(upload.mediaId()).orElseThrow();
+        storage.put(pending.objectKey(), "image/jpeg", image);
+        service.sweep();
+        Media ready = media.findById(pending.id()).orElseThrow();
+        byte[] sanitized = storage.get(ready.objectKey()).orElseThrow();
+        assertThat(ready.objectKey()).isNotEqualTo(pending.objectKey());
+        storage.put(pending.objectKey(), "image/jpeg", new byte[] {1, 2, 3});
+        assertThat(storage.get(ready.objectKey()).orElseThrow()).isEqualTo(sanitized);
+        assertThat(service.url(alex.id(), ready.id()).url().toString()).contains("processed/");
+    }
+
+    @Test
+    void mismatchedDeclaredSizeRejectsAndDeletesObject() {
+        byte[] image = jpeg();
+        CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", 1);
+        Media pending = media.findById(upload.mediaId()).orElseThrow();
+        storage.put(pending.objectKey(), "image/jpeg", image);
+        service.sweep();
+        assertThat(media.findById(pending.id()).orElseThrow().status()).isEqualTo(MediaStatus.REJECTED);
+        assertThat(storage.get(pending.objectKey())).isEmpty();
+    }
+
+    @Test
+    void rejectedUploadKeepsReservationUntilReplayWindowAndCleanupPass() {
+        UUID id = UUID.randomUUID();
+        Media rejected = new Media(
+                id,
+                alex.id(),
+                MediaKind.AVATAR,
+                "image/jpeg",
+                MediaRules.QUOTA_BYTES,
+                0,
+                MediaStatus.REJECTED,
+                Media.originalKey(alex.id(), id),
+                NOW,
+                null);
+        media.save(rejected);
+        storage.put(rejected.objectKey(), "image/jpeg", new byte[] {1, 2, 3});
+        assertThatThrownBy(() -> service.create(alex.id(), "avatar", "image/jpeg", 100))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.QUOTA_EXCEEDED));
+        clock.set(NOW.plus(MediaService.PENDING_ORPHAN).plusSeconds(1));
+        service.sweep();
+        assertThat(storage.exists(rejected.objectKey())).isFalse();
+        assertThat(service.create(alex.id(), "avatar", "image/jpeg", 100)).isNotNull();
+    }
+
+    @Test
+    void deletedMediaConsumesQuotaUntilItsObjectsArePurged() {
+        UUID id = UUID.randomUUID();
+        media.save(new Media(
+                id,
+                alex.id(),
+                MediaKind.AVATAR,
+                "image/jpeg",
+                MediaRules.QUOTA_BYTES,
+                0,
+                MediaStatus.READY,
+                "processed/full",
+                NOW,
+                null));
+        service.delete(alex.id(), id);
+        assertThatThrownBy(() -> service.create(alex.id(), "avatar", "image/jpeg", 100))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.QUOTA_EXCEEDED));
+        clock.set(NOW.plus(MediaService.OBJECT_GRACE).plusSeconds(1));
+        service.sweep();
+        assertThat(service.create(alex.id(), "avatar", "image/jpeg", 100)).isNotNull();
+    }
+
+    @Test
     void fsMed05_quotaExceededWhenUserAlreadyAt1GiB() {
         media.save(new Media(
                 UUID.randomUUID(),
@@ -324,6 +447,7 @@ class MediaServiceTest {
 
     private static final class InMemoryStorage implements ObjectStorage {
         private final Map<String, byte[]> objects = new ConcurrentHashMap<>();
+        private Runnable onProcessedPut;
 
         @Override
         public URI signPut(String key, String mime, Duration ttl) {
@@ -338,6 +462,11 @@ class MediaServiceTest {
         @Override
         public void put(String key, String mime, byte[] body) {
             objects.put(key, body);
+            if (key.startsWith("processed/") && onProcessedPut != null) {
+                Runnable action = onProcessedPut;
+                onProcessedPut = null;
+                action.run();
+            }
         }
 
         @Override
@@ -358,6 +487,21 @@ class MediaServiceTest {
 
     private static final class InMemoryMedia implements MediaRepository {
         private final Map<UUID, Media> store = new LinkedHashMap<>();
+        private final Set<UUID> uploadCleaned = new java.util.HashSet<>();
+
+        @Override
+        public List<Media> findUploadCleanupCandidates(Instant cutoff) {
+            return store.values().stream()
+                    .filter(row -> (row.status() == MediaStatus.READY || row.status() == MediaStatus.REJECTED)
+                            && row.createdAt().isBefore(cutoff)
+                            && !uploadCleaned.contains(row.id()))
+                    .toList();
+        }
+
+        @Override
+        public void markUploadCleaned(UUID id, Instant at) {
+            uploadCleaned.add(id);
+        }
 
         @Override
         public void save(Media row) {
@@ -382,7 +526,8 @@ class MediaServiceTest {
         @Override
         public long usedBytes(UUID ownerId) {
             return store.values().stream()
-                    .filter(row -> row.ownerId().equals(ownerId) && row.deletedAt() == null)
+                    .filter(row -> row.ownerId().equals(ownerId)
+                            && (row.status() != MediaStatus.REJECTED || !uploadCleaned.contains(row.id())))
                     .mapToLong(row -> row.bytes() + row.variantBytes())
                     .sum();
         }

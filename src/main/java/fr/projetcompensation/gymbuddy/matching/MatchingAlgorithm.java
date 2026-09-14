@@ -78,7 +78,7 @@ public final class MatchingAlgorithm {
                     edge.right(),
                     edge.weight(),
                     edge.activity(),
-                    WindowOverlap.midpointInstant(weekStart, edge.overlap()),
+                    WindowOverlap.startInstant(weekStart, edge.overlap()),
                     edge.overlap().durationMinCapped(),
                     weekStart,
                     null));

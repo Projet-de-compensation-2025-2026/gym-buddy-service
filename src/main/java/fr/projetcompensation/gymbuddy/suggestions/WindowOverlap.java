@@ -48,14 +48,10 @@ public final class WindowOverlap {
         return Optional.ofNullable(best);
     }
 
-    public static LocalDateTime midpointUtc(LocalDate weekMonday, Overlap overlap) {
+    public static java.time.Instant startInstant(LocalDate weekMonday, Overlap overlap) {
         LocalDate day = weekMonday.plusDays(daysFromMonday(overlap.weekday()));
-        LocalTime mid = LocalTime.ofSecondOfDay((overlap.startMinutes() * 60L + overlap.endMinutes() * 60L) / 2);
-        return LocalDateTime.of(day, mid);
-    }
-
-    public static java.time.Instant midpointInstant(LocalDate weekMonday, Overlap overlap) {
-        return midpointUtc(weekMonday, overlap).toInstant(ZoneOffset.UTC);
+        LocalTime start = LocalTime.ofSecondOfDay(overlap.startMinutes() * 60L);
+        return LocalDateTime.of(day, start).toInstant(ZoneOffset.UTC);
     }
 
     public static long daysFromMonday(int weekdaySundayZero) {

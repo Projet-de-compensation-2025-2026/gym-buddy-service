@@ -84,7 +84,7 @@ public class JdbcMediaRepository implements MediaRepository {
         Long used = jdbc.queryForObject("""
                 SELECT COALESCE(SUM(bytes + variant_bytes), 0)
                 FROM media
-                WHERE owner_id = ? AND deleted_at IS NULL
+                WHERE owner_id = ? AND (status <> 'rejected' OR upload_cleaned_at IS NULL)
                 """, Long.class, ownerId);
         return used == null ? 0L : used;
     }
@@ -100,6 +100,20 @@ public class JdbcMediaRepository implements MediaRepository {
     @Override
     public List<Media> findPending() {
         return jdbc.query(SELECT + " WHERE status = 'pending' AND deleted_at IS NULL", this::map);
+    }
+
+    @Override
+    public List<Media> findUploadCleanupCandidates(Instant cutoff) {
+        return jdbc.query(
+                SELECT
+                        + " WHERE status IN ('ready', 'rejected') AND upload_cleaned_at IS NULL AND created_at < ? ORDER BY created_at LIMIT 200",
+                this::map,
+                Timestamp.from(cutoff));
+    }
+
+    @Override
+    public void markUploadCleaned(UUID id, Instant at) {
+        jdbc.update("UPDATE media SET upload_cleaned_at = ? WHERE id = ?", Timestamp.from(at), id);
     }
 
     @Override

@@ -61,8 +61,7 @@ public class JdbcMatchingStore implements MatchingStore {
     }
 
     @Override
-    public void replacePairs(LocalDate weekStart, List<ProposedMatch> matches) {
-        jdbc.update("DELETE FROM matching_pairs WHERE week_start = ?", Date.valueOf(weekStart));
+    public void appendPairs(LocalDate weekStart, List<ProposedMatch> matches) {
         for (ProposedMatch match : matches) {
             jdbc.update(
                     """
@@ -104,9 +103,11 @@ public class JdbcMatchingStore implements MatchingStore {
     }
 
     @Override
-    public boolean hasPairs(LocalDate weekStart) {
-        Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM matching_pairs WHERE week_start = ?", Integer.class, Date.valueOf(weekStart));
-        return count != null && count > 0;
+    public <T> T withWeekLock(LocalDate weekStart, java.util.function.Supplier<T> work) {
+        var manager = new org.springframework.jdbc.support.JdbcTransactionManager(jdbc.getDataSource());
+        return new org.springframework.transaction.support.TransactionTemplate(manager).execute(status -> {
+            jdbc.execute("SELECT pg_advisory_xact_lock(" + (718220260915L + weekStart.toEpochDay()) + ")");
+            return work.get();
+        });
     }
 }

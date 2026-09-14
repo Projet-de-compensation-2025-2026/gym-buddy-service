@@ -1,8 +1,8 @@
 package fr.projetcompensation.gymbuddy.fixtures;
 
 /**
- * Default order of magnitude from 07-Test-fixtures.md. Integration tests use
- * {@link #tiny()} (tens of rows), never the 3 000-user demo set.
+ * Default order of magnitude from 07-Test-fixtures.md. Integration tests exercise
+ * both {@link #tiny()} and a bounded 1 000-user data set in disposable databases.
  */
 public record FixtureMagnitude(
         int users, int friendships, int posts, int comments, int events, int applications, int messages, int media) {

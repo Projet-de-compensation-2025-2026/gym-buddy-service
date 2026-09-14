@@ -22,8 +22,8 @@ import org.springframework.context.annotation.Configuration;
 public class MessagingConfiguration {
 
     @Bean
-    MessagingSessionRegistry messagingSessionRegistry() {
-        return new MessagingSessionRegistry();
+    MessagingSessionRegistry messagingSessionRegistry(ObjectProvider<UserRepository> users, Clock clock) {
+        return new MessagingSessionRegistry(users.getIfAvailable(), clock);
     }
 
     @Bean(destroyMethod = "close")

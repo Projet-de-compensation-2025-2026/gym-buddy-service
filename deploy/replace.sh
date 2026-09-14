@@ -93,7 +93,7 @@ if ! docker network inspect "$NETWORK" >/dev/null 2>&1; then
 fi
 
 optional_env=()
-for key in GYM_BUDDY_BOOTSTRAP_STAFF DEMO_ADMIN_PASSWORD DEMO_MOD_PASSWORD; do
+for key in S3_PUBLIC_ENDPOINT GYM_BUDDY_BOOTSTRAP_STAFF DEMO_ADMIN_PASSWORD DEMO_MOD_PASSWORD; do
   if [[ -n "${!key:-}" ]]; then
     optional_env+=(-e "${key}=${!key}")
   fi

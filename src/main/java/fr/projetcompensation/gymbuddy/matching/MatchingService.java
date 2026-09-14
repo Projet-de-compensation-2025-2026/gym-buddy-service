@@ -45,6 +45,7 @@ public final class MatchingService {
 
     public MatchingState me(UUID userId) {
         requireActive(userId);
+        MemberSnapshot viewer = graph.requireMember(userId);
         LocalDate week = IsoWeek.mondayUtc(clock.instant());
         boolean opted = store.optedIn(userId, week);
         ProposedMatch match = store.pairFor(userId, week).orElse(null);
@@ -52,6 +53,18 @@ public final class MatchingService {
         if (match != null) {
             UUID other = match.userA().equals(userId) ? match.userB() : match.userA();
             pair = graph.membersByIds(List.of(other)).stream().findFirst().orElse(null);
+            boolean friends = graph.acceptedFriendIds(userId).contains(other);
+            if (pair == null
+                    || !pair.active()
+                    || (!friends
+                            && (viewer.visibility() != fr.projetcompensation.gymbuddy.profiles.ProfileVisibility.PUBLIC
+                                    || pair.visibility()
+                                            != fr.projetcompensation.gymbuddy.profiles.ProfileVisibility.PUBLIC))
+                    || graph.blockedIds(userId).contains(other)
+                    || graph.blockedIds(other).contains(userId)) {
+                pair = null;
+                match = null;
+            }
         }
         return new MatchingState(opted, week, pair, match);
     }
@@ -59,12 +72,14 @@ public final class MatchingService {
     public List<ProposedMatch> assignCurrentWeek() {
         Instant now = clock.instant();
         LocalDate week = IsoWeek.mondayUtc(now);
-        if (store.hasPairs(week)) {
-            return List.of();
-        }
+        return store.withWeekLock(week, () -> assignUnmatched(week));
+    }
+
+    private List<ProposedMatch> assignUnmatched(LocalDate week) {
         List<MatchingOptIn> optIns = store.listOptIns(week);
         List<MatchingMember> members = new ArrayList<>();
         for (MatchingOptIn optIn : optIns) {
+            if (store.pairFor(optIn.userId(), week).isPresent()) continue;
             MemberSnapshot snapshot = graph.membersByIds(List.of(optIn.userId())).stream()
                     .findFirst()
                     .orElse(null);
@@ -88,7 +103,7 @@ public final class MatchingService {
         for (ProposedMatch match : matches) {
             withEvents.add(attachDraftEvent(match, members));
         }
-        store.replacePairs(week, withEvents);
+        store.appendPairs(week, withEvents);
         return List.copyOf(withEvents);
     }
 
@@ -111,28 +126,24 @@ public final class MatchingService {
                         && !organizer.city().isBlank()
                 ? organizer.city()
                 : "Gym";
-        try {
-            VisibleEvent created = events.create(
-                    future.left(),
-                    new EventDraft(
-                            "Weekly gym match",
-                            "Proposed session from weekly matching. You still accept.",
-                            future.activity(),
-                            place,
-                            organizer == null ? null : organizer.lat(),
-                            organizer == null ? null : organizer.lng(),
-                            startsAt,
-                            future.durationMin(),
-                            "friends",
-                            1,
-                            null,
-                            List.of(),
-                            null,
-                            List.of()));
-            return future.withEventId(created.event().id());
-        } catch (RuntimeException ignored) {
-            return future;
-        }
+        VisibleEvent created = events.create(
+                future.left(),
+                new EventDraft(
+                        "Weekly gym match",
+                        "Proposed session from weekly matching. You still accept.",
+                        future.activity(),
+                        place,
+                        organizer == null ? null : organizer.lat(),
+                        organizer == null ? null : organizer.lng(),
+                        startsAt,
+                        future.durationMin(),
+                        "private",
+                        1,
+                        null,
+                        List.of(),
+                        null,
+                        List.of(future.right())));
+        return future.withEventId(created.event().id());
     }
 
     private void requireActive(UUID userId) {

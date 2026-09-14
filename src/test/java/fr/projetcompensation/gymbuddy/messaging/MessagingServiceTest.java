@@ -68,6 +68,15 @@ class MessagingServiceTest {
     }
 
     @Test
+    void hiddenMediaCannotBeAttachedToAMessage() {
+        UUID conversationId = service.open(alex.id(), blake.id()).conversation().id();
+        Media image = readyMedia(alex, "image/jpeg");
+        media.update(image.hide(NOW, "policy"));
+        assertThatThrownBy(() -> service.send(alex.id(), conversationId, "image", null, image.id()))
+                .isInstanceOf(AuthException.class);
+    }
+
+    @Test
     void fsMsg01_friendsOpenADirectConversation() {
         ListedConversation opened = service.open(alex.id(), blake.id());
         assertThat(opened.peer().handle()).isEqualTo("blake");

@@ -1,12 +1,9 @@
 package fr.projetcompensation.gymbuddy.profiles;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,8 +21,6 @@ public class JdbcProfileRepository implements ProfileRepository {
             FROM profiles
             WHERE user_id = ?
             """;
-
-    private static final ObjectMapper WINDOWS_JSON = new ObjectMapper();
 
     private final JdbcTemplate jdbc;
 
@@ -68,7 +63,7 @@ public class JdbcProfileRepository implements ProfileRepository {
             } else {
                 ps.setDouble(8, profile.lng());
             }
-            ps.setString(9, writeWindows(profile.preferredWindows()));
+            ps.setString(9, PreferredWindowJson.write(profile.preferredWindows()));
             ps.setObject(10, profile.avatarMediaId());
             ps.setObject(11, profile.userId());
             return ps;
@@ -93,47 +88,7 @@ public class JdbcProfileRepository implements ProfileRepository {
                 rs.getString("city"),
                 (Double) rs.getObject("lat"),
                 (Double) rs.getObject("lng"),
-                readWindows(rs.getString("preferred_windows")),
+                PreferredWindowJson.read(rs.getString("preferred_windows")),
                 rs.getObject("avatar_media_id", UUID.class));
-    }
-
-    private static String writeWindows(List<PreferredWindow> windows) {
-        StringBuilder json = new StringBuilder("[");
-        for (int i = 0; i < windows.size(); i++) {
-            if (i > 0) {
-                json.append(',');
-            }
-            PreferredWindow window = windows.get(i);
-            json.append("{\"weekday\":")
-                    .append(window.weekday())
-                    .append(",\"start\":\"")
-                    .append(window.start())
-                    .append("\",\"end\":\"")
-                    .append(window.end())
-                    .append("\"}");
-        }
-        return json.append(']').toString();
-    }
-
-    private static List<PreferredWindow> readWindows(String raw) {
-        if (raw == null || raw.isBlank() || raw.equals("[]")) {
-            return List.of();
-        }
-        try {
-            JsonNode arr = WINDOWS_JSON.readTree(raw);
-            if (!arr.isArray()) {
-                return List.of();
-            }
-            List<PreferredWindow> windows = new ArrayList<>();
-            for (JsonNode node : arr) {
-                windows.add(new PreferredWindow(
-                        node.path("weekday").asInt(),
-                        node.path("start").asText(),
-                        node.path("end").asText()));
-            }
-            return List.copyOf(windows);
-        } catch (Exception ex) {
-            throw new IllegalStateException("preferred_windows is not valid JSON", ex);
-        }
     }
 }

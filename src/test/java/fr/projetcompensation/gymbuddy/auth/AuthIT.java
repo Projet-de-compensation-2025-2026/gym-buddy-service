@@ -32,9 +32,10 @@ class AuthIT {
     private static final String SECRET = "test-hs256-secret-that-is-long-enough";
     private static final String PASSWORD = "correct-horse";
 
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6");
+    static final PostgreSQLContainer POSTGRES = fr.projetcompensation.gymbuddy.support.PostgresTestContainer.create();
 
     static final GenericContainer<?> REDIS = new GenericContainer<>("redis:8-alpine")
+            .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure)
             .withExposedPorts(6379)
             .waitingFor(Wait.forListeningPort())
             .withStartupTimeout(Duration.ofMinutes(2));
@@ -208,6 +209,13 @@ class AuthIT {
     @Test
     void fsAcct05And07_passwordChangeAndCloseAccount() {
         RestClient client = restClient();
+        // Preserve a separate administrator while this member closes their account.
+        client.post()
+                .uri("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(registerBody("admin@example.com", "admin", PASSWORD, "Admin"))
+                .retrieve()
+                .toEntity(String.class);
         client.post()
                 .uri("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)

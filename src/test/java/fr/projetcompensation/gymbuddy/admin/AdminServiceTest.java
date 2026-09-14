@@ -11,6 +11,7 @@ import fr.projetcompensation.gymbuddy.events.Event;
 import fr.projetcompensation.gymbuddy.events.EventApplication;
 import fr.projetcompensation.gymbuddy.events.EventOccurrence;
 import fr.projetcompensation.gymbuddy.events.EventRepository;
+import fr.projetcompensation.gymbuddy.events.EventVisibility;
 import fr.projetcompensation.gymbuddy.fixtures.FixtureGenerator;
 import fr.projetcompensation.gymbuddy.fixtures.FixtureMagnitude;
 import fr.projetcompensation.gymbuddy.fixtures.FixtureReport;
@@ -97,6 +98,100 @@ class AdminServiceTest {
         member = user("member", UserRole.MEMBER);
         moderator = user("mod", UserRole.MODERATOR);
         administrator = user("admin", UserRole.ADMIN);
+    }
+
+    @Test
+    void visibleEventCanBeReportedWithoutExposingPrivateOrHiddenEvents() {
+        Event publicEvent = event(EventVisibility.PUBLIC);
+        events.save(publicEvent, List.of(), List.of());
+        assertThat(admin.createReport(member.id(), "event", publicEvent.id(), "unsafe activity")
+                        .targetId())
+                .isEqualTo(publicEvent.id());
+        Event privateEvent = event(EventVisibility.PRIVATE);
+        events.save(privateEvent, List.of(), List.of());
+        assertThatThrownBy(() -> admin.createReport(member.id(), "event", privateEvent.id(), "reason"))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+        Event hiddenEvent = event(EventVisibility.PUBLIC).hide(NOW);
+        events.save(hiddenEvent, List.of(), List.of());
+        assertThatThrownBy(() -> admin.createReport(member.id(), "event", hiddenEvent.id(), "reason"))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+    }
+
+    private Event event(EventVisibility visibility) {
+        return new Event(
+                UUID.randomUUID(),
+                owner.id(),
+                "Run",
+                null,
+                "running",
+                "Park",
+                null,
+                null,
+                NOW.plusSeconds(3600),
+                60,
+                visibility,
+                4,
+                null,
+                List.of(),
+                null,
+                null,
+                false,
+                NOW,
+                null);
+    }
+
+    @Test
+    void moderatorCannotLockOrUnlockStaff() {
+        User secondAdmin = user("secondadmin", UserRole.ADMIN);
+        assertThatThrownBy(() -> admin.lock(moderator.id(), secondAdmin.id(), "reason"))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.FORBIDDEN));
+        assertThatThrownBy(() -> admin.unlock(moderator.id(), secondAdmin.id(), "reason"))
+                .isInstanceOf(AuthException.class);
+        assertThat(audit.events).isEmpty();
+    }
+
+    @Test
+    void inactiveAdminsDoNotPermitRemovingTheLastActiveAdmin() {
+        User secondAdmin = user("secondadmin", UserRole.ADMIN);
+        users.update(secondAdmin.withStatus(UserStatus.LOCKED));
+        assertThatThrownBy(() -> admin.lock(administrator.id(), administrator.id(), "reason"))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.CONFLICT));
+        assertThatThrownBy(() -> admin.changeRole(administrator.id(), administrator.id(), "member", "reason"))
+                .isInstanceOf(AuthException.class);
+        assertThat(users.findById(administrator.id()).orElseThrow().active()).isTrue();
+    }
+
+    @Test
+    void concurrentAdminDemotionsKeepOneActiveAdmin() throws Exception {
+        User other = user("secondadmin", UserRole.ADMIN);
+        var start = new java.util.concurrent.CountDownLatch(1);
+        try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var first = pool.submit(() -> {
+                start.await();
+                try {
+                    admin.changeRole(administrator.id(), administrator.id(), "member", "test");
+                    return 1;
+                } catch (AuthException ex) {
+                    return 0;
+                }
+            });
+            var second = pool.submit(() -> {
+                start.await();
+                try {
+                    admin.changeRole(other.id(), other.id(), "member", "test");
+                    return 1;
+                } catch (AuthException ex) {
+                    return 0;
+                }
+            });
+            start.countDown();
+            assertThat(first.get() + second.get()).isEqualTo(1);
+            assertThat(catalog.countAdmins()).isEqualTo(1);
+        }
     }
 
     @Test
@@ -267,6 +362,7 @@ class AdminServiceTest {
         @Override
         public List<ListedAdminUser> listUsers(String q, String role, String status, InstantIdCursor after, int limit) {
             return users.stream()
+                    .map(user -> AdminServiceTest.this.users.findById(user.id()).orElseThrow())
                     .sorted(Comparator.comparing(User::createdAt).reversed().thenComparing(User::id))
                     .map(user -> new ListedAdminUser(
                             user, user.handle(), user.role() == UserRole.ADMIN && countAdmins() <= 1))
@@ -276,7 +372,10 @@ class AdminServiceTest {
 
         @Override
         public long countAdmins() {
-            return users.stream().filter(user -> user.role() == UserRole.ADMIN).count();
+            return users.stream()
+                    .map(user -> AdminServiceTest.this.users.findById(user.id()).orElseThrow())
+                    .filter(user -> user.active() && user.role() == UserRole.ADMIN)
+                    .count();
         }
 
         @Override
@@ -489,11 +588,17 @@ class AdminServiceTest {
     }
 
     private static final class InMemoryEvents implements EventRepository {
-        @Override
-        public void save(Event event, List<EventOccurrence> occurrences, List<UUID> inviteeIds) {}
+        private final Map<UUID, Event> rows = new HashMap<>();
 
         @Override
-        public void update(Event event) {}
+        public void save(Event event, List<EventOccurrence> occurrences, List<UUID> inviteeIds) {
+            rows.put(event.id(), event);
+        }
+
+        @Override
+        public void update(Event event) {
+            rows.put(event.id(), event);
+        }
 
         @Override
         public void replaceInvitees(UUID eventId, List<UUID> inviteeIds) {}
@@ -506,7 +611,7 @@ class AdminServiceTest {
 
         @Override
         public Optional<Event> findById(UUID id) {
-            return Optional.empty();
+            return Optional.ofNullable(rows.get(id));
         }
 
         @Override

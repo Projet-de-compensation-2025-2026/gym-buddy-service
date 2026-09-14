@@ -209,6 +209,7 @@ public final class PostService {
                     || row.kind() != MediaKind.POST
                     || row.status() != MediaStatus.READY
                     || row.deletedAt() != null
+                    || row.hidden()
                     || row.mime() == null
                     || !row.mime().startsWith("image/")) {
                 throw AuthException.validation("media is not allowed", new FieldIssue("mediaIds", "invalid"));

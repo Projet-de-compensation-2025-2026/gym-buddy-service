@@ -28,6 +28,13 @@ final class FakeRefreshTokenStore implements RefreshTokenStore {
     }
 
     @Override
+    public synchronized Optional<UUID> consume(String jti, Instant expiresAt) {
+        UUID user = allowed.remove(jti);
+        if (user != null) denied.add(jti);
+        return Optional.ofNullable(user);
+    }
+
+    @Override
     public void revoke(String jti, Instant expiresAt) {
         allowed.remove(jti);
         denied.add(jti);

@@ -15,8 +15,12 @@ public class ProfileConfiguration {
 
     @Bean
     @ConditionalOnProperty(name = "DATABASE_URL")
-    ProfileService profileService(UserRepository users, ProfileRepository profiles, FriendshipQueries friendships) {
-        return new ProfileService(users, profiles, friendships);
+    ProfileService profileService(
+            UserRepository users,
+            ProfileRepository profiles,
+            FriendshipQueries friendships,
+            fr.projetcompensation.gymbuddy.media.MediaRepository media) {
+        return new ProfileService(users, profiles, friendships, media);
     }
 
     @Bean

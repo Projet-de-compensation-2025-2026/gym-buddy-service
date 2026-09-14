@@ -16,9 +16,13 @@ public interface MatchingStore {
 
     List<MatchingOptIn> listOptIns(LocalDate weekStart);
 
-    void replacePairs(LocalDate weekStart, List<ProposedMatch> matches);
+    void appendPairs(LocalDate weekStart, List<ProposedMatch> matches);
 
     Optional<ProposedMatch> pairFor(UUID userId, LocalDate weekStart);
 
-    boolean hasPairs(LocalDate weekStart);
+    default <T> T withWeekLock(LocalDate weekStart, java.util.function.Supplier<T> work) {
+        synchronized (this) {
+            return work.get();
+        }
+    }
 }

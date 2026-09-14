@@ -48,6 +48,57 @@ class FriendshipServiceTest {
     }
 
     @Test
+    void staleAcceptCannotReplaceABlock() {
+        UUID id = service.request(alex.id(), "blake", null).friendship().id();
+        friendships.afterFind = () -> service.block(alex.id(), blake.id());
+        assertThatThrownBy(() -> service.accept(blake.id(), id)).isInstanceOf(AuthException.class);
+        assertThat(friendships.isBlockedEitherWay(alex.id(), blake.id())).isTrue();
+    }
+
+    @Test
+    void staleDeclineCannotReplaceABlock() {
+        UUID id = service.request(alex.id(), "blake", null).friendship().id();
+        friendships.afterFind = () -> service.block(alex.id(), blake.id());
+        assertThatThrownBy(() -> service.decline(blake.id(), id)).isInstanceOf(AuthException.class);
+        assertThat(friendships.isBlockedEitherWay(alex.id(), blake.id())).isTrue();
+    }
+
+    @Test
+    void staleUnfriendCannotDeleteABlock() {
+        UUID id = service.request(alex.id(), "blake", null).friendship().id();
+        service.accept(blake.id(), id);
+        friendships.afterFind = () -> service.block(alex.id(), blake.id());
+        assertThatThrownBy(() -> service.remove(blake.id(), id)).isInstanceOf(AuthException.class);
+        assertThat(friendships.isBlockedEitherWay(alex.id(), blake.id())).isTrue();
+    }
+
+    @Test
+    void blockedMemberCannotTakeOwnershipAndRemoveAnotherMembersBlock() {
+        service.block(alex.id(), blake.id());
+        assertThatThrownBy(() -> service.block(blake.id(), alex.id()))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> service.unblock(blake.id(), alex.id())).isInstanceOf(AuthException.class);
+        assertThat(friendships.findPair(alex.id(), blake.id()).orElseThrow().requesterId())
+                .isEqualTo(alex.id());
+        assertThat(friendships.isBlockedEitherWay(alex.id(), blake.id())).isTrue();
+        service.unblock(alex.id(), blake.id());
+        assertThat(friendships.isBlockedEitherWay(alex.id(), blake.id())).isFalse();
+    }
+
+    @Test
+    void blockedListContainsOnlyBlocksCreatedByTheCaller() {
+        service.block(alex.id(), blake.id());
+        service.block(casey.id(), alex.id());
+        assertThat(service.list(alex.id(), "blocked", null, null, 20).data())
+                .extracting(row -> row.peer().id())
+                .containsExactly(blake.id());
+        assertThat(service.list(blake.id(), "blocked", null, null, 20).data()).isEmpty();
+        assertThatThrownBy(() -> service.list(blake.id(), "blocked", "alex", null, 20))
+                .isInstanceOf(AuthException.class);
+    }
+
+    @Test
     void fsFrnd01And02_requestThenAcceptIsSymmetric() {
         ListedFriendship pending = service.request(alex.id(), "blake", null);
 
@@ -198,6 +249,7 @@ class FriendshipServiceTest {
     }
 
     private static final class InMemoryFriendships implements FriendshipRepository {
+        private Runnable afterFind;
         private final Map<UUID, Friendship> store = new LinkedHashMap<>();
 
         @Override
@@ -217,7 +269,13 @@ class FriendshipServiceTest {
 
         @Override
         public Optional<Friendship> findById(UUID id) {
-            return Optional.ofNullable(store.get(id));
+            Optional<Friendship> snapshot = Optional.ofNullable(store.get(id));
+            if (afterFind != null) {
+                Runnable action = afterFind;
+                afterFind = null;
+                action.run();
+            }
+            return snapshot;
         }
 
         @Override
@@ -253,6 +311,17 @@ class FriendshipServiceTest {
             return page(
                     store.values().stream()
                             .filter(row -> row.status() == FriendshipStatus.PENDING
+                                    && row.requesterId().equals(userId))
+                            .toList(),
+                    after,
+                    limit);
+        }
+
+        @Override
+        public List<Friendship> listBlocked(UUID userId, InstantIdCursor after, int limit) {
+            return page(
+                    store.values().stream()
+                            .filter(row -> row.status() == FriendshipStatus.BLOCKED
                                     && row.requesterId().equals(userId))
                             .toList(),
                     after,

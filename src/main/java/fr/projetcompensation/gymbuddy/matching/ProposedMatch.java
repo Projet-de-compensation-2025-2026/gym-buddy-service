@@ -23,10 +23,10 @@ public record ProposedMatch(
     }
 
     public UUID left() {
-        return userA.compareTo(userB) < 0 ? userA : userB;
+        return userA.toString().compareTo(userB.toString()) < 0 ? userA : userB;
     }
 
     public UUID right() {
-        return userA.compareTo(userB) < 0 ? userB : userA;
+        return userA.toString().compareTo(userB.toString()) < 0 ? userB : userA;
     }
 }
