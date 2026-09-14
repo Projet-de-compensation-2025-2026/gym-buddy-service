@@ -48,8 +48,7 @@ class MediaIT {
     private static final String SECRET = "test-hs256-secret-that-is-long-enough";
     private static final String PASSWORD = "correct-horse";
 
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6")
-            .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure);
+    static final PostgreSQLContainer POSTGRES = fr.projetcompensation.gymbuddy.support.PostgresTestContainer.create();
 
     static final GenericContainer<?> REDIS = new GenericContainer<>("redis:8-alpine")
             .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure)
@@ -185,6 +184,13 @@ class MediaIT {
                             .build(),
                     HttpResponse.BodyHandlers.discarding());
             assertThat(changedLength.statusCode()).isEqualTo(403);
+            var changedMime = http.send(
+                    HttpRequest.newBuilder(upload)
+                            .header("Content-Type", "application/octet-stream")
+                            .PUT(HttpRequest.BodyPublishers.ofByteArray(body))
+                            .build(),
+                    HttpResponse.BodyHandlers.discarding());
+            assertThat(changedMime.statusCode()).isEqualTo(403);
             assertThat(storage.get(key)).contains(body);
 
             client.putObject(

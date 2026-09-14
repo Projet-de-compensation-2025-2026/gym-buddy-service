@@ -72,6 +72,27 @@ class MediaServiceTest {
     }
 
     @Test
+    void finalizationBeforeOrphanLockCannotDeleteReadyMedia() {
+        byte[] image = jpeg();
+        CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", image.length);
+        Media pending = media.findById(upload.mediaId()).orElseThrow();
+        clock.set(NOW.plus(Duration.ofHours(2)));
+        UserRepository lockedUsers = org.mockito.Mockito.spy(users);
+        org.mockito.Mockito.doAnswer(invocation -> {
+                    // A concurrent ingest committed while cleanup waited to acquire this account.
+                    media.update(pending.processed(image.length, 0));
+                    storage.put(pending.processedKey(), "image/jpeg", image);
+                    return invocation.callRealMethod();
+                })
+                .when(lockedUsers)
+                .withAccountLock(org.mockito.ArgumentMatchers.eq(alex.id()), org.mockito.ArgumentMatchers.any());
+        service = new MediaService(media, storage, lockedUsers, profiles, friends, clock);
+        service.sweep();
+        assertThat(media.findById(pending.id()).orElseThrow().ready()).isTrue();
+        assertThat(storage.exists(pending.processedKey())).isTrue();
+    }
+
+    @Test
     void deletionDuringProcessingCannotRestoreMedia() {
         byte[] image = jpeg();
         CreateUpload upload = service.create(alex.id(), "avatar", "image/jpeg", image.length);

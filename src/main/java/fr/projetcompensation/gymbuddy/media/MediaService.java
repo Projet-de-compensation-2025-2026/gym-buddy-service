@@ -128,12 +128,14 @@ public final class MediaService {
             }
         }
         for (Media orphan : media.findPendingCreatedBefore(now.minus(PENDING_ORPHAN))) {
-            Media latest = media.findById(orphan.id()).orElse(null);
-            if (latest == null || !latest.pending()) {
-                continue;
-            }
-            deleteObjectTree(latest);
-            media.delete(latest.id());
+            users.withAccountLock(orphan.ownerId(), () -> {
+                Media latest = media.findById(orphan.id()).orElse(null);
+                if (latest != null && latest.pending()) {
+                    deleteObjectTree(latest);
+                    media.delete(latest.id());
+                }
+                return null;
+            });
         }
         for (Media completed : media.findUploadCleanupCandidates(now.minus(PENDING_ORPHAN))) {
             String uploadKey = Media.originalKey(completed.ownerId(), completed.id());
