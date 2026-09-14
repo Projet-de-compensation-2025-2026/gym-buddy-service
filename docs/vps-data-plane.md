@@ -150,7 +150,7 @@ sudo env \
   ./deploy/replace.sh gym-buddy-service:local
 ```
 
-After a **0.1.x** Release (not `0.3.0`), Deploy copies `deploy/replace.sh` over SSH and runs it with the GHCR tag. Same env file, same network. You do not pass secret values through GitHub Actions.
+After a reviewed semantic-version Release, Deploy copies `deploy/replace.sh` over SSH and runs it with the GHCR tag. Same env file, same network. You do not pass secret values through GitHub Actions.
 
 Manual GHCR replace (operator already logged in, or `GHCR_USERNAME` + `GHCR_TOKEN` in the environment):
 
@@ -160,7 +160,7 @@ sudo env \
   DEPLOY_BIND=127.0.0.1 \
   GHCR_USERNAME="$GHCR_USERNAME" \
   GHCR_TOKEN="$GHCR_TOKEN" \
-  ./deploy/replace.sh ghcr.io/projet-de-compensation-2025-2026/gym-buddy-service:v0.1.x
+  ./deploy/replace.sh ghcr.io/projet-de-compensation-2025-2026/gym-buddy-service:vX.Y.Z
 ```
 
 What `replace.sh` does on that `docker run`:
@@ -203,7 +203,7 @@ Expect `127.0.0.1:8080`. Not `0.0.0.0:8080`.
 ## 5. Ongoing releases
 
 1. Keep `/etc/gym-buddy/vps.env` and `docker compose … -f deploy/compose.yaml` running.
-2. When a 0.1.x version is stable, run the existing **Release** workflow (pin `version=0.1.x` if needed). Do not bump the application to `0.3.0`.
+2. When the reviewed version is ready, run the existing **Release** workflow with its intended semantic version.
 3. **Deploy** builds `ghcr.io/projet-de-compensation-2025-2026/gym-buddy-service:vX.Y.Z`, copies `deploy/replace.sh`, and runs it. The new container joins `gym-buddy-data` and reads the VPS env file.
 
-Do not compose the API on the VPS. Do not publish friends / feed / events in this slice.
+The data-plane Compose file does not manage the API. Verify the deployed image revision and core browser journeys after replacement.
