@@ -183,8 +183,9 @@ public final class EventService {
                 ? row.durationMin()
                 : requireRange(draft.durationMin(), "durationMin", 1, MAX_DURATION);
         List<String> tags = draft.tags() == null ? row.tags() : normalizeTags(draft.tags());
-        UUID cover =
-                draft.coverMediaId() == null ? row.coverMediaId() : requireCover(caller.id(), draft.coverMediaId());
+        UUID cover = draft.coverMediaId() == null
+                ? row.coverMediaId()
+                : requireCover(caller.id(), draft.coverMediaId(), row.id());
         Double lat = draft.lat() == null ? row.lat() : optionalCoord(draft.lat(), "lat", -90, 90);
         Double lng = draft.lng() == null ? row.lng() : optionalCoord(draft.lng(), "lng", -180, 180);
         boolean acceptedAnyone = events.applicationsForEvent(row.id()).stream()
@@ -516,6 +517,10 @@ public final class EventService {
     }
 
     private UUID requireCover(UUID ownerId, UUID mediaId) {
+        return requireCover(ownerId, mediaId, null);
+    }
+
+    private UUID requireCover(UUID ownerId, UUID mediaId, UUID allowedEventId) {
         if (mediaId == null) {
             return null;
         }
@@ -526,13 +531,16 @@ public final class EventService {
                 || row.kind() != MediaKind.EVENT
                 || row.status() != MediaStatus.READY
                 || row.deletedAt() != null
+                || row.hidden()
                 || row.mime() == null
                 || !row.mime().startsWith("image/")) {
             throw AuthException.validation("media is not allowed", new FieldIssue("coverMediaId", "invalid"));
         }
-        events.findByCoverMediaId(mediaId).ifPresent(existing -> {
-            throw AuthException.validation("media is not allowed", new FieldIssue("coverMediaId", "attached"));
-        });
+        events.findByCoverMediaId(mediaId)
+                .filter(existing -> !existing.id().equals(allowedEventId))
+                .ifPresent(existing -> {
+                    throw AuthException.validation("media is not allowed", new FieldIssue("coverMediaId", "attached"));
+                });
         return mediaId;
     }
 

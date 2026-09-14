@@ -79,6 +79,32 @@ class EventServiceTest {
     }
 
     @Test
+    void eventCoverRejectsHiddenMediaAndRetainsAnUnchangedAttachment() {
+        UUID coverId = UUID.randomUUID();
+        Media cover = new Media(
+                coverId,
+                alex.id(),
+                fr.projetcompensation.gymbuddy.media.MediaKind.EVENT,
+                "image/jpeg",
+                100,
+                0,
+                fr.projetcompensation.gymbuddy.media.MediaStatus.READY,
+                "key",
+                NOW,
+                null);
+        EventDraft covered = new EventDraft(
+                "Run", null, "running", "Park", null, null, START, 60, "public", 4, null, List.of(), coverId,
+                List.of());
+        media.save(cover.hide(NOW, "policy"));
+        assertThatThrownBy(() -> service.create(alex.id(), covered)).isInstanceOf(AuthException.class);
+        media.update(cover);
+        UUID eventId = service.create(alex.id(), covered).event().id();
+        assertThat(service.patch(alex.id(), eventId, covered).event().coverMediaId())
+                .isEqualTo(coverId);
+        assertThatThrownBy(() -> service.create(alex.id(), covered)).isInstanceOf(AuthException.class);
+    }
+
+    @Test
     void selectedRecurringOccurrenceHasItsOwnApplicationsAndCapacity() {
         var created = service.create(alex.id(), draft("FREQ=WEEKLY;BYDAY=TU", "public", 1));
         UUID first = created.occurrences().get(0).occurrence().id();

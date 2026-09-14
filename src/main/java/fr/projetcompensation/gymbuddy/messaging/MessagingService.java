@@ -231,6 +231,7 @@ public final class MessagingService {
                 || row.kind() != MediaKind.MESSAGE
                 || row.status() != MediaStatus.READY
                 || row.deletedAt() != null
+                || row.hidden()
                 || row.mime() == null) {
             throw AuthException.validation("media is not allowed", new FieldIssue("mediaId", "invalid"));
         }
