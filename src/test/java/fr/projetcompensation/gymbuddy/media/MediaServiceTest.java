@@ -126,6 +126,29 @@ class MediaServiceTest {
     }
 
     @Test
+    void deletedMediaConsumesQuotaUntilItsObjectsArePurged() {
+        UUID id = UUID.randomUUID();
+        media.save(new Media(
+                id,
+                alex.id(),
+                MediaKind.AVATAR,
+                "image/jpeg",
+                MediaRules.QUOTA_BYTES,
+                0,
+                MediaStatus.READY,
+                "processed/full",
+                NOW,
+                null));
+        service.delete(alex.id(), id);
+        assertThatThrownBy(() -> service.create(alex.id(), "avatar", "image/jpeg", 100))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.QUOTA_EXCEEDED));
+        clock.set(NOW.plus(MediaService.OBJECT_GRACE).plusSeconds(1));
+        service.sweep();
+        assertThat(service.create(alex.id(), "avatar", "image/jpeg", 100)).isNotNull();
+    }
+
+    @Test
     void fsMed05_quotaExceededWhenUserAlreadyAt1GiB() {
         media.save(new Media(
                 UUID.randomUUID(),
@@ -442,7 +465,7 @@ class MediaServiceTest {
         @Override
         public long usedBytes(UUID ownerId) {
             return store.values().stream()
-                    .filter(row -> row.ownerId().equals(ownerId) && row.deletedAt() == null)
+                    .filter(row -> row.ownerId().equals(ownerId) && row.status() != MediaStatus.REJECTED)
                     .mapToLong(row -> row.bytes() + row.variantBytes())
                     .sum();
         }
