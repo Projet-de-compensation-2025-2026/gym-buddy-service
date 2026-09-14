@@ -64,6 +64,11 @@ jobs:
           assert totals['tests'] > 0 and not any(totals[key] for key in ('failures', 'errors', 'skipped')), totals
           PY
 
+      - name: Validate media gateway configuration
+        run: |
+          docker run --rm -v "$PWD/deploy/Caddyfile.example:/etc/caddy/Caddyfile:ro" \
+            caddy:2 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
       - name: Smoke (container must respond)
         run: bash .github/scripts/ci/smoke.sh
 
@@ -73,7 +78,7 @@ jobs:
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$PWD/image-audit:/reports" \
-            aquasec/trivy:0.74.0 image --scanners vuln --severity CRITICAL \
+            aquasec/trivy:0.74.0 image --scanners vuln --severity CRITICAL --exit-code 1 \
             --format json --output /reports/critical.json gym-buddy-service:smoke
 
       - name: Preserve test and runtime audit evidence

@@ -3,7 +3,7 @@
 # both are part of the signature generated using S3_PUBLIC_ENDPOINT.
 vps-c39cdf03.vps.ovh.net {
     @media_preflight {
-        path /gym-buddy/*
+        path_regexp ^/gym-buddy/.+
         method OPTIONS
         header Origin https://projet-de-compensation-2025-2026.github.io
     }
@@ -17,7 +17,7 @@ vps-c39cdf03.vps.ovh.net {
     }
 
     @media {
-        path /gym-buddy/*
+        path_regexp ^/gym-buddy/.+
         method GET HEAD PUT
     }
     handle @media {
