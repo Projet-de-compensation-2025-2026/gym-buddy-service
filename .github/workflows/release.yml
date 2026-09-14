@@ -4,9 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "SemVer to publish (e.g. 0.2.0). Leave empty to compute automatically."
+        description: "SemVer to publish (e.g. 1.2.0). Leave empty to compute automatically."
         required: false
         type: string
+      deployToVm:
+        description: "Replace the VPS container after publishing and scanning the image. Disable for a coordinated deployment."
+        required: false
+        type: boolean
+        default: true
       bump:
         description: "When version is empty: auto (from Conventional Commits), patch, minor, or major."
         required: false
@@ -103,6 +108,7 @@ jobs:
     uses: ./.github/workflows/deploy.yml
     with:
       version: ${{ needs.release.outputs.version }}
+      deployToVm: ${{ inputs.deployToVm }}
     secrets: inherit
     permissions:
       contents: read

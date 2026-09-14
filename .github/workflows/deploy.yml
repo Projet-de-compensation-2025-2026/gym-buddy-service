@@ -9,6 +9,21 @@ on:
       version:
         required: false
         type: string
+      deployToVm:
+        description: Replace the VPS container after the image passes its security scan.
+        required: false
+        type: boolean
+        default: true
+    outputs:
+      image:
+        description: Published image repository.
+        value: ${{ jobs.image.outputs.image }}
+      digest:
+        description: Immutable published image digest.
+        value: ${{ jobs.image.outputs.digest }}
+      revision:
+        description: Source revision checked out from the release tag.
+        value: ${{ jobs.image.outputs.revision }}
 
 permissions:
   contents: read
@@ -24,6 +39,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.meta.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+      revision: ${{ steps.meta.outputs.source_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,6 +81,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -79,8 +97,28 @@ jobs:
             ${{ env.IMAGE }}:v${{ env.VERSION }}
             ${{ env.IMAGE }}:latest
 
+      - name: Scan the published image for critical vulnerabilities
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker pull "${IMAGE}@${DIGEST}"
+          mkdir -p release-security
+          docker run --rm             -v /var/run/docker.sock:/var/run/docker.sock             -v "$PWD/release-security:/output"             aquasec/trivy:0.74.0 image --image-src docker             --scanners vuln --severity CRITICAL --exit-code 1             --format json --output /output/released-image-critical.json             "${IMAGE}@${DIGEST}"
+
+      - name: Upload released image security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: released-image-security
+          path: release-security/
+          if-no-files-found: warn
+
   vm:
     name: vm
+    if: ${{ github.event_name == 'push' || inputs.deployToVm }}
     needs: image
     runs-on: ubuntu-latest
     steps:
@@ -104,12 +142,7 @@ jobs:
             echo "Image was pushed to GHCR. Skipping SSH replace until secrets exist."
             exit 0
           fi
-          VERSION="${{ inputs.version }}"
-          if [[ -z "$VERSION" ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          fi
-          OWNER="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
-          IMAGE="ghcr.io/${OWNER}/gym-buddy-service:v${VERSION}"
+          IMAGE="${{ needs.image.outputs.image }}@${{ needs.image.outputs.digest }}"
           mkdir -p ~/.ssh
           printf '%s\n' "$KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
