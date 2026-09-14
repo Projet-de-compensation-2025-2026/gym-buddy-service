@@ -11,6 +11,7 @@ import fr.projetcompensation.gymbuddy.events.Event;
 import fr.projetcompensation.gymbuddy.events.EventApplication;
 import fr.projetcompensation.gymbuddy.events.EventOccurrence;
 import fr.projetcompensation.gymbuddy.events.EventRepository;
+import fr.projetcompensation.gymbuddy.events.EventVisibility;
 import fr.projetcompensation.gymbuddy.fixtures.FixtureGenerator;
 import fr.projetcompensation.gymbuddy.fixtures.FixtureMagnitude;
 import fr.projetcompensation.gymbuddy.fixtures.FixtureReport;
@@ -97,6 +98,48 @@ class AdminServiceTest {
         member = user("member", UserRole.MEMBER);
         moderator = user("mod", UserRole.MODERATOR);
         administrator = user("admin", UserRole.ADMIN);
+    }
+
+    @Test
+    void visibleEventCanBeReportedWithoutExposingPrivateOrHiddenEvents() {
+        Event publicEvent = event(EventVisibility.PUBLIC);
+        events.save(publicEvent, List.of(), List.of());
+        assertThat(admin.createReport(member.id(), "event", publicEvent.id(), "unsafe activity")
+                        .targetId())
+                .isEqualTo(publicEvent.id());
+        Event privateEvent = event(EventVisibility.PRIVATE);
+        events.save(privateEvent, List.of(), List.of());
+        assertThatThrownBy(() -> admin.createReport(member.id(), "event", privateEvent.id(), "reason"))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+        Event hiddenEvent = event(EventVisibility.PUBLIC).hide(NOW);
+        events.save(hiddenEvent, List.of(), List.of());
+        assertThatThrownBy(() -> admin.createReport(member.id(), "event", hiddenEvent.id(), "reason"))
+                .isInstanceOf(AuthException.class)
+                .satisfies(ex -> assertThat(((AuthException) ex).code()).isEqualTo(ErrorCode.NOT_FOUND));
+    }
+
+    private Event event(EventVisibility visibility) {
+        return new Event(
+                UUID.randomUUID(),
+                owner.id(),
+                "Run",
+                null,
+                "running",
+                "Park",
+                null,
+                null,
+                NOW.plusSeconds(3600),
+                60,
+                visibility,
+                4,
+                null,
+                List.of(),
+                null,
+                null,
+                false,
+                NOW,
+                null);
     }
 
     @Test
@@ -545,11 +588,17 @@ class AdminServiceTest {
     }
 
     private static final class InMemoryEvents implements EventRepository {
-        @Override
-        public void save(Event event, List<EventOccurrence> occurrences, List<UUID> inviteeIds) {}
+        private final Map<UUID, Event> rows = new HashMap<>();
 
         @Override
-        public void update(Event event) {}
+        public void save(Event event, List<EventOccurrence> occurrences, List<UUID> inviteeIds) {
+            rows.put(event.id(), event);
+        }
+
+        @Override
+        public void update(Event event) {
+            rows.put(event.id(), event);
+        }
 
         @Override
         public void replaceInvitees(UUID eventId, List<UUID> inviteeIds) {}
@@ -562,7 +611,7 @@ class AdminServiceTest {
 
         @Override
         public Optional<Event> findById(UUID id) {
-            return Optional.empty();
+            return Optional.ofNullable(rows.get(id));
         }
 
         @Override

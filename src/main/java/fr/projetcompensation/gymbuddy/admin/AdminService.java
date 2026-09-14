@@ -5,6 +5,7 @@ import fr.projetcompensation.gymbuddy.auth.FieldIssue;
 import fr.projetcompensation.gymbuddy.comments.Comment;
 import fr.projetcompensation.gymbuddy.comments.CommentRepository;
 import fr.projetcompensation.gymbuddy.events.Event;
+import fr.projetcompensation.gymbuddy.events.EventAccess;
 import fr.projetcompensation.gymbuddy.events.EventRepository;
 import fr.projetcompensation.gymbuddy.fixtures.FixtureGenerator;
 import fr.projetcompensation.gymbuddy.fixtures.FixtureGuard;
@@ -380,6 +381,12 @@ public final class AdminService {
                 }
                 Post post = posts.findById(row.postId()).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
                 if (!PostAccess.canView(post, caller, friendships, users)) {
+                    throw AuthException.notFound(NOT_FOUND);
+                }
+            }
+            case "event" -> {
+                Event row = events.findById(targetId).orElseThrow(() -> AuthException.notFound(NOT_FOUND));
+                if (!EventAccess.canView(row, caller, friendships, users, events)) {
                     throw AuthException.notFound(NOT_FOUND);
                 }
             }
