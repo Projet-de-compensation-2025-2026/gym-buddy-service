@@ -52,6 +52,13 @@ public final class MatchingService {
         if (match != null) {
             UUID other = match.userA().equals(userId) ? match.userB() : match.userA();
             pair = graph.membersByIds(List.of(other)).stream().findFirst().orElse(null);
+            if (pair == null
+                    || !pair.active()
+                    || graph.blockedIds(userId).contains(other)
+                    || graph.blockedIds(other).contains(userId)) {
+                pair = null;
+                match = null;
+            }
         }
         return new MatchingState(opted, week, pair, match);
     }
@@ -123,12 +130,12 @@ public final class MatchingService {
                             organizer == null ? null : organizer.lng(),
                             startsAt,
                             future.durationMin(),
-                            "friends",
+                            "private",
                             1,
                             null,
                             List.of(),
                             null,
-                            List.of()));
+                            List.of(future.right())));
             return future.withEventId(created.event().id());
         } catch (RuntimeException ignored) {
             return future;

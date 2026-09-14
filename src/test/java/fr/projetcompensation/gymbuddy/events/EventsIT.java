@@ -33,8 +33,7 @@ class EventsIT {
     private static final String SECRET = "test-hs256-secret-that-is-long-enough";
     private static final String PASSWORD = "correct-horse";
 
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6")
-            .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure);
+    static final PostgreSQLContainer POSTGRES = fr.projetcompensation.gymbuddy.support.PostgresTestContainer.create();
 
     static final GenericContainer<?> REDIS = new GenericContainer<>("redis:8-alpine")
             .withCreateContainerCmdModifier(fr.projetcompensation.gymbuddy.support.IsolatedContainers::configure)
@@ -77,6 +76,59 @@ class EventsIT {
 
     @Autowired(required = false)
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private fr.projetcompensation.gymbuddy.matching.MatchingService matching;
+
+    @Test
+    void weeklyMatchInvitesPublicStrangerWithoutExposingPrivateSession() {
+        RestClient client = restClient();
+        registerAndLogin(client, "staff@example.com", "staff", "Staff");
+        String alexAccess = registerAndLogin(client, "match.alex@example.com", "matchalex", "Alex");
+        String blakeAccess = registerAndLogin(client, "match.blake@example.com", "matchblake", "Blake");
+        String caseyAccess = registerAndLogin(client, "match.casey@example.com", "matchcasey", "Casey");
+        jdbcTemplate.update("""
+                UPDATE profiles SET visibility = 'public', sports = ARRAY['running'], city = 'Paris',
+                  preferred_windows = '[{"weekday":1,"start":"07:00","end":"09:00"}]'::jsonb
+                WHERE user_id IN (SELECT id FROM users WHERE handle IN ('matchalex', 'matchblake'))
+                """);
+        var alex = jdbcTemplate.queryForObject("SELECT id FROM users WHERE handle = 'matchalex'", java.util.UUID.class);
+        var blake =
+                jdbcTemplate.queryForObject("SELECT id FROM users WHERE handle = 'matchblake'", java.util.UUID.class);
+        matching.optIn(alex);
+        matching.optIn(blake);
+        var match = matching.assignCurrentWeek().getFirst();
+        assertThat(match.eventId()).isNotNull();
+        String applicantAccess = match.left().equals(alex) ? blakeAccess : alexAccess;
+        var detail = client.get()
+                .uri("/api/v1/events/" + match.eventId())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + applicantAccess)
+                .retrieve()
+                .toEntity(String.class);
+        assertThat(detail.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(detail.getBody()).contains("\"visibility\":\"private\"");
+        assertThat(client.post()
+                        .uri("/api/v1/events/" + match.eventId() + "/applications")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + applicantAccess)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{}")
+                        .retrieve()
+                        .toEntity(String.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.CREATED);
+        assertThat(client.get()
+                        .uri("/api/v1/events/" + match.eventId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + caseyAccess)
+                        .retrieve()
+                        .toEntity(String.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM friendships", Integer.class))
+                .isZero();
+        jdbcTemplate.update("UPDATE users SET status = 'closed' WHERE id = ?", blake);
+        assertThat(matching.me(alex).pair()).isNull();
+        assertThat(matching.me(alex).match()).isNull();
+    }
 
     @BeforeEach
     void resetUsers() {
